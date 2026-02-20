@@ -80,7 +80,12 @@ class BrokerAdapter:
 
     async def _request(self, method: str, url: str, **kwargs) -> dict:
         response = await self._client.request(method, url, **kwargs)
-        raw = response.json()
+        try:
+            raw = response.json()
+        except Exception:
+            print(f"FAILED TO PARSE JSON. Status: {response.status_code}")
+            print(f"RAW TEXT: {response.text}")
+            raise
         if self._is_error(raw, response.status_code):
             raise self.transformer.parse_error(raw)
         return raw

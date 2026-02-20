@@ -5,9 +5,13 @@ from tt_connect.exceptions import (
     InvalidOrderError, InsufficientFundsError, BrokerError,
 )
 
-# TODO: Add AngelOne specific error codes
+# AngelOne Error Codes (Example - based on SmartAPI docs)
+# AG8001: Invalid Credentials
+# AB1001: Invalid Token
 ERROR_MAP: dict[str, type[TTConnectError]] = {
-    # e.g., "AG8001": AuthenticationError
+    "AG8001": AuthenticationError,
+    "AB1001": AuthenticationError,
+    "AB1008": AuthenticationError, # Invalid Session
 }
 
 class AngelOneTransformer:
@@ -18,29 +22,31 @@ class AngelOneTransformer:
     def to_order_params(instrument_token: str, qty: int, side: Side,
                         product: ProductType, order_type: OrderType,
                         price: float | None, trigger_price: float | None) -> dict:
-        # TODO: Implement mapping
+        # TODO: Implement mapping later
         return {}
 
     # --- Incoming ---
 
     @staticmethod
     def to_profile(raw: dict) -> Profile:
-        # TODO: Implement mapping
+        # TODO: Implement mapping later
         pass
 
     @staticmethod
     def to_fund(raw: dict) -> Fund:
-        # TODO: Implement mapping
+        # TODO: Implement mapping later
         pass
 
     @staticmethod
     def to_order(raw: dict, instrument) -> Order:
-        # TODO: Implement mapping
+        # TODO: Implement mapping later
         pass
 
     # --- Errors ---
 
     @staticmethod
     def parse_error(raw: dict) -> TTConnectError:
-        # TODO: Parse AngelOne-specific error
-        pass
+        code = raw.get("errorcode", "")
+        message = raw.get("message", "Unknown error")
+        exc_class = ERROR_MAP.get(code, BrokerError)
+        return exc_class(message, broker_code=code)
