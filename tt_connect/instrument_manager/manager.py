@@ -47,7 +47,8 @@ class InstrumentManager:
         lookup = await self._build_underlying_lookup()
         await self._insert_futures(parsed.futures, lookup)
 
-        # Chunk 4: options — coming soon
+        # Chunk 4: options — same lookup, already built
+        await self._insert_options(parsed.options, lookup)
 
         await self._conn.commit()
 
@@ -171,6 +172,54 @@ class InstrumentManager:
 
         if skipped:
             logger.warning(f"Skipped {skipped} futures due to unresolved underlyings")
+
+    async def _insert_options(self, options, lookup: dict) -> None:
+        if not options:
+            return
+
+        logger.info(f"Inserting {len(options)} options")
+        skipped = 0
+
+        for opt in options:
+            underlying_id = lookup.get((opt.underlying_exchange, opt.symbol))
+            if underlying_id is None:
+                logger.warning(
+                    f"Skipping {opt.broker_symbol}: underlying "
+                    f"({opt.underlying_exchange}, {opt.symbol}) not in DB"
+                )
+                skipped += 1
+                continue
+
+            # 1. Base instrument record
+            cursor = await self._conn.execute(
+                """
+                INSERT INTO instruments (exchange, symbol, segment, name, lot_size, tick_size)
+                VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                (opt.exchange, opt.symbol, opt.segment, None, opt.lot_size, opt.tick_size),
+            )
+            instrument_id = cursor.lastrowid
+
+            # 2. Options sub-table
+            await self._conn.execute(
+                """
+                INSERT INTO options (instrument_id, underlying_id, expiry, strike, option_type)
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                (instrument_id, underlying_id, opt.expiry.isoformat(), opt.strike, opt.option_type),
+            )
+
+            # 3. Broker token
+            await self._conn.execute(
+                """
+                INSERT INTO broker_tokens (instrument_id, broker_id, token, broker_symbol)
+                VALUES (?, ?, ?, ?)
+                """,
+                (instrument_id, self._broker_id, opt.broker_token, opt.broker_symbol),
+            )
+
+        if skipped:
+            logger.warning(f"Skipped {skipped} options due to unresolved underlyings")
 
     async def _is_stale(self) -> bool:
         async with self._conn.execute(

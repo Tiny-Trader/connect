@@ -75,11 +75,15 @@ class InstrumentResolver:
         return row[0]
 
     async def _resolve_option(self, instrument: Option) -> str:
+        # instrument.exchange is the underlying's exchange (NSE/BSE), not NFO/BFO.
+        # Join through the underlying to match on what the user actually knows.
         query = """
-            SELECT bt.token FROM instruments i
-            JOIN options o ON o.instrument_id = i.id
-            JOIN broker_tokens bt ON bt.instrument_id = i.id
-            WHERE i.exchange = ? AND i.symbol = ? AND o.expiry = ?
+            SELECT bt.token
+            FROM instruments opt
+            JOIN options o        ON o.instrument_id  = opt.id
+            JOIN instruments u    ON u.id             = o.underlying_id
+            JOIN broker_tokens bt ON bt.instrument_id = opt.id
+            WHERE u.exchange = ? AND u.symbol = ? AND o.expiry = ?
               AND o.strike = ? AND o.option_type = ? AND bt.broker_id = ?
         """
         async with self._conn.execute(query, (

@@ -59,12 +59,27 @@ class ParsedFuture:
     underlying_exchange: str  # NSE for NFO, BSE for BFO — used to resolve underlying_id
 
 
+@dataclass(frozen=True)
+class ParsedOption:
+    exchange: str             # NFO or BFO (the derivative exchange, stored in DB)
+    symbol: str               # underlying canonical name — e.g. "NIFTY", "RELIANCE"
+    broker_symbol: str        # Zerodha's tradingsymbol — e.g. "NIFTY26FEB23000CE"
+    segment: str              # NFO-OPT or BFO-OPT
+    lot_size: int
+    tick_size: float
+    broker_token: str
+    expiry: date
+    strike: float
+    option_type: str          # CE or PE
+    underlying_exchange: str  # NSE for NFO, BSE for BFO — used to resolve underlying_id
+
+
 @dataclass
 class ParsedInstruments:
     indices:  list[ParsedIndex]  = field(default_factory=list)
     equities: list[ParsedEquity] = field(default_factory=list)
     futures:  list[ParsedFuture] = field(default_factory=list)
-    # options — future chunk
+    options:  list[ParsedOption] = field(default_factory=list)
 
 
 # ---------------------------------------------------------------------------
@@ -138,7 +153,8 @@ def parse(raw_csv: str) -> ParsedInstruments:
         if exchange in _FUT_EXCHANGES:
             if instrument_type == "FUT":
                 result.futures.append(_parse_future(row))
-            # options — future chunk
+            elif instrument_type in ("CE", "PE"):
+                result.options.append(_parse_option(row))
             continue
 
         # MCX, CDS, NCO — out of v1 scope, skip
@@ -198,5 +214,23 @@ def _parse_future(row: dict) -> ParsedFuture:
         tick_size            = float(row["tick_size"]),
         broker_token         = row["instrument_token"],
         expiry               = date.fromisoformat(row["expiry"]),
+        underlying_exchange  = _UNDERLYING_EXCHANGE[exchange],
+    )
+
+
+def _parse_option(row: dict) -> ParsedOption:
+    exchange = row["exchange"]
+
+    return ParsedOption(
+        exchange             = exchange,
+        symbol               = row["name"],          # already canonical for both index & equity underlyings
+        broker_symbol        = row["tradingsymbol"],
+        segment              = row["segment"],
+        lot_size             = int(row["lot_size"]),
+        tick_size            = float(row["tick_size"]),
+        broker_token         = row["instrument_token"],
+        expiry               = date.fromisoformat(row["expiry"]),
+        strike               = float(row["strike"]),
+        option_type          = row["instrument_type"],
         underlying_exchange  = _UNDERLYING_EXCHANGE[exchange],
     )
