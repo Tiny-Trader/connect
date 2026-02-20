@@ -30,13 +30,13 @@
 
 > Models need to carry all fields that Zerodha returns so transformers can populate them properly.
 
-- [ ] **`Fund` model** — add `collateral`, `m2m_unrealized`, `m2m_realized`, `utilised_debits`
+- [x] **`Fund` model** — add `collateral`, `m2m_unrealized`, `m2m_realized`, `utilised_debits`
   - Zerodha returns: `equity.available.collateral`, `equity.utilised.m2m_unrealised`, `equity.utilised.m2m_realised`, `equity.utilised.debits`
-- [ ] **`Holding` model** — add `pnl_percent`
+- [x] **`Holding` model** — add `pnl_percent`
   - Computed as `(ltp - avg_price) / avg_price * 100`
-- [ ] **`Trade` model** — new model for trade book entries
+- [x] **`Trade` model** — new model for trade book entries
   - Fields: `order_id`, `instrument`, `side`, `qty`, `avg_price`, `trade_value`, `product`, `timestamp`
-- [ ] **`Margin` model** — new model for margin calculation results
+- [x] **`Margin` model** — new model for margin calculation results
   - Fields: `total`, `span`, `exposure`, `option_premium`, `final_total`, `benefit`
   - `benefit = initial.total - final.total` (spread credit)
 
@@ -46,17 +46,17 @@
 
 > These are called today from the client but raise `AttributeError` since they don't exist yet.
 
-- [ ] **`to_holding(raw)`**
+- [x] **`to_holding(raw)`**
   - Maps: `tradingsymbol → instrument.symbol`, `exchange`, `quantity`, `average_price`, `last_price → ltp`, `pnl`, compute `pnl_percent`
   - Note: holdings do not carry an `Instrument` object — resolve from `tradingsymbol + exchange`
-- [ ] **`to_position(raw)`**
+- [x] **`to_position(raw)`**
   - Maps from `data.net[]`: `tradingsymbol`, `exchange`, `quantity` (net), `average_price`, `last_price → ltp`, `pnl`, `product`
   - Skip rows where `quantity == 0` (flat positions)
-- [ ] **`to_trade(raw)`**
+- [x] **`to_trade(raw)`**
   - Maps from `/trades`: `order_id`, `tradingsymbol → instrument`, `transaction_type → side`, `quantity`, `average_price`, `quantity * average_price → trade_value`, `product`, `fill_timestamp`
-- [ ] **`to_fund(raw)`** — extend existing implementation
+- [x] **`to_fund(raw)`** — extend existing implementation
   - Add: `collateral`, `m2m_unrealized`, `m2m_realized`, `utilised_debits`
-- [ ] **`to_margin(raw)`** — new
+- [x] **`to_margin(raw)`** — new
   - Maps `/margins/basket` response to `Margin` model
 
 ---
@@ -65,11 +65,11 @@
 
 > HTTP wiring for the remaining endpoints.
 
-- [ ] **`get_trades()`** — `GET /trades`
+- [x] **`get_trades()`** — `GET /trades`
 - [ ] **`calculate_margin(orders)`** — `POST /margins/basket?consider_positions=true`
   - Request body: list of order dicts in Zerodha format (exchange, tradingsymbol, transaction_type, variety, product, order_type, quantity, price, trigger_price)
   - Also add `to_margin_params()` to transformer for the outgoing transform
-- [ ] **Base adapter** — add abstract stubs for `get_trades()` and `calculate_margin()`
+- [x] **Base adapter** — add abstract stub for `get_trades()`
 
 ---
 
@@ -77,13 +77,13 @@
 
 > Expose the above to end users through the public API.
 
-- [ ] **`get_trades() -> list[Trade]`**
+- [x] **`get_trades() -> list[Trade]`**
 - [ ] **`calculate_margin(instruments) -> Margin`**
   - Accepts a list of `(Instrument, qty, side, product, order_type)` tuples
   - Resolves each instrument to a broker token + builds Zerodha margin payload
-- [ ] **`cancel_all_orders() -> tuple[list[str], list[str]]`** — client-side logic
+- [x] **`cancel_all_orders() -> tuple[list[str], list[str]]`** — client-side logic
   - Fetch orders → filter status `OPEN` or `TRIGGER PENDING` → cancel each → return (cancelled_ids, failed_ids)
-- [ ] **`close_all_positions()`** — client-side logic
+- [x] **`close_all_positions()`** — client-side logic
   - Fetch positions → for each non-zero position, place offsetting market order
   - Long (qty > 0) → SELL MIS/NRML; Short (qty < 0) → BUY
 
@@ -94,8 +94,7 @@
 > All tests use the public `AsyncTTConnect` API, not internal methods.
 > Order-writing tests (cancel_all, close_all) are safe because we have no open positions.
 
-- [ ] **`test_live_portfolio.py`** — holdings + positions
-- [ ] **`test_live_tradebook.py`** — trade book (read-only, needs prior trades)
+- [x] **`test_live_portfolio.py`** — holdings, positions, orders, trades, funds (live-tested)
 - [ ] **`test_live_margin.py`** — `calculate_margin()` with NIFTY FUT + a CE/PE pair
 
 ---

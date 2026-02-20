@@ -47,7 +47,15 @@ class ZerodhaAdapter(BrokerAdapter, broker_id="zerodha"):
                                    headers=self.auth.headers)
 
     async def get_positions(self) -> list[dict]:
-        return await self._request("GET", f"{BASE_URL}/portfolio/positions",
+        raw = await self._request("GET", f"{BASE_URL}/portfolio/positions",
+                                  headers=self.auth.headers)
+        # Zerodha returns {"data": {"net": [...], "day": [...]}}
+        # Expose only net (open) positions; skip flat rows (qty == 0).
+        raw["data"] = [p for p in raw["data"]["net"] if p["quantity"] != 0]
+        return raw
+
+    async def get_trades(self) -> dict:
+        return await self._request("GET", f"{BASE_URL}/trades",
                                    headers=self.auth.headers)
 
     async def place_order(self, params: dict) -> dict:

@@ -20,6 +20,9 @@ class Fund(BaseModel):
     available: float
     used: float
     total: float
+    collateral: float = 0.0
+    m2m_unrealized: float = 0.0
+    m2m_realized: float = 0.0
 
 
 class Holding(BaseModel):
@@ -30,6 +33,7 @@ class Holding(BaseModel):
     avg_price: float
     ltp: float
     pnl: float
+    pnl_percent: float = 0.0
 
 
 class Position(BaseModel):
@@ -47,7 +51,7 @@ class Order(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     id: str
-    instrument: Instrument
+    instrument: Instrument | None = None
     side: Side
     qty: int
     filled_qty: int
@@ -58,6 +62,30 @@ class Order(BaseModel):
     trigger_price: float | None = None
     avg_price: float | None = None
     timestamp: datetime | None = None
+
+
+class Trade(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    order_id: str
+    instrument: Instrument
+    side: Side
+    qty: int
+    avg_price: float
+    trade_value: float
+    product: ProductType
+    timestamp: datetime | None = None
+
+
+class Margin(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    total: float            # initial total margin required
+    span: float
+    exposure: float
+    option_premium: float = 0.0
+    final_total: float      # after portfolio netting / spread benefit
+    benefit: float          # = total - final_total
 
 
 class Tick(BaseModel):

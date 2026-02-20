@@ -6,7 +6,7 @@ from tt_connect.enums import Side, ProductType, OrderType, OnStale
 from tt_connect.instruments import Instrument
 from tt_connect.instrument_manager.manager import InstrumentManager
 from tt_connect.instrument_manager.resolver import InstrumentResolver
-from tt_connect.models import Profile, Fund, Holding, Position, Order
+from tt_connect.models import Profile, Fund, Holding, Position, Order, Trade, Margin
 from tt_connect.ws.client import WebSocketClient, OnTick
 
 
@@ -57,6 +57,12 @@ class AsyncTTConnect:
         raw = await self._adapter.get_positions()
         return [self._adapter.transformer.to_position(p) for p in raw["data"]]
 
+    # --- Reports ---
+
+    async def get_trades(self) -> list[Trade]:
+        raw = await self._adapter.get_trades()
+        return [self._adapter.transformer.to_trade(t) for t in raw["data"]]
+
     # --- Orders ---
 
     async def place_order(
@@ -82,6 +88,52 @@ class AsyncTTConnect:
 
     async def cancel_order(self, order_id: str) -> None:
         await self._adapter.cancel_order(order_id)
+
+    async def cancel_all_orders(self) -> tuple[list[str], list[str]]:
+        """Cancel every open order. Returns (cancelled_ids, failed_ids)."""
+        raw = await self._adapter.get_orders()
+        open_statuses = {"OPEN", "TRIGGER PENDING", "AMO REQ RECEIVED",
+                         "MODIFY PENDING", "OPEN PENDING", "CANCEL PENDING",
+                         "VALIDATION PENDING"}
+        open_orders = [o for o in raw["data"] if o["status"] in open_statuses]
+
+        cancelled, failed = [], []
+        for order in open_orders:
+            oid = order["order_id"]
+            try:
+                await self._adapter.cancel_order(oid)
+                cancelled.append(oid)
+            except Exception:
+                failed.append(oid)
+        return cancelled, failed
+
+    async def close_all_positions(self) -> tuple[list[str], list[str]]:
+        """
+        Place offsetting market orders for every open position.
+        Returns (placed_order_ids, failed_symbols).
+        """
+        raw = await self._adapter.get_positions()
+        placed, failed = [], []
+        for pos in raw["data"]:
+            qty = pos["quantity"]
+            if qty == 0:
+                continue
+            side = Side.SELL if qty > 0 else Side.BUY
+            params = self._adapter.transformer.to_order_params(
+                instrument_token=pos["tradingsymbol"],
+                qty=abs(qty),
+                side=side,
+                product=ProductType(pos["product"]),
+                order_type=OrderType.MARKET,
+                price=None,
+                trigger_price=None,
+            )
+            try:
+                result = await self._adapter.place_order(params)
+                placed.append(result["data"]["order_id"])
+            except Exception:
+                failed.append(pos["tradingsymbol"])
+        return placed, failed
 
     async def get_order(self, order_id: str) -> Order:
         raw = await self._adapter.get_order(order_id)
@@ -127,6 +179,9 @@ class TTConnect:
     def get_positions(self) -> list[Position]:
         return self._run(self._async.get_positions())
 
+    def get_trades(self) -> list[Trade]:
+        return self._run(self._async.get_trades())
+
     def place_order(self, instrument: Instrument, qty: int, side: Side,
                     product: ProductType, order_type: OrderType,
                     price: float | None = None,
@@ -140,6 +195,12 @@ class TTConnect:
 
     def cancel_order(self, order_id: str) -> None:
         self._run(self._async.cancel_order(order_id))
+
+    def cancel_all_orders(self) -> tuple[list[str], list[str]]:
+        return self._run(self._async.cancel_all_orders())
+
+    def close_all_positions(self) -> tuple[list[str], list[str]]:
+        return self._run(self._async.close_all_positions())
 
     def get_order(self, order_id: str) -> Order:
         return self._run(self._async.get_order(order_id))

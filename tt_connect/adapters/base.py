@@ -63,6 +63,9 @@ class BrokerAdapter:
     @abstractmethod
     async def get_orders(self) -> list[dict]: ...
 
+    @abstractmethod
+    async def get_trades(self) -> dict: ...
+
     # --- Capabilities ---
 
     @property
