@@ -23,7 +23,7 @@ import pyotp
 # ---------------------------------------------------------------------------
 
 def _load_env():
-    env_file = Path(__file__).parent / ".env"
+    env_file = Path(__file__).parent.parent / ".env"
     if not env_file.exists():
         raise SystemExit("No .env found. Copy .env.example → .env and fill in credentials.")
     for line in env_file.read_text().splitlines():
@@ -132,7 +132,7 @@ def get_access_token() -> str:
 # ---------------------------------------------------------------------------
 
 def _update_env(access_token: str) -> None:
-    env_path = Path(__file__).parent / ".env"
+    env_path = Path(__file__).parent.parent / ".env"
     text = env_path.read_text()
     if re.search(r"^ZERODHA_ACCESS_TOKEN=", text, re.MULTILINE):
         text = re.sub(

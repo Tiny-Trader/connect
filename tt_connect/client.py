@@ -29,6 +29,10 @@ class AsyncTTConnect:
             self._broker_id,
         )
 
+    async def close(self) -> None:
+        await self._instrument_manager.connection.close()
+        await self._adapter._client.aclose()
+
     async def _resolve(self, instrument: Instrument) -> str:
         assert self._resolver, "Call await broker.init() first"
         return await self._resolver.resolve(instrument)
