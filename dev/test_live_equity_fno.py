@@ -1,15 +1,15 @@
 """
-Live integration test — Futures & Options via the public AsyncTTConnect API.
+Live integration test — Equity Futures & Options via the public AsyncTTConnect API.
 
-Tests NIFTY, BANKNIFTY, and MIDCPNIFTY futures + options end-to-end:
-  1. Init   — login + instrument download + DB insert (full pipeline)
-  2. Counts — verify futures and options rows in DB
-  3. Futures — resolve nearest-expiry future for each index
-  4. Options — resolve nearest-expiry ATM CE + PE for each index
+Tests SBIN and ITC futures + options end-to-end:
+  1. Init   — login + instrument download + DB insert (reuses today's DB if present)
+  2. Counts — equity futures and options rows in DB
+  3. Futures — resolve nearest-expiry future for each stock
+  4. Options — resolve nearest-expiry 3 strikes × CE + PE for each stock
 
 Usage:
     python get_token.py           # if access_token is stale
-    python test_live_fno.py
+    python test_live_equity_fno.py
 """
 
 import asyncio
@@ -32,21 +32,19 @@ def _load_env():
 
 _load_env()
 
+# Reuse the same DB as the index F&O test if it already exists (saves ~8s)
 import tt_connect.instrument_manager.db as db_module
 db_module.DB_PATH = Path("/tmp/tt_live_fno/instruments.db")
 Path("/tmp/tt_live_fno").mkdir(exist_ok=True)
-if db_module.DB_PATH.exists():
-    db_module.DB_PATH.unlink()
 
 from tt_connect.client import AsyncTTConnect
 from tt_connect.instruments import Future, Option
 from tt_connect.enums import Exchange, OptionType
 
 
-INDICES = [
-    ("NSE", "NIFTY"),
-    ("NSE", "BANKNIFTY"),
-    ("NSE", "MIDCPNIFTY"),
+STOCKS = [
+    ("NSE", "SBIN"),
+    ("NSE", "ITC"),
 ]
 
 
@@ -56,10 +54,7 @@ async def run():
         "access_token": os.environ["ZERODHA_ACCESS_TOKEN"],
     }
 
-    # -------------------------------------------------------------------
-    # Init
-    # -------------------------------------------------------------------
-    print("Initialising broker (login + instrument download + DB insert) ...")
+    print("Initialising broker ...")
     t0 = time.perf_counter()
 
     broker = AsyncTTConnect("zerodha", config)
@@ -75,21 +70,25 @@ async def run():
             return (await cur.fetchone())[0]
 
     # -------------------------------------------------------------------
-    # DB counts
+    # DB counts — equity F&O only
     # -------------------------------------------------------------------
-    print("DB counts:")
-    total   = await scalar("SELECT COUNT(*) FROM instruments")
-    futures = await scalar("SELECT COUNT(*) FROM futures")
-    options = await scalar("SELECT COUNT(*) FROM options")
-    tokens  = await scalar("SELECT COUNT(*) FROM broker_tokens")
-    print(f"  instruments   : {total}")
-    print(f"  futures       : {futures}")
-    print(f"  options       : {options}")
-    print(f"  broker_tokens : {tokens}")
+    print("DB counts (equity F&O):")
+    eq_futures = await scalar("""
+        SELECT COUNT(*) FROM futures f
+        JOIN instruments u ON u.id = f.underlying_id
+        WHERE u.segment != 'INDICES'
+    """)
+    eq_options = await scalar("""
+        SELECT COUNT(*) FROM options o
+        JOIN instruments u ON u.id = o.underlying_id
+        WHERE u.segment != 'INDICES'
+    """)
+    print(f"  equity futures : {eq_futures}")
+    print(f"  equity options : {eq_options}")
     print()
 
     # -------------------------------------------------------------------
-    # Futures — nearest expiry for each index
+    # Futures
     # -------------------------------------------------------------------
     print("=" * 55)
     print("FUTURES")
@@ -97,7 +96,7 @@ async def run():
     print(f"  {'exchange:symbol':<20} {'expiry':<14} token")
     print("  " + "-" * 45)
 
-    for uex, usym in INDICES:
+    for uex, usym in STOCKS:
         expiry_str = await scalar("""
             SELECT MIN(f.expiry)
             FROM futures f
@@ -121,16 +120,15 @@ async def run():
     print()
 
     # -------------------------------------------------------------------
-    # Options — nearest expiry, 3 strikes (ITM / ATM / OTM), CE + PE
+    # Options
     # -------------------------------------------------------------------
     print("=" * 55)
     print("OPTIONS")
     print("=" * 55)
 
-    for uex, usym in INDICES:
+    for uex, usym in STOCKS:
         exchange = Exchange.NSE if uex == "NSE" else Exchange.BSE
 
-        # Nearest expiry for this underlying
         expiry_str = await scalar("""
             SELECT MIN(o.expiry)
             FROM options o
@@ -142,7 +140,6 @@ async def run():
             print(f"  {uex}:{usym}  — no options found")
             continue
 
-        # Pick 3 representative strikes (low / mid / high of available range)
         async with conn.execute("""
             SELECT o.strike
             FROM options o
@@ -156,9 +153,9 @@ async def run():
 
         n = len(all_strikes)
         sampled = [
-            all_strikes[n // 4],       # lower quartile
-            all_strikes[n // 2],       # mid (approx ATM)
-            all_strikes[3 * n // 4],   # upper quartile
+            all_strikes[n // 4],
+            all_strikes[n // 2],
+            all_strikes[3 * n // 4],
         ]
 
         print(f"  {uex}:{usym}  expiry={expiry_str}  ({n} strikes)")
