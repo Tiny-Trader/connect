@@ -12,6 +12,109 @@
 
 ---
 
+## Phase 0 — Auth Architecture (Option B)
+
+> Adds a `manual` / `auto` auth mode system with optional session caching to disk.
+> Foundational — must land before AngelOne or any new broker is added.
+
+### Design
+
+**Config shape (explicit `auth_mode` key, everything else stays the same):**
+
+```python
+# Zerodha — manual only
+{
+    "auth_mode":     "manual",     # optional; "manual" is default for Zerodha
+    "api_key":       "...",
+    "access_token":  "...",        # required on first run (or if no cached session)
+    "cache_session": True,         # default False; writes _cache/zerodha_session.json
+}
+
+# AngelOne — auto (default) — full TOTP login, no human needed
+{
+    "auth_mode":     "auto",       # optional; "auto" is default for AngelOne
+    "api_key":       "...",
+    "client_id":     "...",
+    "pin":           "...",
+    "totp_secret":   "...",
+    "cache_session": True,         # strongly recommended; avoids re-login on every init
+}
+
+# AngelOne — manual (user pre-obtains jwt_token themselves)
+{
+    "auth_mode":     "manual",
+    "api_key":       "...",
+    "access_token":  "...",        # jwt_token from manual login
+    "cache_session": False,
+}
+```
+
+**Session file** (written to `_cache/{broker_id}_session.json` when `cache_session=True`):
+
+```json
+{
+  "broker":        "angelone",
+  "mode":          "auto",
+  "access_token":  "eyJ...",
+  "refresh_token": "...",
+  "feed_token":    "...",
+  "obtained_at":   "2026-02-21T09:00:00+05:30",
+  "expires_at":    "2026-02-22T00:00:00+05:30"
+}
+```
+
+**Token expiry by broker:**
+- Zerodha — 6:00 AM IST next day (hard limit, no refresh API exists)
+- AngelOne — midnight IST; has a `renewToken` endpoint for refresh without re-login
+
+**On 401 / expired token:**
+- `auto` mode → call `refresh()` → if that fails, full re-login → update cache
+- `manual` mode → raise `AuthenticationError` with a clear message telling the user to re-run `get_token.py` or pass a fresh `access_token`
+
+---
+
+### New files
+
+- [ ] **`tt_connect/auth/__init__.py`**
+- [ ] **`tt_connect/auth/base.py`** — `AuthMode` enum, `SessionData` dataclass, `BaseAuth` abstract class
+  - `AuthMode`: `MANUAL = "manual"`, `AUTO = "auto"`
+  - `SessionData`: `access_token`, `refresh_token | None`, `feed_token | None`, `obtained_at`, `expires_at | None`, `is_expired() -> bool`
+  - `BaseAuth`: holds `_session: SessionData | None`, `_store`, `_mode`; implements `login()` dispatch, `save/load` helpers; abstract `_login_manual()`, `_login_auto()`, `_refresh_auto()`, `headers` property, `_default_mode`, `_supported_modes`
+- [ ] **`tt_connect/auth/store.py`** — session persistence
+  - `BaseSessionStore` — `load(broker_id) -> SessionData | None`, `save(broker_id, session)`, `clear(broker_id)`
+  - `MemorySessionStore` — in-process only, lost on restart
+  - `FileSessionStore` — reads/writes `_cache/{broker_id}_session.json`; created automatically when `cache_session=True` in config
+
+### Modified files
+
+- [x] **`tt_connect/enums.py`** — add `AuthMode` enum (`MANUAL`, `AUTO`)
+- [x] **`tt_connect/capabilities.py`** — add `auth_modes: frozenset[AuthMode]` field + `verify_auth_mode()` method
+- [x] **`tt_connect/adapters/zerodha/capabilities.py`** — `auth_modes=frozenset({AuthMode.MANUAL})`
+- [x] **`tt_connect/adapters/angelone/capabilities.py`** — `auth_modes=frozenset({AuthMode.MANUAL, AuthMode.AUTO})`
+- [ ] **`tt_connect/adapters/zerodha/auth.py`** — refactor `ZerodhaAuth` to extend `BaseAuth`
+  - `_default_mode = AuthMode.MANUAL`
+  - calls `capabilities.verify_auth_mode(mode)` on init — raises `UnsupportedFeatureError` if `auth_mode=auto`
+  - `_login_manual()` — read `access_token` from config; set `expires_at` = next 6 AM IST
+  - `_login_auto()` — raises `UnsupportedFeatureError("Zerodha does not support automated login")`
+  - `_refresh_auto()` — raises `UnsupportedFeatureError`
+  - `headers` — unchanged (`token {api_key}:{access_token}` + `X-Kite-Version: 3`)
+- [ ] **`tt_connect/adapters/angelone/auth.py`** — refactor `AngelOneAuth` to extend `BaseAuth`
+  - `_default_mode = AuthMode.AUTO`
+  - `_supported_modes = {AuthMode.MANUAL, AuthMode.AUTO}`
+  - `_login_auto()` — POST `/loginByPassword` with `client_id + pin + totp`; stores `jwtToken`, `refreshToken`, `feedToken`; sets `expires_at` = midnight IST
+  - `_login_manual()` — read `access_token` from config; set `expires_at` = midnight IST
+  - `_refresh_auto()` — POST `/renewToken` with `refreshToken`; update all three tokens; fall back to full `_login_auto()` on failure
+  - `headers` — `Authorization: Bearer {jwt_token}` + AngelOne's 7 other required headers
+- [ ] **`tt_connect/adapters/base.py`** — add `auth` abstract property typed to `BaseAuth`
+
+### Backwards compatibility
+
+- Zerodha configs with no `auth_mode` key — defaults to `"manual"`, same as today ✅
+- AngelOne configs with no `auth_mode` key — defaults to `"auto"`, same as today ✅
+- No change to any public client API (`TTConnect`, `AsyncTTConnect`) ✅
+
+---
+
 ## What's Already Done
 
 - [x] DB schema — instruments, equities, futures, options, broker_tokens, \_meta

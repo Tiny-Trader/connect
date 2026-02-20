@@ -44,3 +44,8 @@ class OrderStatus(StrEnum):
 class OnStale(StrEnum):
     FAIL = "fail"
     WARN = "warn"
+
+
+class AuthMode(StrEnum):
+    MANUAL = "manual"   # User supplies access_token; library never logs in autonomously
+    AUTO   = "auto"     # Library performs TOTP login + token refresh automatically
