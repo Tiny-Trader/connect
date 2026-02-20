@@ -1,9 +1,20 @@
 from __future__ import annotations
+
+import asyncio
+import logging
 from abc import abstractmethod
 from typing import ClassVar, Protocol
+
 import httpx
+
 from tt_connect.capabilities import Capabilities
 from tt_connect.exceptions import TTConnectError
+
+logger = logging.getLogger(__name__)
+
+_TIMEOUT = httpx.Timeout(connect=5.0, read=30.0, write=10.0, pool=5.0)
+_MAX_RETRIES = 3
+_RETRY_BACKOFF = 1.0  # seconds; doubled on each attempt
 
 
 class BrokerTransformer(Protocol):
@@ -21,7 +32,7 @@ class BrokerAdapter:
 
     def __init__(self, config: dict):
         self._config = config
-        self._client = httpx.AsyncClient()
+        self._client = httpx.AsyncClient(timeout=_TIMEOUT)
 
     # --- Lifecycle ---
 
@@ -82,13 +93,33 @@ class BrokerAdapter:
     def _is_error(self, raw: dict, status_code: int) -> bool: ...
 
     async def _request(self, method: str, url: str, **kwargs) -> dict:
-        response = await self._client.request(method, url, **kwargs)
-        try:
-            raw = response.json()
-        except Exception:
-            print(f"FAILED TO PARSE JSON. Status: {response.status_code}")
-            print(f"RAW TEXT: {response.text}")
-            raise
-        if self._is_error(raw, response.status_code):
-            raise self.transformer.parse_error(raw)
-        return raw
+        last_exc: Exception | None = None
+        for attempt in range(1, _MAX_RETRIES + 1):
+            try:
+                response = await self._client.request(method, url, **kwargs)
+            except httpx.TimeoutException as exc:
+                last_exc = exc
+                logger.warning(f"Request timed out ({attempt}/{_MAX_RETRIES}): {method} {url}")
+                await asyncio.sleep(_RETRY_BACKOFF * (2 ** (attempt - 1)))
+                continue
+
+            try:
+                raw = response.json()
+            except Exception:
+                logger.error(f"Failed to parse JSON. Status: {response.status_code}, body: {response.text[:200]}")
+                raise
+
+            # 5xx — transient server error, retry
+            if response.status_code >= 500:
+                last_exc = TTConnectError(f"Server error {response.status_code} from {url}")
+                logger.warning(f"Server error {response.status_code} ({attempt}/{_MAX_RETRIES}): {method} {url}")
+                await asyncio.sleep(_RETRY_BACKOFF * (2 ** (attempt - 1)))
+                continue
+
+            # 4xx or broker-level error — do not retry
+            if self._is_error(raw, response.status_code):
+                raise self.transformer.parse_error(raw)
+
+            return raw
+
+        raise TTConnectError(f"Request failed after {_MAX_RETRIES} attempts: {method} {url}") from last_exc

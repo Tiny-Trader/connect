@@ -3,6 +3,7 @@ from datetime import date
 import logging
 import aiosqlite
 from tt_connect.enums import OnStale
+from tt_connect.exceptions import TTConnectError
 from tt_connect.instrument_manager.db import get_connection, init_schema, truncate_all
 
 logger = logging.getLogger(__name__)
@@ -26,6 +27,13 @@ class InstrumentManager:
             except Exception as e:
                 if self._on_stale == OnStale.FAIL:
                     raise
+                # WARN mode: only fall back to stale data if data actually exists.
+                # On a first run with no DB, there's nothing to serve — fail clearly.
+                if not await self._has_any_data():
+                    raise TTConnectError(
+                        "Instrument data download failed and no cached data exists. "
+                        "Check your network connection and try again."
+                    ) from e
                 logger.warning(f"Instrument refresh failed, using stale data: {e}")
 
     async def refresh(self, fetch_fn) -> None:
@@ -220,6 +228,11 @@ class InstrumentManager:
 
         if skipped:
             logger.warning(f"Skipped {skipped} options due to unresolved underlyings")
+
+    async def _has_any_data(self) -> bool:
+        async with self._conn.execute("SELECT COUNT(*) FROM instruments") as cur:
+            row = await cur.fetchone()
+        return row is not None and row[0] > 0
 
     async def _is_stale(self) -> bool:
         async with self._conn.execute(
