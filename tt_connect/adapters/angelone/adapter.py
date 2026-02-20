@@ -1,12 +1,15 @@
+from __future__ import annotations
+
 from tt_connect.adapters.base import BrokerAdapter
 from tt_connect.adapters.angelone.auth import AngelOneAuth
 from tt_connect.adapters.angelone.transformer import AngelOneTransformer
 from tt_connect.adapters.angelone.capabilities import ANGELONE_CAPABILITIES
 from tt_connect.adapters.angelone.parser import parse, ParsedInstruments
 from tt_connect.capabilities import Capabilities
+from tt_connect.exceptions import UnsupportedFeatureError
 
-# Base URL for SmartAPI secure endpoints
 BASE_URL = "https://apiconnect.angelbroking.com/rest/secure/angelbroking"
+INSTRUMENTS_URL = "https://margincalculator.angelbroking.com/OpenAPI_File/files/OpenAPIScripMaster.json"
 
 
 class AngelOneAdapter(BrokerAdapter, broker_id="angelone"):
@@ -29,9 +32,9 @@ class AngelOneAdapter(BrokerAdapter, broker_id="angelone"):
         await self.auth.refresh()
 
     async def fetch_instruments(self) -> ParsedInstruments:
-        # AngelOne instrument master is usually a public URL, not a secure API call
-        # But we'll implement the download logic here or in parser.
-        raise NotImplementedError
+        response = await self._client.get(INSTRUMENTS_URL)
+        response.raise_for_status()
+        return parse(response.json())
 
     # --- REST ---
 
@@ -44,12 +47,34 @@ class AngelOneAdapter(BrokerAdapter, broker_id="angelone"):
                                    headers=self.auth.headers)
 
     async def get_holdings(self) -> list[dict]:
-        return await self._request("GET", f"{BASE_URL}/portfolio/v1/getHolding",
-                                   headers=self.auth.headers)
+        raw = await self._request("GET", f"{BASE_URL}/portfolio/v1/getHolding",
+                                  headers=self.auth.headers)
+        raw["data"] = raw.get("data") or []
+        return raw
 
     async def get_positions(self) -> list[dict]:
-        return await self._request("GET", f"{BASE_URL}/order/v1/getPosition",
-                                   headers=self.auth.headers)
+        raw = await self._request("GET", f"{BASE_URL}/order/v1/getPosition",
+                                  headers=self.auth.headers)
+        raw["data"] = raw.get("data") or []
+        return raw
+
+    async def get_orders(self) -> list[dict]:
+        raw = await self._request("GET", f"{BASE_URL}/order/v1/getOrderBook",
+                                  headers=self.auth.headers)
+        raw["data"] = raw.get("data") or []
+        return raw
+
+    async def get_trades(self) -> dict:
+        raw = await self._request("GET", f"{BASE_URL}/order/v1/getTradeBook",
+                                  headers=self.auth.headers)
+        raw["data"] = raw.get("data") or []
+        return raw
+
+    async def get_order(self, order_id: str) -> dict:
+        raise UnsupportedFeatureError(
+            "AngelOne does not support fetching a single order by ID. "
+            "Use get_orders() and filter by order_id."
+        )
 
     async def place_order(self, params: dict) -> dict:
         return await self._request("POST", f"{BASE_URL}/order/v1/placeOrder",
@@ -60,16 +85,9 @@ class AngelOneAdapter(BrokerAdapter, broker_id="angelone"):
                                    headers=self.auth.headers, json=params)
 
     async def cancel_order(self, order_id: str) -> dict:
-        params = {"orderid": order_id}
         return await self._request("POST", f"{BASE_URL}/order/v1/cancelOrder",
-                                   headers=self.auth.headers, json=params)
-
-    async def get_order(self, order_id: str) -> dict:
-        raise NotImplementedError
-
-    async def get_orders(self) -> list[dict]:
-        return await self._request("GET", f"{BASE_URL}/order/v1/getOrderBook",
-                                   headers=self.auth.headers)
+                                   headers=self.auth.headers,
+                                   json={"orderid": order_id, "variety": "NORMAL"})
 
     # --- Capabilities ---
 
@@ -80,4 +98,4 @@ class AngelOneAdapter(BrokerAdapter, broker_id="angelone"):
     # --- Internal ---
 
     def _is_error(self, raw: dict, status_code: int) -> bool:
-        return raw.get("status") == False or status_code >= 400
+        return raw.get("status") is False or status_code >= 400

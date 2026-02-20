@@ -129,8 +129,10 @@ class BaseAuth:
         if self._mode == AuthMode.AUTO:
             await self._refresh_auto()
         else:
-            # Manual: no programmatic refresh — re-read from config / cache
-            await self.login()
+            # Manual: force re-read from config — user may have updated access_token
+            await self._login_manual()
+            if self._session:
+                self._store.save(self._broker_id, self._session)
 
     # --- Subclass hooks ---
 

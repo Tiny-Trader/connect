@@ -15,7 +15,7 @@ def _make_auth(config: dict) -> ZerodhaAuth:
 async def test_login_sets_access_token():
     auth = _make_auth({"api_key": "testkey", "access_token": "testtoken"})
     await auth.login()
-    assert auth._access_token == "testtoken"
+    assert auth.access_token == "testtoken"
 
 
 @pytest.mark.asyncio
@@ -58,4 +58,4 @@ async def test_refresh_reads_config_token():
     auth._config["access_token"] = "tok2"
     await auth.refresh()
 
-    assert auth._access_token == "tok2"
+    assert auth.access_token == "tok2"
