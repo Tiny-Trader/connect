@@ -1,7 +1,12 @@
 # tt-connect API Layer — Implementation Plan
 
 > **Scope** — Trading, investing, and reports APIs only.
-> Historical chart data, live market quotes, and WebSockets are explicitly out of scope for now.
+> Historical chart data and live market quotes are out of scope for now.
+
+> **Reality check (updated: 2026-02-22):**
+> - Auth mode architecture (`manual`/`auto`) and session stores are implemented.
+> - Unit + integration suites are in place and passing locally.
+> - WebSocket support has started (shared interface + AngelOne WS client); treat streaming as in-progress, not out-of-scope.
 
 ---
 
@@ -75,12 +80,12 @@
 
 ### New files
 
-- [ ] **`tt_connect/auth/__init__.py`**
-- [ ] **`tt_connect/auth/base.py`** — `AuthMode` enum, `SessionData` dataclass, `BaseAuth` abstract class
+- [x] **`tt_connect/auth/__init__.py`**
+- [x] **`tt_connect/auth/base.py`** — `AuthMode` enum, `SessionData` dataclass, `BaseAuth` abstract class
   - `AuthMode`: `MANUAL = "manual"`, `AUTO = "auto"`
   - `SessionData`: `access_token`, `refresh_token | None`, `feed_token | None`, `obtained_at`, `expires_at | None`, `is_expired() -> bool`
   - `BaseAuth`: holds `_session: SessionData | None`, `_store`, `_mode`; implements `login()` dispatch, `save/load` helpers; abstract `_login_manual()`, `_login_auto()`, `_refresh_auto()`, `headers` property, `_default_mode`, `_supported_modes`
-- [ ] **`tt_connect/auth/store.py`** — session persistence
+- [x] **`tt_connect/auth/store.py`** — session persistence
   - `BaseSessionStore` — `load(broker_id) -> SessionData | None`, `save(broker_id, session)`, `clear(broker_id)`
   - `MemorySessionStore` — in-process only, lost on restart
   - `FileSessionStore` — reads/writes `_cache/{broker_id}_session.json`; created automatically when `cache_session=True` in config
@@ -91,14 +96,14 @@
 - [x] **`tt_connect/capabilities.py`** — add `auth_modes: frozenset[AuthMode]` field + `verify_auth_mode()` method
 - [x] **`tt_connect/adapters/zerodha/capabilities.py`** — `auth_modes=frozenset({AuthMode.MANUAL})`
 - [x] **`tt_connect/adapters/angelone/capabilities.py`** — `auth_modes=frozenset({AuthMode.MANUAL, AuthMode.AUTO})`
-- [ ] **`tt_connect/adapters/zerodha/auth.py`** — refactor `ZerodhaAuth` to extend `BaseAuth`
+- [x] **`tt_connect/adapters/zerodha/auth.py`** — refactor `ZerodhaAuth` to extend `BaseAuth`
   - `_default_mode = AuthMode.MANUAL`
   - calls `capabilities.verify_auth_mode(mode)` on init — raises `UnsupportedFeatureError` if `auth_mode=auto`
   - `_login_manual()` — read `access_token` from config; set `expires_at` = next 6 AM IST
   - `_login_auto()` — raises `UnsupportedFeatureError("Zerodha does not support automated login")`
   - `_refresh_auto()` — raises `UnsupportedFeatureError`
   - `headers` — unchanged (`token {api_key}:{access_token}` + `X-Kite-Version: 3`)
-- [ ] **`tt_connect/adapters/angelone/auth.py`** — refactor `AngelOneAuth` to extend `BaseAuth`
+- [x] **`tt_connect/adapters/angelone/auth.py`** — refactor `AngelOneAuth` to extend `BaseAuth`
   - `_default_mode = AuthMode.AUTO`
   - `_supported_modes = {AuthMode.MANUAL, AuthMode.AUTO}`
   - `_login_auto()` — POST `/loginByPassword` with `client_id + pin + totp`; stores `jwtToken`, `refreshToken`, `feedToken`; sets `expires_at` = midnight IST
@@ -204,7 +209,7 @@
 
 ## Phase 6 — Hardening
 
-- [ ] **Unit tests** — parser, transformer (to_holding, to_position, to_trade, to_fund, to_order) using fixture dicts, no real API calls
+- [x] **Unit tests** — parser, transformer (to_holding, to_position, to_trade, to_fund, to_order) using fixture dicts, no real API calls
 - [ ] **`on_stale=WARN`** path tested — verify stale DB serves cached data instead of crashing
 - [ ] **Retry / timeout** — add `httpx.Timeout` and retry on transient 5xx to `_request()` in base adapter
 - [ ] **Graceful `init()` failure** — if instrument download fails on first run (no cached DB), surface a clear error
@@ -215,7 +220,6 @@
 
 - Historical OHLC data
 - Live market quotes (REST polling)
-- WebSocket tick streaming
 - MCX / CDS instruments
 - Basket orders / GTT orders
 - Options strategy margin (multi-leg)

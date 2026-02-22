@@ -1,35 +1,44 @@
 """
-tt-connect: Zerodha — Getting Started
-======================================
+tt-connect: AngelOne — Getting Started
+=======================================
 
-This example shows the full user-facing API:
-  1. Authenticate and initialise
+This example shows the full user-facing API for AngelOne:
+  1. Authenticate and initialise (auto mode — TOTP; or manual mode)
   2. Profile and funds
   3. Instrument resolution (Index, Equity, Future, Option)
   4. Portfolio — holdings and positions
   5. Reports   — order book and trade book
   6. Order management — place, modify, cancel, cancel-all, close-all
+  7. WebSocket — real-time tick streaming
 
 Prerequisites
 -------------
 1. Install the library (from the connect/ directory):
        pip install -e .
 
-2. Get your credentials from https://kite.trade/:
-   - api_key      → your Kite Connect app's API key
-   - access_token → generated after completing the daily OAuth login flow
-                    (use dev/get_token.py for the automated flow)
+2. Get your AngelOne Smart API credentials from https://smartapi.angelbroking.com/:
+   - api_key     → your Smart API app key
+   - client_id   → your AngelOne client / user ID
+   - pin         → your 4-digit trading PIN
+   - totp_secret → the Base32 secret shown when you enable TOTP in the app
+                   (scan the QR code with a TOTP app and note the secret key)
 
 3. Set environment variables (or .env file):
-       export ZERODHA_API_KEY=your_api_key
-       export ZERODHA_ACCESS_TOKEN=your_access_token
+       export ANGELONE_API_KEY=your_api_key
+       export ANGELONE_CLIENT_ID=your_client_id
+       export ANGELONE_PIN=your_pin
+       export ANGELONE_TOTP_SECRET=your_totp_secret
+
+   For manual mode (you pre-obtain the JWT token yourself):
+       export ANGELONE_ACCESS_TOKEN=your_jwt_token
 
 Run
 ---
     cd connect/
-    python examples/zerodha.py
+    python examples/angelone.py
 """
 
+import asyncio
 import os
 from datetime import date
 from pathlib import Path
@@ -54,13 +63,29 @@ def _load_env() -> None:
 
 _load_env()
 
-API_KEY = os.environ.get("ZERODHA_API_KEY", "")
-ACCESS_TOKEN = os.environ.get("ZERODHA_ACCESS_TOKEN", "")
+API_KEY     = os.environ.get("ANGELONE_API_KEY", "")
+CLIENT_ID   = os.environ.get("ANGELONE_CLIENT_ID", "")
+PIN         = os.environ.get("ANGELONE_PIN", "")
+TOTP_SECRET = os.environ.get("ANGELONE_TOTP_SECRET", "")
 
-if not API_KEY or not ACCESS_TOKEN:
+# Only required for manual mode:
+ACCESS_TOKEN = os.environ.get("ANGELONE_ACCESS_TOKEN", "")
+
+# Decide which mode to run.
+# Switch to "manual" if you have a pre-obtained JWT token and no TOTP secret.
+USE_AUTO_MODE = bool(CLIENT_ID and PIN and TOTP_SECRET)
+
+if not API_KEY:
     raise SystemExit(
         "\nMissing credentials.\n"
-        "Set ZERODHA_API_KEY and ZERODHA_ACCESS_TOKEN in your environment or .env file.\n"
+        "Set ANGELONE_API_KEY (and the other required vars) in your environment or .env file.\n"
+    )
+
+if not USE_AUTO_MODE and not ACCESS_TOKEN:
+    raise SystemExit(
+        "\nCannot use manual mode: ANGELONE_ACCESS_TOKEN is not set.\n"
+        "Either provide CLIENT_ID + PIN + TOTP_SECRET for auto mode, "
+        "or set ANGELONE_ACCESS_TOKEN for manual mode.\n"
     )
 
 
@@ -68,19 +93,43 @@ if not API_KEY or not ACCESS_TOKEN:
 # tt-connect: the public API
 # ---------------------------------------------------------------------------
 
-from tt_connect import TTConnect
-from tt_connect.instruments import Index, Equity, Future, Option
-from tt_connect.enums import Exchange, OptionType, Side, ProductType, OrderType
+from tt_connect import TTConnect                                     # noqa: E402
+from tt_connect.instruments import Index, Equity, Future, Option    # noqa: E402
+from tt_connect.enums import Exchange, OptionType, Side, ProductType, OrderType  # noqa: E402
 
-broker = TTConnect(
-    "zerodha",
-    config={
-        "api_key": API_KEY,
-        "access_token": ACCESS_TOKEN,
-    },
-)
+# ---------------------------------------------------------------------------
+# Auth mode A: AUTO (default for AngelOne)
+#   tt-connect performs the full TOTP login and handles token refresh.
+#   No human interaction required after the first run.
+#   Recommended for production algo-trading.
+#
+# Auth mode B: MANUAL
+#   You supply a pre-obtained JWT access_token.
+#   Useful when you already manage sessions externally.
+# ---------------------------------------------------------------------------
+
+if USE_AUTO_MODE:
+    config = {
+        "auth_mode":    "auto",          # optional — "auto" is already the AngelOne default
+        "api_key":      API_KEY,
+        "client_id":    CLIENT_ID,
+        "pin":          PIN,
+        "totp_secret":  TOTP_SECRET,
+        "cache_session": True,           # writes _cache/angelone_session.json
+                                         # avoids a re-login on every restart until midnight IST
+    }
+else:
+    config = {
+        "auth_mode":    "manual",
+        "api_key":      API_KEY,
+        "access_token": ACCESS_TOKEN,    # the jwtToken from a prior login
+        "cache_session": False,
+    }
+
+broker = TTConnect("angelone", config=config)
 
 # TTConnect.__init__ calls login() + seeds the instrument DB automatically.
+# In auto mode, credentials are validated and a JWT is obtained via TOTP.
 # No manual session management required.
 
 
@@ -124,7 +173,7 @@ print()
 print("── Instrument resolution ───────────────")
 
 # Index
-nifty = Index(exchange=Exchange.NSE, symbol="NIFTY")
+nifty  = Index(exchange=Exchange.NSE, symbol="NIFTY")
 sensex = Index(exchange=Exchange.BSE, symbol="SENSEX")
 
 # Equity
@@ -147,7 +196,7 @@ def get_nearest_expiry(broker_client: TTConnect, symbol: str) -> date:
 nearest_expiry = get_nearest_expiry(broker, "NIFTY")
 print(f"  [Using nearest NIFTY expiry: {nearest_expiry}]")
 
-# Future  
+# Future
 nifty_fut = Future(
     exchange=Exchange.NSE,
     symbol="NIFTY",
@@ -217,6 +266,11 @@ else:
     print("  (no orders today)")
 print()
 
+# Note: AngelOne does not support fetching a single order by ID.
+# Use get_orders() and filter by order_id yourself:
+#
+#   target = next((o for o in orders if o.id == "my_order_id"), None)
+
 print("── Trade book ──────────────────────────")
 trades = broker.get_trades()
 if trades:
@@ -263,29 +317,50 @@ print()
 
 
 # ---------------------------------------------------------------------------
-# 7. Async API
+# 7. Async API & WebSocket streaming
 #
 # tt-connect is built strictly async-first. The `AsyncTTConnect` class provides
 # the exact same API but returns awaiting coroutines.
 #
-# (Note: Zerodha WebSockets are not yet implemented in tt-connect)
+# AngelOne supports live tick streaming via WebSocket.
+# subscribe() resolves each instrument to its broker token automatically,
+# then opens the WS connection and calls on_tick for every incoming tick.
 # ---------------------------------------------------------------------------
 
-import asyncio
-
 async def run_async_demo() -> None:
-    print("── Async API ───────────────────────────")
+    print("── Async API & WebSockets ──────────────")
     from tt_connect import AsyncTTConnect
     
     # Initialize the fully async client
-    async_broker = AsyncTTConnect("zerodha", config=broker._async._config)
+    async_broker = AsyncTTConnect("angelone", config=config)
     await async_broker.init()
     
     # Fetch funds asynchronously just as an example
     funds = await async_broker.get_funds()
     print(f"  [Async] Available Funds: ₹{funds.available:,.2f}")
+
+    # WebSocket setup
+    instruments = [
+        Index(exchange=Exchange.NSE, symbol="NIFTY"),
+        Equity(exchange=Exchange.NSE, symbol="RELIANCE"),
+    ]
+
+    def on_tick(tick) -> None:
+        print(
+            f"  TICK  {tick.instrument.exchange}:{tick.instrument.symbol:<20}"
+            f"  ltp=₹{tick.ltp:.2f}"
+            + (f"  vol={tick.volume}" if tick.volume is not None else "")
+        )
+
+    print("── Streaming ticks (10 seconds) ────────")
+    await async_broker.subscribe(instruments, on_tick)
     
+    # Stream for a short time
+    await asyncio.sleep(10)
+    
+    await async_broker.unsubscribe(instruments)
     await async_broker.close()
+    print("── Stream closed ───────────────────────")
 
 # Uncomment to run the async demo:
 # asyncio.run(run_async_demo())

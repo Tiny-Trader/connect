@@ -2,7 +2,7 @@
 name = "tt-connect"
 version = "0.1.0"
 description = "A unified API layer for all Indian brokers"
-authors = ["Apurv <apurv@example.com>"]  # Placeholder as actual author is unknown
+authors = ["Apurv Salunke<apurv@tinytrader.in>"]
 readme = "README.md"
 packages = [{include = "tt_connect"}]
 
@@ -39,3 +39,6 @@ python_version = "3.11"
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests/unit", "tests/integration"]
+norecursedirs = ["dev", ".git", ".venv", "__pycache__"]
