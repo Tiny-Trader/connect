@@ -10,17 +10,26 @@ logger = logging.getLogger(__name__)
 
 
 class InstrumentManager:
+    """Maintains the local instrument master and staleness lifecycle."""
+
     def __init__(self, broker_id: str, on_stale: OnStale = OnStale.FAIL):
         self._broker_id = broker_id
         self._on_stale = on_stale
         self._conn: aiosqlite.Connection | None = None
 
     async def init(self, fetch_fn) -> None:
+        """Open DB, initialize schema, and ensure data freshness."""
         self._conn = await get_connection()
         await init_schema(self._conn)
         await self.ensure_fresh(fetch_fn)
 
     async def ensure_fresh(self, fetch_fn) -> None:
+        """Refresh stale data; optionally fall back to cached data on failure.
+
+        Behavior depends on `on_stale`:
+        - `FAIL`: raise refresh errors immediately.
+        - `WARN`: use stale cache only if at least one instrument exists.
+        """
         if await self._is_stale():
             try:
                 await self.refresh(fetch_fn)
@@ -37,6 +46,7 @@ class InstrumentManager:
                 logger.warning(f"Instrument refresh failed, using stale data: {e}")
 
     async def refresh(self, fetch_fn) -> None:
+        """Fetch broker instruments and atomically rebuild local tables."""
         logger.info(f"Refreshing instruments for {self._broker_id}")
         parsed = await fetch_fn()
         await truncate_all(self._conn)
@@ -45,6 +55,7 @@ class InstrumentManager:
         logger.info("Instrument refresh complete")
 
     async def _insert(self, parsed) -> None:
+        """Insert parsed instruments in dependency-safe order."""
         # Chunk 1: indices — must exist before futures/options reference them
         await self._insert_indices(parsed.indices)
 
@@ -230,11 +241,13 @@ class InstrumentManager:
             logger.warning(f"Skipped {skipped} options due to unresolved underlyings")
 
     async def _has_any_data(self) -> bool:
+        """Return True if the local instrument DB already has at least one row."""
         async with self._conn.execute("SELECT COUNT(*) FROM instruments") as cur:
             row = await cur.fetchone()
         return row is not None and row[0] > 0
 
     async def _is_stale(self) -> bool:
+        """Return True when `_meta.last_updated` is missing or not today."""
         async with self._conn.execute(
             "SELECT value FROM _meta WHERE key = 'last_updated'"
         ) as cur:
@@ -244,6 +257,7 @@ class InstrumentManager:
         return row[0] != date.today().isoformat()
 
     async def _set_last_updated(self) -> None:
+        """Persist today's date as the successful refresh marker."""
         await self._conn.execute(
             "INSERT OR REPLACE INTO _meta(key, value) VALUES ('last_updated', ?)",
             (date.today().isoformat(),),
@@ -252,5 +266,6 @@ class InstrumentManager:
 
     @property
     def connection(self) -> aiosqlite.Connection:
+        """Expose initialized DB connection to resolver/client layers."""
         assert self._conn, "InstrumentManager not initialized"
         return self._conn

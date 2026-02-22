@@ -1,3 +1,5 @@
+"""Canonical instrument to broker token/symbol resolver."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -16,12 +18,15 @@ class ResolvedInstrument:
 
 
 class InstrumentResolver:
+    """Resolve canonical instruments to broker-specific execution metadata."""
+
     def __init__(self, conn: aiosqlite.Connection, broker_id: str):
         self._conn = conn
         self._broker_id = broker_id
         self._cache: dict[Instrument, ResolvedInstrument] = {}
 
     async def resolve(self, instrument: Instrument) -> ResolvedInstrument:
+        """Resolve with an in-memory cache to avoid repeated DB lookups."""
         if instrument in self._cache:
             return self._cache[instrument]
         resolved = await self._resolve(instrument)
@@ -29,6 +34,7 @@ class InstrumentResolver:
         return resolved
 
     async def _resolve(self, instrument: Instrument) -> ResolvedInstrument:
+        """Dispatch resolution by instrument subtype."""
         if isinstance(instrument, Index):
             return await self._resolve_index(instrument)
         if isinstance(instrument, Equity):
@@ -40,6 +46,7 @@ class InstrumentResolver:
         raise InstrumentNotFoundError(f"Unsupported instrument type: {type(instrument)}")
 
     async def _resolve_index(self, instrument: Index) -> ResolvedInstrument:
+        """Resolve index instruments from `INDICES` rows."""
         query = """
             SELECT bt.token, bt.broker_symbol, i.exchange
             FROM instruments i
@@ -54,6 +61,7 @@ class InstrumentResolver:
         return ResolvedInstrument(token=row[0], broker_symbol=row[1], exchange=row[2])
 
     async def _resolve_equity(self, instrument: Equity) -> ResolvedInstrument:
+        """Resolve non-index equities."""
         query = """
             SELECT bt.token, bt.broker_symbol, i.exchange
             FROM instruments i
@@ -68,6 +76,7 @@ class InstrumentResolver:
         return ResolvedInstrument(token=row[0], broker_symbol=row[1], exchange=row[2])
 
     async def _resolve_future(self, instrument: Future) -> ResolvedInstrument:
+        """Resolve futures by underlying identity and expiry date."""
         # instrument.exchange is the underlying's exchange (NSE/BSE), not NFO/BFO.
         # Join through the underlying to match on what the user actually knows.
         query = """
@@ -89,6 +98,7 @@ class InstrumentResolver:
         return ResolvedInstrument(token=row[0], broker_symbol=row[1], exchange=row[2])
 
     async def _resolve_option(self, instrument: Option) -> ResolvedInstrument:
+        """Resolve options by underlying, expiry, strike, and CE/PE side."""
         # instrument.exchange is the underlying's exchange (NSE/BSE), not NFO/BFO.
         # Join through the underlying to match on what the user actually knows.
         query = """

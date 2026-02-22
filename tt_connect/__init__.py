@@ -1,3 +1,5 @@
+"""Public package entrypoint for tt-connect clients."""
+
 from tt_connect.client import TTConnect, AsyncTTConnect
 
 # Import adapters to trigger auto-registration

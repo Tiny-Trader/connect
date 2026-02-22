@@ -5,6 +5,8 @@ from tt_connect.enums import Exchange, OptionType
 
 
 class Instrument(BaseModel, frozen=True):
+    """Canonical base instrument shape accepted by client APIs."""
+
     exchange: Exchange
     symbol: str
 
@@ -19,32 +21,42 @@ class Index(Instrument):
 
 
 class Equity(Instrument):
+    """Cash-market equity or ETF."""
+
     exchange: Exchange
 
 
 class Future(Instrument):
+    """Futures contract keyed by canonical underlying symbol + expiry."""
+
     expiry: date
 
     @model_validator(mode="after")
     def _validate(self) -> Future:
-        # Validated against instrument DB after TTConnect is initialized
+        """Placeholder for DB-backed validation after client initialization."""
         return self
 
 
 class Option(Instrument):
+    """Options contract keyed by underlying symbol, expiry, strike and side."""
+
     expiry: date
     strike: float
     option_type: OptionType
 
     @model_validator(mode="after")
     def _validate(self) -> Option:
-        # Validated against instrument DB after TTConnect is initialized
+        """Placeholder for DB-backed validation after client initialization."""
         return self
 
 
 class Currency(Instrument):
+    """Currency derivative instrument."""
+
     exchange: Exchange
 
 
 class Commodity(Instrument):
+    """Commodity derivative instrument."""
+
     exchange: Exchange

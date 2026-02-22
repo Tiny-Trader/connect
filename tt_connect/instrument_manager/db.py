@@ -1,3 +1,5 @@
+"""SQLite schema and helpers for the local instrument master cache."""
+
 import aiosqlite
 from pathlib import Path
 
@@ -53,6 +55,7 @@ CREATE INDEX IF NOT EXISTS idx_options      ON options(underlying_id, expiry, st
 
 
 async def get_connection() -> aiosqlite.Connection:
+    """Create a WAL-enabled SQLite connection with foreign keys enforced."""
     DB_PATH.parent.mkdir(exist_ok=True)
     conn = await aiosqlite.connect(DB_PATH)
     await conn.execute("PRAGMA foreign_keys = ON")
@@ -61,11 +64,13 @@ async def get_connection() -> aiosqlite.Connection:
 
 
 async def init_schema(conn: aiosqlite.Connection) -> None:
+    """Apply schema and indexes if they do not already exist."""
     await conn.executescript(SCHEMA)
     await conn.commit()
 
 
 async def truncate_all(conn: aiosqlite.Connection) -> None:
+    """Clear all instrument and metadata tables before a full refresh."""
     for table in ("broker_tokens", "equities", "futures", "options", "instruments", "_meta"):
         await conn.execute(f"DELETE FROM {table}")
     await conn.commit()

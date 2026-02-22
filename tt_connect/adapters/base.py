@@ -8,7 +8,7 @@ from typing import ClassVar, Protocol
 import httpx
 
 from tt_connect.capabilities import Capabilities
-from tt_connect.exceptions import TTConnectError
+from tt_connect.exceptions import TTConnectError, UnsupportedFeatureError
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +18,8 @@ _RETRY_BACKOFF = 1.0  # seconds; doubled on each attempt
 
 
 class BrokerTransformer(Protocol):
+    """Transformer contract implemented by each broker adapter."""
+
     @staticmethod
     def parse_error(raw: dict) -> TTConnectError: ...
     @staticmethod
@@ -27,14 +29,22 @@ class BrokerTransformer(Protocol):
 
 
 class BrokerAdapter:
+    """Base class for broker integrations.
+
+    Concrete adapters own broker-specific auth, REST wiring, and normalization.
+    This base provides adapter auto-registration and shared HTTP retry behavior.
+    """
+
     _registry: ClassVar[dict[str, type[BrokerAdapter]]] = {}
 
     def __init_subclass__(cls, broker_id: str | None = None, **kwargs):
+        """Auto-register adapter classes by `broker_id` for client lookup."""
         super().__init_subclass__(**kwargs)
         if broker_id:
             BrokerAdapter._registry[broker_id] = cls
 
     def __init__(self, config: dict):
+        """Initialize adapter with config and a shared async HTTP client."""
         self._config = config
         self._client = httpx.AsyncClient(timeout=_TIMEOUT)
 
@@ -81,6 +91,14 @@ class BrokerAdapter:
     @abstractmethod
     async def get_trades(self) -> dict: ...
 
+    # --- WebSocket ---
+
+    def create_ws_client(self):
+        """Return a broker-specific BrokerWebSocket. Override in adapters that support streaming."""
+        raise UnsupportedFeatureError(
+            f"{self.__class__.__name__} does not support WebSocket streaming."
+        )
+
     # --- Capabilities ---
 
     @property
@@ -97,6 +115,13 @@ class BrokerAdapter:
     def _is_error(self, raw: dict, status_code: int) -> bool: ...
 
     async def _request(self, method: str, url: str, **kwargs) -> dict:
+        """Perform a broker API request with timeout and transient-error retries.
+
+        Retry policy:
+        - Retries on `httpx.TimeoutException`
+        - Retries on HTTP 5xx responses
+        - Does not retry broker-declared/business errors (`_is_error`)
+        """
         last_exc: Exception | None = None
         for attempt in range(1, _MAX_RETRIES + 1):
             try:
