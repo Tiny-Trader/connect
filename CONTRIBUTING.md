@@ -1,23 +1,22 @@
 # Contributing to tt-connect
 
-## Branch Strategy (Short GitFlow)
+## Branch Strategy (Current)
+
+Until `main` is fully stabilized, we use a `main`-first flow.
 
 Use these branch names:
 
-- `main`: production-grade code only.
-- `dev`: integration branch for upcoming release.
-- `feat/<topic>`: new features from `dev`.
-- `fix/<topic>`: non-urgent fixes from `dev`.
-- `rel/<version>`: release hardening from `dev` (example: `rel/0.3.0`).
-- `hotfix/<topic>`: urgent fixes from `main`.
+- `main`: source of truth.
+- `feat/<topic>`: feature work from `main`.
+- `fix/<topic>`: bug fixes from `main`.
+- `hotfix/<topic>`: urgent production fixes from `main`.
 
 ## Merge Flow
 
-1. Branch from `dev` for regular work (`feat/*`, `fix/*`).
-2. Open PR into `dev` and merge only after CI passes.
-3. Cut `rel/*` from `dev` when stabilizing a release.
-4. Merge `rel/*` into `main`, tag release, then merge back into `dev`.
-5. For incidents, branch `hotfix/*` from `main`, then merge to both `main` and `dev`.
+1. Branch from `main`.
+2. Open PR into `main`.
+3. Merge only after CI passes and review is complete.
+4. Use release tags (`vX.Y.Z`) from `main` per `RELEASE.md`.
 
 ## PR Rules
 
@@ -30,12 +29,13 @@ Every PR should include:
 
 ## CI Policy
 
-- PRs to `dev` and `main` must pass:
+- PRs to `main` must pass:
   - lint (`ruff`)
   - type check (`mypy`)
   - tests (`pytest` unit + integration)
   - coverage gate (`>=64%` for `tt_connect`, raise as coverage improves)
   - package build (`poetry build`)
+  - changelog gate for code-impacting changes
 - Live tests under `tests/live/` are manual and not part of required CI.
 
 ## Local Developer Commands
@@ -52,7 +52,7 @@ Use `make` targets from `connect/`:
 
 ## Branch Protection Settings (GitHub)
 
-Apply these rules to `main` and `dev`:
+Apply these rules to `main`:
 
 1. Require pull request before merging.
 2. Require at least 1 approval.
