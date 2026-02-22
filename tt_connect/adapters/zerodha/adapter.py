@@ -1,6 +1,7 @@
 """Zerodha REST adapter implementation."""
 
 from tt_connect.adapters.base import BrokerAdapter
+from tt_connect.adapters.base import JsonDict
 from tt_connect.adapters.zerodha.auth import ZerodhaAuth
 from tt_connect.adapters.zerodha.transformer import ZerodhaTransformer
 from tt_connect.adapters.zerodha.capabilities import ZERODHA_CAPABILITIES
@@ -13,7 +14,7 @@ BASE_URL = "https://api.kite.trade"
 class ZerodhaAdapter(BrokerAdapter, broker_id="zerodha"):
     """Broker adapter for Zerodha Kite Connect APIs."""
 
-    def __init__(self, config: dict):
+    def __init__(self, config: JsonDict):
         """Initialize auth and transformer for Zerodha."""
         super().__init__(config)
         self.auth = ZerodhaAuth(config, self._client)
@@ -42,22 +43,22 @@ class ZerodhaAdapter(BrokerAdapter, broker_id="zerodha"):
 
     # --- REST ---
 
-    async def get_profile(self) -> dict:
+    async def get_profile(self) -> JsonDict:
         """Fetch raw profile payload from Zerodha."""
         return await self._request("GET", f"{BASE_URL}/user/profile",
                                    headers=self.auth.headers)
 
-    async def get_funds(self) -> dict:
+    async def get_funds(self) -> JsonDict:
         """Fetch raw funds/margins payload from Zerodha."""
         return await self._request("GET", f"{BASE_URL}/user/margins",
                                    headers=self.auth.headers)
 
-    async def get_holdings(self) -> list[dict]:
+    async def get_holdings(self) -> JsonDict:
         """Fetch raw holdings payload from Zerodha."""
         return await self._request("GET", f"{BASE_URL}/portfolio/holdings",
                                    headers=self.auth.headers)
 
-    async def get_positions(self) -> list[dict]:
+    async def get_positions(self) -> JsonDict:
         """Fetch raw net positions and drop flat rows."""
         raw = await self._request("GET", f"{BASE_URL}/portfolio/positions",
                                   headers=self.auth.headers)
@@ -66,32 +67,32 @@ class ZerodhaAdapter(BrokerAdapter, broker_id="zerodha"):
         raw["data"] = [p for p in raw["data"]["net"] if p["quantity"] != 0]
         return raw
 
-    async def get_trades(self) -> dict:
+    async def get_trades(self) -> JsonDict:
         """Fetch raw trade-book payload."""
         return await self._request("GET", f"{BASE_URL}/trades",
                                    headers=self.auth.headers)
 
-    async def place_order(self, params: dict) -> dict:
+    async def place_order(self, params: JsonDict) -> JsonDict:
         """Place a new order using broker-native params."""
         return await self._request("POST", f"{BASE_URL}/orders/regular",
                                    headers=self.auth.headers, data=params)
 
-    async def modify_order(self, order_id: str, params: dict) -> dict:
+    async def modify_order(self, order_id: str, params: JsonDict) -> JsonDict:
         """Modify an existing order by id."""
         return await self._request("PUT", f"{BASE_URL}/orders/regular/{order_id}",
                                    headers=self.auth.headers, data=params)
 
-    async def cancel_order(self, order_id: str) -> dict:
+    async def cancel_order(self, order_id: str) -> JsonDict:
         """Cancel an order by id."""
         return await self._request("DELETE", f"{BASE_URL}/orders/regular/{order_id}",
                                    headers=self.auth.headers)
 
-    async def get_order(self, order_id: str) -> dict:
+    async def get_order(self, order_id: str) -> JsonDict:
         """Fetch one order by id."""
         return await self._request("GET", f"{BASE_URL}/orders/{order_id}",
                                    headers=self.auth.headers)
 
-    async def get_orders(self) -> list[dict]:
+    async def get_orders(self) -> JsonDict:
         """Fetch complete order book."""
         return await self._request("GET", f"{BASE_URL}/orders",
                                    headers=self.auth.headers)
@@ -105,6 +106,6 @@ class ZerodhaAdapter(BrokerAdapter, broker_id="zerodha"):
 
     # --- Internal ---
 
-    def _is_error(self, raw: dict, status_code: int) -> bool:
+    def _is_error(self, raw: JsonDict, status_code: int) -> bool:
         """Identify transport or broker-level error envelopes."""
         return raw.get("status") == "error" or status_code >= 400

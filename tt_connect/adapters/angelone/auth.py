@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import socket
+from typing import cast
 
 import pyotp
 
@@ -22,14 +23,14 @@ def _local_ip() -> str:
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.connect(("8.8.8.8", 80))
-        ip = s.getsockname()[0]
+        ip = str(s.getsockname()[0])
         s.close()
         return ip
     except Exception:
         return "127.0.0.1"
 
 
-def _base_headers(api_key: str) -> dict:
+def _base_headers(api_key: str) -> dict[str, str]:
     """Build mandatory SmartAPI headers shared across auth and REST calls."""
     return {
         "Content-Type": "application/json",
@@ -63,13 +64,13 @@ class AngelOneAuth(BaseAuth):
             )
 
         try:
-            totp = pyotp.TOTP(totp_secret).now()
+            totp = pyotp.TOTP(cast(str, totp_secret)).now()
         except Exception as e:
             raise AuthenticationError(f"Failed to generate TOTP: {e}")
 
         response = await self._client.post(
             _LOGIN_URL,
-            headers=_base_headers(api_key),
+            headers=_base_headers(cast(str, api_key)),
             json={"clientcode": client_id, "password": pin, "totp": totp},
         )
         data = response.json()
@@ -103,7 +104,7 @@ class AngelOneAuth(BaseAuth):
             await self._login_auto()
             return
 
-        api_key = self._config.get("api_key", "")
+        api_key = str(self._config.get("api_key", ""))
         headers = {
             **_base_headers(api_key),
             "Authorization": f"Bearer {self._session.access_token}",
@@ -132,11 +133,11 @@ class AngelOneAuth(BaseAuth):
             await self._login_auto()
 
     @property
-    def headers(self) -> dict:
+    def headers(self) -> dict[str, str]:
         """Build authenticated headers required by AngelOne APIs."""
         if not self._session:
             raise AuthenticationError("Not authenticated. Call login() first.")
         return {
-            **_base_headers(self._config.get("api_key", "")),
+            **_base_headers(str(self._config.get("api_key", ""))),
             "Authorization": f"Bearer {self._session.access_token}",
         }

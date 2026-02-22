@@ -7,12 +7,14 @@ repos:
         name: ruff check
         entry: make lint
         language: system
-        types: [python]
+        pass_filenames: false
+        always_run: true
         stages: [pre-commit]
 
-      - id: pytest-fast
-        name: pytest unit+integration
-        entry: make test-fast
+      - id: mypy-typecheck
+        name: mypy typecheck
+        entry: make typecheck
         language: system
         pass_filenames: false
-        stages: [pre-push]
+        always_run: true
+        stages: [pre-commit]

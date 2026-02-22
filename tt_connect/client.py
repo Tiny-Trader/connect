@@ -1,13 +1,18 @@
 from __future__ import annotations
 import asyncio
 import threading
-from tt_connect.adapters.base import BrokerAdapter
+from concurrent.futures import Future as ThreadFuture
+from typing import Any, Coroutine, TypeVar
+
+from tt_connect.adapters.base import BrokerAdapter, JsonDict
 from tt_connect.enums import Side, ProductType, OrderType, OrderStatus, OnStale
 from tt_connect.instruments import Instrument
 from tt_connect.instrument_manager.manager import InstrumentManager
-from tt_connect.instrument_manager.resolver import InstrumentResolver
+from tt_connect.instrument_manager.resolver import InstrumentResolver, ResolvedInstrument
 from tt_connect.models import Profile, Fund, Holding, Position, Order, Trade
 from tt_connect.ws.client import BrokerWebSocket, OnTick
+
+T = TypeVar("T")
 
 
 class AsyncTTConnect:
@@ -19,7 +24,7 @@ class AsyncTTConnect:
     3. Call :meth:`close` to release HTTP, DB, and WebSocket resources.
     """
 
-    def __init__(self, broker: str, config: dict):
+    def __init__(self, broker: str, config: dict[str, Any]):
         self._broker_id = broker
         self._adapter: BrokerAdapter = BrokerAdapter._registry[broker](config)
         self._instrument_manager = InstrumentManager(
@@ -45,7 +50,7 @@ class AsyncTTConnect:
         await self._instrument_manager.connection.close()
         await self._adapter._client.aclose()
 
-    async def _resolve(self, instrument: Instrument):
+    async def _resolve(self, instrument: Instrument) -> ResolvedInstrument:
         """Resolve a canonical instrument to broker token/symbol/exchange."""
         assert self._resolver, "Call await broker.init() first"
         return await self._resolver.resolve(instrument)
@@ -54,31 +59,31 @@ class AsyncTTConnect:
 
     async def get_profile(self) -> Profile:
         """Fetch and normalize account profile."""
-        raw = await self._adapter.get_profile()
+        raw: JsonDict = await self._adapter.get_profile()
         return self._adapter.transformer.to_profile(raw["data"])
 
     async def get_funds(self) -> Fund:
         """Fetch and normalize available/used funds."""
-        raw = await self._adapter.get_funds()
+        raw: JsonDict = await self._adapter.get_funds()
         return self._adapter.transformer.to_fund(raw["data"])
 
     # --- Portfolio ---
 
     async def get_holdings(self) -> list[Holding]:
         """Fetch and normalize demat holdings."""
-        raw = await self._adapter.get_holdings()
+        raw: JsonDict = await self._adapter.get_holdings()
         return [self._adapter.transformer.to_holding(h) for h in raw["data"]]
 
     async def get_positions(self) -> list[Position]:
         """Fetch and normalize open net positions."""
-        raw = await self._adapter.get_positions()
+        raw: JsonDict = await self._adapter.get_positions()
         return [self._adapter.transformer.to_position(p) for p in raw["data"]]
 
     # --- Reports ---
 
     async def get_trades(self) -> list[Trade]:
         """Fetch and normalize trade-book entries."""
-        raw = await self._adapter.get_trades()
+        raw: JsonDict = await self._adapter.get_trades()
         return [self._adapter.transformer.to_trade(t) for t in raw["data"]]
 
     # --- Orders ---
@@ -114,7 +119,7 @@ class AsyncTTConnect:
         raw = await self._adapter.place_order(params)
         return self._adapter.transformer.to_order_id(raw)
 
-    async def modify_order(self, order_id: str, **kwargs) -> None:
+    async def modify_order(self, order_id: str, **kwargs: Any) -> None:
         """Modify an existing order using broker-specific raw kwargs."""
         await self._adapter.modify_order(order_id, kwargs)
 
@@ -140,7 +145,7 @@ class AsyncTTConnect:
         Place offsetting market orders for every open position.
         Returns (placed_order_ids, failed_symbols).
         """
-        raw = await self._adapter.get_positions()
+        raw: JsonDict = await self._adapter.get_positions()
         placed, failed = [], []
         for pos_raw in raw["data"]:
             position = self._adapter.transformer.to_position(pos_raw)
@@ -159,12 +164,12 @@ class AsyncTTConnect:
 
     async def get_order(self, order_id: str) -> Order:
         """Fetch a single order and normalize it to the canonical model."""
-        raw = await self._adapter.get_order(order_id)
+        raw: JsonDict = await self._adapter.get_order(order_id)
         return self._adapter.transformer.to_order(raw["data"], instrument=None)
 
     async def get_orders(self) -> list[Order]:
         """Fetch and normalize all orders."""
-        raw = await self._adapter.get_orders()
+        raw: JsonDict = await self._adapter.get_orders()
         return [self._adapter.transformer.to_order(o, instrument=None) for o in raw["data"]]
 
     # --- Streaming ---
@@ -195,7 +200,7 @@ class AsyncTTConnect:
 class TTConnect:
     """Threaded synchronous wrapper over :class:`AsyncTTConnect`."""
 
-    def __init__(self, broker: str, config: dict):
+    def __init__(self, broker: str, config: dict[str, Any]):
         """Create a dedicated event loop thread and initialize the async client."""
         self._loop = asyncio.new_event_loop()
         self._thread = threading.Thread(target=self._loop.run_forever, daemon=True)
@@ -203,9 +208,10 @@ class TTConnect:
         self._async = AsyncTTConnect(broker, config)
         self._run(self._async.init())
 
-    def _run(self, coro):
+    def _run(self, coro: Coroutine[Any, Any, T]) -> T:
         """Execute a coroutine on the internal loop and block for result."""
-        return asyncio.run_coroutine_threadsafe(coro, self._loop).result()
+        fut: ThreadFuture[T] = asyncio.run_coroutine_threadsafe(coro, self._loop)
+        return fut.result()
 
     def get_profile(self) -> Profile:
         return self._run(self._async.get_profile())
@@ -238,7 +244,7 @@ class TTConnect:
             )
         )
 
-    def modify_order(self, order_id: str, **kwargs) -> None:
+    def modify_order(self, order_id: str, **kwargs: Any) -> None:
         self._run(self._async.modify_order(order_id, **kwargs))
 
     def cancel_order(self, order_id: str) -> None:

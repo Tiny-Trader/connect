@@ -17,7 +17,9 @@ import logging
 from abc import abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
+from typing import Any
 
+import httpx
 from tt_connect.enums import AuthMode
 from tt_connect.exceptions import UnsupportedFeatureError
 
@@ -85,7 +87,7 @@ class BaseAuth:
     _default_mode: AuthMode = AuthMode.MANUAL
     _supported_modes: frozenset[AuthMode] = frozenset({AuthMode.MANUAL})
 
-    def __init__(self, config: dict, client) -> None:
+    def __init__(self, config: dict[str, Any], client: httpx.AsyncClient) -> None:
         self._config = config
         self._client = client
         self._session: SessionData | None = None
@@ -159,7 +161,7 @@ class BaseAuth:
 
     @property
     @abstractmethod
-    def headers(self) -> dict:
+    def headers(self) -> dict[str, str]:
         """Return auth headers required by broker API requests."""
         raise NotImplementedError
 

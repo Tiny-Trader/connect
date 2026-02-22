@@ -23,4 +23,4 @@ precommit-install:
 precommit-run:
 	pre-commit run --all-files
 
-ci: lint test-fast coverage
+ci: lint typecheck test-fast coverage

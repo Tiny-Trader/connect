@@ -1,12 +1,13 @@
 from __future__ import annotations
 from datetime import date
-from pydantic import BaseModel, model_validator
+from pydantic import BaseModel, ConfigDict, model_validator
 from tt_connect.enums import Exchange, OptionType
 
 
-class Instrument(BaseModel, frozen=True):
+class Instrument(BaseModel):
     """Canonical base instrument shape accepted by client APIs."""
 
+    model_config = ConfigDict(frozen=True)
     exchange: Exchange
     symbol: str
 

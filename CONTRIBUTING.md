@@ -31,11 +31,11 @@ Every PR should include:
 
 - PRs to `dev` and `main` must pass:
   - lint (`ruff`)
+  - type check (`mypy`)
   - tests (`pytest` unit + integration)
   - coverage gate (`>=64%` for `tt_connect`, raise as coverage improves)
   - package build (`poetry build`)
 - Live tests under `tests/live/` are manual and not part of required CI.
-- `mypy` is temporarily non-blocking and will be re-enabled in a dedicated typing cleanup PR.
 
 ## Local Developer Commands
 
