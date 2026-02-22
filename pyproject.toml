@@ -2,7 +2,7 @@
 name = "tt-connect"
 version = "0.1.0"
 description = "A unified API layer for all Indian brokers"
-authors = ["Apurv Salunke<apurv@tinytrader.in>"]
+authors = ["Apurv Salunke <apurv@tinytrader.in>"]
 readme = "README.md"
 packages = [{include = "tt_connect"}]
 
