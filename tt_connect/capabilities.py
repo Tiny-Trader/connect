@@ -1,3 +1,5 @@
+"""Broker capability declarations and validation helpers."""
+
 from dataclasses import dataclass
 from tt_connect.enums import Exchange, OrderType, ProductType, AuthMode
 from tt_connect.exceptions import UnsupportedFeatureError
@@ -6,6 +8,11 @@ from tt_connect.instruments import Instrument, Index
 
 @dataclass(frozen=True)
 class Capabilities:
+    """Static feature matrix for a broker adapter.
+
+    The client uses this to fail fast before making network calls.
+    """
+
     broker_id: str
     segments: frozenset[Exchange]
     order_types: frozenset[OrderType]
@@ -18,6 +25,7 @@ class Capabilities:
         order_type: OrderType,
         product_type: ProductType,
     ) -> None:
+        """Validate whether an order request is supported by this broker."""
         if isinstance(instrument, Index):
             raise UnsupportedFeatureError(
                 "Indices are not tradeable. Use Equity, Future, or Option instead."
@@ -36,6 +44,7 @@ class Capabilities:
             )
 
     def verify_auth_mode(self, mode: AuthMode) -> None:
+        """Validate whether an authentication mode is supported."""
         if mode not in self.auth_modes:
             supported = ", ".join(sorted(m.value for m in self.auth_modes))
             raise UnsupportedFeatureError(

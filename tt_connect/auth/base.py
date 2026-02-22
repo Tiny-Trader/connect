@@ -57,12 +57,15 @@ class BaseSessionStore:
     """Abstract session persistence layer."""
 
     def load(self, broker_id: str) -> SessionData | None:
+        """Return cached session data for a broker, or ``None`` if absent."""
         raise NotImplementedError
 
     def save(self, broker_id: str, session: SessionData) -> None:
+        """Persist session data for a broker."""
         raise NotImplementedError
 
     def clear(self, broker_id: str) -> None:
+        """Delete cached session data for a broker."""
         raise NotImplementedError
 
 
@@ -110,6 +113,7 @@ class BaseAuth:
         )
 
     async def login(self) -> None:
+        """Authenticate using configured mode, preferring unexpired cache."""
         # Check cache first — avoids a network round-trip on every init
         cached = self._store.load(self._broker_id)
         if cached and not cached.is_expired():
@@ -126,6 +130,7 @@ class BaseAuth:
             self._store.save(self._broker_id, self._session)
 
     async def refresh(self) -> None:
+        """Refresh auth session according to mode semantics."""
         if self._mode == AuthMode.AUTO:
             await self._refresh_auto()
         else:
@@ -137,14 +142,17 @@ class BaseAuth:
     # --- Subclass hooks ---
 
     async def _login_manual(self) -> None:
+        """Manual login hook; subclasses should read tokens from config."""
         raise NotImplementedError
 
     async def _login_auto(self) -> None:
+        """Automated login hook; default raises if broker does not support it."""
         raise UnsupportedFeatureError(
             f"{self._broker_id} does not support automated login."
         )
 
     async def _refresh_auto(self) -> None:
+        """Automated token refresh hook; default raises if unsupported."""
         raise UnsupportedFeatureError(
             f"{self._broker_id} does not support automated token refresh."
         )
@@ -152,10 +160,12 @@ class BaseAuth:
     @property
     @abstractmethod
     def headers(self) -> dict:
+        """Return auth headers required by broker API requests."""
         raise NotImplementedError
 
     # --- Convenience ---
 
     @property
     def access_token(self) -> str | None:
+        """Current access token if logged in, otherwise ``None``."""
         return self._session.access_token if self._session else None

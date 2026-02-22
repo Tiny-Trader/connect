@@ -26,12 +26,15 @@ class MemorySessionStore(BaseSessionStore):
         self._sessions: dict[str, SessionData] = {}
 
     def load(self, broker_id: str) -> SessionData | None:
+        """Return in-memory session for a broker if present."""
         return self._sessions.get(broker_id)
 
     def save(self, broker_id: str, session: SessionData) -> None:
+        """Store session in process memory."""
         self._sessions[broker_id] = session
 
     def clear(self, broker_id: str) -> None:
+        """Remove in-memory session for a broker."""
         self._sessions.pop(broker_id, None)
 
 
@@ -42,9 +45,11 @@ class FileSessionStore(BaseSessionStore):
         self._cache_dir = cache_dir
 
     def _path(self, broker_id: str) -> Path:
+        """Compute the JSON session cache path for a broker."""
         return self._cache_dir / f"{broker_id}_session.json"
 
     def load(self, broker_id: str) -> SessionData | None:
+        """Load broker session from disk; return ``None`` on miss/parse failure."""
         path = self._path(broker_id)
         if not path.exists():
             return None
@@ -68,6 +73,7 @@ class FileSessionStore(BaseSessionStore):
             return None
 
     def save(self, broker_id: str, session: SessionData) -> None:
+        """Persist broker session as JSON under `_cache/`."""
         self._cache_dir.mkdir(parents=True, exist_ok=True)
         path = self._path(broker_id)
         data = {
@@ -82,6 +88,7 @@ class FileSessionStore(BaseSessionStore):
         logger.debug(f"[{broker_id}] Session cached to {path}")
 
     def clear(self, broker_id: str) -> None:
+        """Delete broker session JSON file if it exists."""
         path = self._path(broker_id)
         if path.exists():
             path.unlink()
