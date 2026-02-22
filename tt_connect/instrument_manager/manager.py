@@ -19,7 +19,7 @@ class InstrumentManager:
 
     async def init(self, fetch_fn) -> None:
         """Open DB, initialize schema, and ensure data freshness."""
-        self._conn = await get_connection()
+        self._conn = await get_connection(self._broker_id)
         await init_schema(self._conn)
         await self.ensure_fresh(fetch_fn)
 

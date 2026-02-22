@@ -14,9 +14,9 @@ async def test_init_calls_login_and_instruments(zerodha_csv, tmp_path, monkeypat
     )
 
     # Patch DB_PATH to use a temp directory
-    test_db = tmp_path / "test.db"
+    test_db_dir = tmp_path
     import tt_connect.instrument_manager.db as db_module
-    monkeypatch.setattr(db_module, "DB_PATH", test_db)
+    monkeypatch.setattr(db_module, "DB_DIR", test_db_dir)
 
     broker = AsyncTTConnect("zerodha", {
         "api_key": "testkey",
@@ -44,7 +44,7 @@ async def test_client_get_profile(zerodha_response, monkeypatch, tmp_path):
     )
     
     import tt_connect.instrument_manager.db as db_module
-    monkeypatch.setattr(db_module, "DB_PATH", tmp_path / "test.db")
+    monkeypatch.setattr(db_module, "DB_DIR", tmp_path)
 
     broker = AsyncTTConnect("zerodha", {
         "api_key": "testkey",
@@ -67,7 +67,7 @@ async def test_client_get_holdings(zerodha_response, monkeypatch, tmp_path):
     )
     
     import tt_connect.instrument_manager.db as db_module
-    monkeypatch.setattr(db_module, "DB_PATH", tmp_path / "test.db")
+    monkeypatch.setattr(db_module, "DB_DIR", tmp_path)
 
     broker = AsyncTTConnect("zerodha", {
         "api_key": "testkey",
@@ -92,7 +92,7 @@ async def test_client_place_order(zerodha_response, populated_db, monkeypatch, t
     )
 
     import tt_connect.instrument_manager.db as db_module
-    monkeypatch.setattr(db_module, "DB_PATH", tmp_path / "test.db")
+    monkeypatch.setattr(db_module, "DB_DIR", tmp_path)
 
     broker = AsyncTTConnect("zerodha", {
         "api_key": "testkey",

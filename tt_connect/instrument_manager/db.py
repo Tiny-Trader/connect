@@ -3,7 +3,10 @@
 import aiosqlite
 from pathlib import Path
 
-DB_PATH = Path("_cache/instruments.db")
+DB_DIR = Path("_cache")
+
+def get_db_path(broker_id: str) -> Path:
+    return DB_DIR / f"{broker_id}_instruments.db"
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS instruments (
@@ -54,10 +57,11 @@ CREATE INDEX IF NOT EXISTS idx_options      ON options(underlying_id, expiry, st
 """
 
 
-async def get_connection() -> aiosqlite.Connection:
+async def get_connection(broker_id: str) -> aiosqlite.Connection:
     """Create a WAL-enabled SQLite connection with foreign keys enforced."""
-    DB_PATH.parent.mkdir(exist_ok=True)
-    conn = await aiosqlite.connect(DB_PATH)
+    path = get_db_path(broker_id)
+    path.parent.mkdir(exist_ok=True)
+    conn = await aiosqlite.connect(path)
     await conn.execute("PRAGMA foreign_keys = ON")
     await conn.execute("PRAGMA journal_mode = WAL")
     return conn
