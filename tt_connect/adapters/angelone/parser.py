@@ -30,6 +30,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import date, datetime
+from typing import Any
 
 
 # ---------------------------------------------------------------------------
@@ -148,7 +149,7 @@ def _parse_expiry(raw: str) -> date:
 # Public entry point
 # ---------------------------------------------------------------------------
 
-def parse(rows: list[dict]) -> ParsedInstruments:
+def parse(rows: list[dict[str, Any]]) -> ParsedInstruments:
     """
     Parse AngelOne's instrument master (list of dicts, from JSON)
     into a ParsedInstruments container. Rows outside v1 scope are silently skipped.
@@ -191,7 +192,7 @@ def parse(rows: list[dict]) -> ParsedInstruments:
 # Per-type parsers
 # ---------------------------------------------------------------------------
 
-def _parse_index(row: dict) -> ParsedIndex:
+def _parse_index(row: dict[str, Any]) -> ParsedIndex:
     """
     AngelOne index rows (instrumenttype == AMXIDX):
       - symbol field: display name with spaces, mixed case — e.g. "Nifty 50", "Nifty Bank"
@@ -216,7 +217,7 @@ def _parse_index(row: dict) -> ParsedIndex:
     )
 
 
-def _parse_equity(row: dict) -> ParsedEquity:
+def _parse_equity(row: dict[str, Any]) -> ParsedEquity:
     """
     AngelOne equity rows: instrumenttype is empty, exch_seg is NSE or BSE.
     Symbol may have a "-EQ" suffix (e.g. "RELIANCE-EQ"). We strip it for
@@ -237,7 +238,7 @@ def _parse_equity(row: dict) -> ParsedEquity:
     )
 
 
-def _parse_future(row: dict) -> ParsedFuture:
+def _parse_future(row: dict[str, Any]) -> ParsedFuture:
     """
     AngelOne futures: FUTIDX (index futures) and FUTSTK (stock futures).
     The `name` field carries the underlying's canonical symbol — same value
@@ -258,7 +259,7 @@ def _parse_future(row: dict) -> ParsedFuture:
     )
 
 
-def _parse_option(row: dict) -> ParsedOption:
+def _parse_option(row: dict[str, Any]) -> ParsedOption:
     """
     AngelOne options: OPTIDX (index options) and OPTSTK (stock options).
     Strike is stored as strike * 100 in AngelOne's master — divide by 100.
@@ -295,7 +296,7 @@ def _parse_option(row: dict) -> ParsedOption:
 # Suffix patterns that indicate non-equity NSE/BSE instruments to skip
 _NON_EQUITY_SUFFIXES = ("-GS", "-MF", "-SG", "-SM", "-IL", "-BL", "-CB", "-TB")
 
-def _is_plain_equity(row: dict) -> bool:
+def _is_plain_equity(row: dict[str, Any]) -> bool:
     """
     Heuristic: keep NSE/BSE rows that look like plain equities.
     Filters out bonds (suffix -GS, -SG), MFs (-MF), SMEs (-SM), etc.

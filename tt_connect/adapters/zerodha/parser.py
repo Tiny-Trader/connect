@@ -181,7 +181,7 @@ def parse(raw_csv: str) -> ParsedInstruments:
 _BROKER_TO_CANONICAL: dict[str, str] = {v[1]: k for k, v in INDEX_NAME_MAP.items()}
 
 
-def _parse_index(row: dict) -> ParsedIndex:
+def _parse_index(row: dict[str, str]) -> ParsedIndex:
     """Parse one index row."""
     broker_symbol = row["tradingsymbol"]
     canonical_symbol = _BROKER_TO_CANONICAL.get(broker_symbol, broker_symbol)
@@ -198,7 +198,7 @@ def _parse_index(row: dict) -> ParsedIndex:
     )
 
 
-def _parse_equity(row: dict) -> ParsedEquity:
+def _parse_equity(row: dict[str, str]) -> ParsedEquity:
     """Parse one equity row."""
     symbol = row["tradingsymbol"]
 
@@ -214,7 +214,7 @@ def _parse_equity(row: dict) -> ParsedEquity:
     )
 
 
-def _parse_future(row: dict) -> ParsedFuture:
+def _parse_future(row: dict[str, str]) -> ParsedFuture:
     """Parse one futures row."""
     exchange = row["exchange"]
 
@@ -231,7 +231,7 @@ def _parse_future(row: dict) -> ParsedFuture:
     )
 
 
-def _parse_option(row: dict) -> ParsedOption:
+def _parse_option(row: dict[str, str]) -> ParsedOption:
     """Parse one options row."""
     exchange = row["exchange"]
 

@@ -27,7 +27,7 @@ permissions:
   contents: read
 
 jobs:
-  lint:
+  lint_type:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -48,6 +48,9 @@ jobs:
 
       - name: Ruff
         run: make lint
+
+      - name: MyPy
+        run: make typecheck
 
   test:
     runs-on: ubuntu-latest

@@ -28,7 +28,7 @@ class ZerodhaAuth(BaseAuth):
         )
 
     @property
-    def headers(self) -> dict:
+    def headers(self) -> dict[str, str]:
         """Build authenticated headers expected by Kite APIs."""
         return {
             "X-Kite-Version": "3",

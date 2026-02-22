@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Any
 
 from tt_connect.enums import Exchange, Side, ProductType, OrderType, OrderStatus
 from tt_connect.exceptions import (
@@ -100,7 +101,7 @@ def _parse_ts(raw: str | None) -> datetime | None:
         return None
 
 
-def _f(val) -> float:
+def _f(val: Any) -> float:
     """Safely convert str/None to float."""
     try:
         return float(val) if val else 0.0
@@ -108,7 +109,7 @@ def _f(val) -> float:
         return 0.0
 
 
-def _i(val) -> int:
+def _i(val: Any) -> int:
     """Safely convert str/None to int."""
     try:
         return int(val) if val else 0
@@ -132,9 +133,9 @@ class AngelOneTransformer:
         order_type: OrderType,
         price: float | None,
         trigger_price: float | None,
-    ) -> dict:
+    ) -> dict[str, Any]:
         """Build AngelOne order placement payload from canonical arguments."""
-        params: dict = {
+        params: dict[str, Any] = {
             "variety":         "NORMAL",
             "symboltoken":     token,
             "tradingsymbol":   broker_symbol,
@@ -153,12 +154,12 @@ class AngelOneTransformer:
         return params
 
     @staticmethod
-    def to_order_id(raw: dict) -> str:
+    def to_order_id(raw: dict[str, Any]) -> str:
         """Extract order id from successful place/modify responses."""
-        return raw["data"]["orderid"]
+        return str(raw["data"]["orderid"])
 
     @staticmethod
-    def to_close_position_params(pos_raw: dict, qty: int, side: Side) -> dict:
+    def to_close_position_params(pos_raw: dict[str, Any], qty: int, side: Side) -> dict[str, Any]:
         """Build market-order payload used to offset an open position."""
         return {
             "variety":         "NORMAL",
@@ -178,7 +179,7 @@ class AngelOneTransformer:
     # --- Incoming ---
 
     @staticmethod
-    def to_profile(raw: dict) -> Profile:
+    def to_profile(raw: dict[str, Any]) -> Profile:
         """Normalize profile payload."""
         return Profile(
             client_id=raw["clientcode"],
@@ -188,7 +189,7 @@ class AngelOneTransformer:
         )
 
     @staticmethod
-    def to_fund(raw: dict) -> Fund:
+    def to_fund(raw: dict[str, Any]) -> Fund:
         """Normalize funds/RMS payload."""
         # AngelOne returns all values as strings
         return Fund(
@@ -201,7 +202,7 @@ class AngelOneTransformer:
         )
 
     @staticmethod
-    def to_holding(raw: dict) -> Holding:
+    def to_holding(raw: dict[str, Any]) -> Holding:
         """Normalize holdings row."""
         avg = _f(raw.get("averageprice"))
         ltp = _f(raw.get("ltp"))
@@ -222,7 +223,7 @@ class AngelOneTransformer:
         )
 
     @staticmethod
-    def to_position(raw: dict) -> Position:
+    def to_position(raw: dict[str, Any]) -> Position:
         """Normalize positions row."""
         net_qty = _i(raw.get("netqty"))
         # avg price: buy side for long, sell side for short
@@ -246,7 +247,7 @@ class AngelOneTransformer:
         )
 
     @staticmethod
-    def to_order(raw: dict, instrument=None) -> Order:
+    def to_order(raw: dict[str, Any], instrument: Instrument | None = None) -> Order:
         """Normalize order row with status/order/product mappings."""
         status_raw = (raw.get("status") or raw.get("orderstatus") or "").lower()
         status = _ORDER_STATUS_MAP.get(status_raw, OrderStatus.PENDING)
@@ -268,7 +269,7 @@ class AngelOneTransformer:
         )
 
     @staticmethod
-    def to_trade(raw: dict) -> Trade:
+    def to_trade(raw: dict[str, Any]) -> Trade:
         """Normalize trade row."""
         qty = _i(raw.get("fillsize"))
         price = _f(raw.get("fillprice"))
@@ -290,7 +291,7 @@ class AngelOneTransformer:
     # --- Errors ---
 
     @staticmethod
-    def parse_error(raw: dict) -> TTConnectError:
+    def parse_error(raw: dict[str, Any]) -> TTConnectError:
         """Map AngelOne error envelope to canonical exception types."""
         code = raw.get("errorcode", "")
         message = raw.get("message", "Unknown error")

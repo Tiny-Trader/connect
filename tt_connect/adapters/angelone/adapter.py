@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
-from tt_connect.adapters.base import BrokerAdapter
+from tt_connect.adapters.base import BrokerAdapter, JsonDict
 from tt_connect.adapters.angelone.auth import AngelOneAuth
 from tt_connect.adapters.angelone.transformer import AngelOneTransformer
 from tt_connect.adapters.angelone.capabilities import ANGELONE_CAPABILITIES
 from tt_connect.adapters.angelone.parser import parse, ParsedInstruments
 from tt_connect.capabilities import Capabilities
 from tt_connect.exceptions import UnsupportedFeatureError
+from tt_connect.ws.client import BrokerWebSocket
 
 BASE_URL = "https://apiconnect.angelbroking.com/rest/secure/angelbroking"
 INSTRUMENTS_URL = "https://margincalculator.angelbroking.com/OpenAPI_File/files/OpenAPIScripMaster.json"
@@ -17,7 +18,7 @@ INSTRUMENTS_URL = "https://margincalculator.angelbroking.com/OpenAPI_File/files/
 class AngelOneAdapter(BrokerAdapter, broker_id="angelone"):
     """Broker adapter for AngelOne SmartAPI endpoints."""
 
-    def __init__(self, config: dict):
+    def __init__(self, config: JsonDict):
         """Initialize auth and transformer for AngelOne."""
         super().__init__(config)
         self.auth = AngelOneAuth(config, self._client)
@@ -46,62 +47,62 @@ class AngelOneAdapter(BrokerAdapter, broker_id="angelone"):
 
     # --- REST ---
 
-    async def get_profile(self) -> dict:
+    async def get_profile(self) -> JsonDict:
         """Fetch raw profile payload."""
         return await self._request("GET", f"{BASE_URL}/user/v1/getProfile",
                                    headers=self.auth.headers)
 
-    async def get_funds(self) -> dict:
+    async def get_funds(self) -> JsonDict:
         """Fetch raw RMS/funds payload."""
         return await self._request("GET", f"{BASE_URL}/user/v1/getRMS",
                                    headers=self.auth.headers)
 
-    async def get_holdings(self) -> list[dict]:
+    async def get_holdings(self) -> JsonDict:
         """Fetch raw holdings and normalize null data to empty list."""
         raw = await self._request("GET", f"{BASE_URL}/portfolio/v1/getHolding",
                                   headers=self.auth.headers)
         raw["data"] = raw.get("data") or []
         return raw
 
-    async def get_positions(self) -> list[dict]:
+    async def get_positions(self) -> JsonDict:
         """Fetch raw positions and normalize null data to empty list."""
         raw = await self._request("GET", f"{BASE_URL}/order/v1/getPosition",
                                   headers=self.auth.headers)
         raw["data"] = raw.get("data") or []
         return raw
 
-    async def get_orders(self) -> list[dict]:
+    async def get_orders(self) -> JsonDict:
         """Fetch raw order book and normalize null data to empty list."""
         raw = await self._request("GET", f"{BASE_URL}/order/v1/getOrderBook",
                                   headers=self.auth.headers)
         raw["data"] = raw.get("data") or []
         return raw
 
-    async def get_trades(self) -> dict:
+    async def get_trades(self) -> JsonDict:
         """Fetch raw trade book and normalize null data to empty list."""
         raw = await self._request("GET", f"{BASE_URL}/order/v1/getTradeBook",
                                   headers=self.auth.headers)
         raw["data"] = raw.get("data") or []
         return raw
 
-    async def get_order(self, order_id: str) -> dict:
+    async def get_order(self, order_id: str) -> JsonDict:
         """Single-order endpoint is unavailable for AngelOne."""
         raise UnsupportedFeatureError(
             "AngelOne does not support fetching a single order by ID. "
             "Use get_orders() and filter by order_id."
         )
 
-    async def place_order(self, params: dict) -> dict:
+    async def place_order(self, params: JsonDict) -> JsonDict:
         """Place a new order using broker-native params."""
         return await self._request("POST", f"{BASE_URL}/order/v1/placeOrder",
                                    headers=self.auth.headers, json=params)
 
-    async def modify_order(self, order_id: str, params: dict) -> dict:
+    async def modify_order(self, order_id: str, params: JsonDict) -> JsonDict:
         """Modify an order by id."""
         return await self._request("POST", f"{BASE_URL}/order/v1/modifyOrder",
                                    headers=self.auth.headers, json=params)
 
-    async def cancel_order(self, order_id: str) -> dict:
+    async def cancel_order(self, order_id: str) -> JsonDict:
         """Cancel an order by id."""
         return await self._request("POST", f"{BASE_URL}/order/v1/cancelOrder",
                                    headers=self.auth.headers,
@@ -109,7 +110,7 @@ class AngelOneAdapter(BrokerAdapter, broker_id="angelone"):
 
     # --- WebSocket ---
 
-    def create_ws_client(self):
+    def create_ws_client(self) -> BrokerWebSocket:
         """Create broker-specific WebSocket client."""
         from tt_connect.ws.angelone import AngelOneWebSocket
         return AngelOneWebSocket(self.auth)
@@ -123,6 +124,6 @@ class AngelOneAdapter(BrokerAdapter, broker_id="angelone"):
 
     # --- Internal ---
 
-    def _is_error(self, raw: dict, status_code: int) -> bool:
+    def _is_error(self, raw: JsonDict, status_code: int) -> bool:
         """Identify transport or broker-level error envelopes."""
         return raw.get("status") is False or status_code >= 400

@@ -1,6 +1,8 @@
 """Zerodha request/response normalization helpers."""
 
 from datetime import datetime
+from typing import Any
+
 from tt_connect.models import Profile, Fund, Holding, Position, Order, Trade, Margin
 from tt_connect.instruments import Instrument
 from tt_connect.enums import Exchange, Side, ProductType, OrderType, OrderStatus
@@ -41,9 +43,9 @@ class ZerodhaTransformer:
     def to_order_params(token: str, broker_symbol: str, exchange: str,
                         qty: int, side: Side, product: ProductType,
                         order_type: OrderType, price: float | None,
-                        trigger_price: float | None) -> dict:
+                        trigger_price: float | None) -> dict[str, Any]:
         """Build Zerodha order placement payload from canonical arguments."""
-        params = {
+        params: dict[str, Any] = {
             "tradingsymbol": broker_symbol,
             "exchange":       exchange,
             "transaction_type": side.value,
@@ -59,12 +61,12 @@ class ZerodhaTransformer:
         return params
 
     @staticmethod
-    def to_order_id(raw: dict) -> str:
+    def to_order_id(raw: dict[str, Any]) -> str:
         """Extract order id from successful place/modify responses."""
-        return raw["data"]["order_id"]
+        return str(raw["data"]["order_id"])
 
     @staticmethod
-    def to_close_position_params(pos_raw: dict, qty: int, side: Side) -> dict:
+    def to_close_position_params(pos_raw: dict[str, Any], qty: int, side: Side) -> dict[str, Any]:
         """Build market-order payload used to offset an open position."""
         return {
             "tradingsymbol":    pos_raw["tradingsymbol"],
@@ -79,7 +81,7 @@ class ZerodhaTransformer:
     # --- Incoming ---
 
     @staticmethod
-    def to_profile(raw: dict) -> Profile:
+    def to_profile(raw: dict[str, Any]) -> Profile:
         """Normalize profile payload."""
         return Profile(
             client_id=raw["user_id"],
@@ -89,7 +91,7 @@ class ZerodhaTransformer:
         )
 
     @staticmethod
-    def to_fund(raw: dict) -> Fund:
+    def to_fund(raw: dict[str, Any]) -> Fund:
         """Normalize funds/margins payload."""
         equity = raw["equity"]
         return Fund(
@@ -102,7 +104,7 @@ class ZerodhaTransformer:
         )
 
     @staticmethod
-    def to_holding(raw: dict) -> Holding:
+    def to_holding(raw: dict[str, Any]) -> Holding:
         """Normalize holding row and compute pnl percentage."""
         avg = raw["average_price"]
         ltp = raw["last_price"]
@@ -120,7 +122,7 @@ class ZerodhaTransformer:
         )
 
     @staticmethod
-    def to_position(raw: dict) -> Position:
+    def to_position(raw: dict[str, Any]) -> Position:
         """Normalize net position row."""
         return Position(
             instrument=Instrument(
@@ -135,7 +137,7 @@ class ZerodhaTransformer:
         )
 
     @staticmethod
-    def to_trade(raw: dict) -> Trade:
+    def to_trade(raw: dict[str, Any]) -> Trade:
         """Normalize trade-book row."""
         ts = raw.get("fill_timestamp") or raw.get("order_timestamp")
         return Trade(
@@ -153,7 +155,7 @@ class ZerodhaTransformer:
         )
 
     @staticmethod
-    def to_order(raw: dict, instrument=None) -> Order:
+    def to_order(raw: dict[str, Any], instrument: Instrument | None = None) -> Order:
         """Normalize order-book row with status mapping."""
         status = _ORDER_STATUS_MAP.get(raw["status"], OrderStatus.PENDING)
         ts = raw.get("order_timestamp") or raw.get("exchange_timestamp")
@@ -173,7 +175,7 @@ class ZerodhaTransformer:
         )
 
     @staticmethod
-    def to_margin(raw: dict) -> Margin:
+    def to_margin(raw: dict[str, Any]) -> Margin:
         """Normalize basket margin response."""
         initial = raw["initial"]
         final   = raw["final"]
@@ -191,7 +193,7 @@ class ZerodhaTransformer:
     # --- Errors ---
 
     @staticmethod
-    def parse_error(raw: dict) -> TTConnectError:
+    def parse_error(raw: dict[str, Any]) -> TTConnectError:
         """Map broker error envelope to canonical exception types."""
         code = raw.get("error_type", "")
         message = raw.get("message", "Unknown error")

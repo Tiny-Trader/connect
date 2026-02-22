@@ -3,6 +3,7 @@ from __future__ import annotations
 from abc import abstractmethod
 from typing import Callable, Awaitable
 
+from tt_connect.instrument_manager.resolver import ResolvedInstrument
 from tt_connect.instruments import Instrument
 from tt_connect.models import Tick
 
@@ -16,7 +17,7 @@ class BrokerWebSocket:
     @abstractmethod
     async def subscribe(
         self,
-        subscriptions: list[tuple[Instrument, object]],  # (Instrument, ResolvedInstrument)
+        subscriptions: list[tuple[Instrument, ResolvedInstrument]],
         on_tick: OnTick,
     ) -> None:
         """Start or extend subscriptions and emit normalized ticks via callback."""
