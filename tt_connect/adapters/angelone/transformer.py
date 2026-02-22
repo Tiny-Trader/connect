@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+"""AngelOne request/response normalization helpers."""
+
 from datetime import datetime
 
 from tt_connect.enums import Exchange, Side, ProductType, OrderType, OrderStatus
@@ -89,6 +91,7 @@ _TS_FMT = "%d-%b-%Y %H:%M:%S"
 
 
 def _parse_ts(raw: str | None) -> datetime | None:
+    """Parse AngelOne timestamp string into datetime, returning None on failure."""
     if not raw:
         return None
     try:
@@ -114,6 +117,7 @@ def _i(val) -> int:
 
 
 class AngelOneTransformer:
+    """Transforms AngelOne payloads to/from canonical tt-connect models."""
 
     # --- Outgoing ---
 
@@ -129,6 +133,7 @@ class AngelOneTransformer:
         price: float | None,
         trigger_price: float | None,
     ) -> dict:
+        """Build AngelOne order placement payload from canonical arguments."""
         params: dict = {
             "variety":         "NORMAL",
             "symboltoken":     token,
@@ -149,10 +154,12 @@ class AngelOneTransformer:
 
     @staticmethod
     def to_order_id(raw: dict) -> str:
+        """Extract order id from successful place/modify responses."""
         return raw["data"]["orderid"]
 
     @staticmethod
     def to_close_position_params(pos_raw: dict, qty: int, side: Side) -> dict:
+        """Build market-order payload used to offset an open position."""
         return {
             "variety":         "NORMAL",
             "symboltoken":     pos_raw.get("symboltoken", ""),
@@ -172,6 +179,7 @@ class AngelOneTransformer:
 
     @staticmethod
     def to_profile(raw: dict) -> Profile:
+        """Normalize profile payload."""
         return Profile(
             client_id=raw["clientcode"],
             name=raw["name"].strip(),
@@ -181,6 +189,7 @@ class AngelOneTransformer:
 
     @staticmethod
     def to_fund(raw: dict) -> Fund:
+        """Normalize funds/RMS payload."""
         # AngelOne returns all values as strings
         return Fund(
             available=_f(raw.get("availablecash")),
@@ -193,6 +202,7 @@ class AngelOneTransformer:
 
     @staticmethod
     def to_holding(raw: dict) -> Holding:
+        """Normalize holdings row."""
         avg = _f(raw.get("averageprice"))
         ltp = _f(raw.get("ltp"))
         pnl = _f(raw.get("profitandloss"))
@@ -213,6 +223,7 @@ class AngelOneTransformer:
 
     @staticmethod
     def to_position(raw: dict) -> Position:
+        """Normalize positions row."""
         net_qty = _i(raw.get("netqty"))
         # avg price: buy side for long, sell side for short
         if net_qty >= 0:
@@ -236,6 +247,7 @@ class AngelOneTransformer:
 
     @staticmethod
     def to_order(raw: dict, instrument=None) -> Order:
+        """Normalize order row with status/order/product mappings."""
         status_raw = (raw.get("status") or raw.get("orderstatus") or "").lower()
         status = _ORDER_STATUS_MAP.get(status_raw, OrderStatus.PENDING)
         order_type = _ORDER_TYPE_MAP.get(raw.get("ordertype", ""), OrderType.MARKET)
@@ -257,6 +269,7 @@ class AngelOneTransformer:
 
     @staticmethod
     def to_trade(raw: dict) -> Trade:
+        """Normalize trade row."""
         qty = _i(raw.get("fillsize"))
         price = _f(raw.get("fillprice"))
         symbol: str = (raw.get("tradingsymbol") or "").removesuffix("-EQ")
@@ -278,6 +291,7 @@ class AngelOneTransformer:
 
     @staticmethod
     def parse_error(raw: dict) -> TTConnectError:
+        """Map AngelOne error envelope to canonical exception types."""
         code = raw.get("errorcode", "")
         message = raw.get("message", "Unknown error")
         exc_class = ERROR_MAP.get(code, BrokerError)

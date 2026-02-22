@@ -1,3 +1,5 @@
+"""AngelOne capability matrix."""
+
 from tt_connect.capabilities import Capabilities
 from tt_connect.enums import Exchange, OrderType, ProductType, AuthMode
 

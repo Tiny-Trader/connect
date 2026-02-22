@@ -39,6 +39,8 @@ from datetime import date, datetime
 
 @dataclass(frozen=True)
 class ParsedIndex:
+    """Parsed canonical index row from AngelOne instrument JSON."""
+
     exchange: str
     symbol: str         # canonical — what users write: "NIFTY", "BANKNIFTY"
     broker_symbol: str  # AngelOne's raw symbol field: "Nifty 50", "Nifty Bank"
@@ -51,6 +53,8 @@ class ParsedIndex:
 
 @dataclass(frozen=True)
 class ParsedEquity:
+    """Parsed canonical equity row from AngelOne instrument JSON."""
+
     exchange: str
     symbol: str         # canonical — same as broker_symbol stripped of -EQ suffix
     broker_symbol: str  # AngelOne's raw symbol field: "RELIANCE-EQ"
@@ -63,6 +67,8 @@ class ParsedEquity:
 
 @dataclass(frozen=True)
 class ParsedFuture:
+    """Parsed canonical futures row from AngelOne instrument JSON."""
+
     exchange: str             # NFO or BFO (the derivative exchange, stored in DB)
     symbol: str               # underlying canonical name — "NIFTY", "RELIANCE"
     broker_symbol: str        # AngelOne's tradingsymbol — "NIFTY30MAR26FUT"
@@ -76,6 +82,8 @@ class ParsedFuture:
 
 @dataclass(frozen=True)
 class ParsedOption:
+    """Parsed canonical options row from AngelOne instrument JSON."""
+
     exchange: str             # NFO or BFO
     symbol: str               # underlying canonical name — "NIFTY", "RELIANCE"
     broker_symbol: str        # AngelOne's tradingsymbol — "NIFTY27FEB2623000CE"
@@ -91,6 +99,8 @@ class ParsedOption:
 
 @dataclass
 class ParsedInstruments:
+    """Container for all parsed instrument groups."""
+
     indices:  list[ParsedIndex]  = field(default_factory=list)
     equities: list[ParsedEquity] = field(default_factory=list)
     futures:  list[ParsedFuture] = field(default_factory=list)
@@ -130,6 +140,7 @@ _OPTION_TYPES = {"OPTIDX", "OPTSTK"}
 # ---------------------------------------------------------------------------
 
 def _parse_expiry(raw: str) -> date:
+    """Parse AngelOne expiry date in `DDMMMYYYY` format."""
     return datetime.strptime(raw.strip(), "%d%b%Y").date()
 
 
