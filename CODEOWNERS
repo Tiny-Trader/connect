@@ -1,0 +1,9 @@
+# Default owners for repository reviews.
+
+* @Apurv-Salunke
+
+# Core framework
+tt_connect/** @Apurv-Salunke
+tests/** @Apurv-Salunke
+.github/workflows/** @Apurv-Salunke
+docs/** @Apurv-Salunke

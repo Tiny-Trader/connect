@@ -34,3 +34,12 @@ poetry run pytest
 poetry run ruff check .
 poetry run mypy tt_connect/
 ```
+
+## Important Legal Notice
+
+Before using this project for live trading, read:
+
+- `DISCLAIMER.md`
+- `SECURITY.md`
+- `COMPLIANCE.md`
+- `TRADEMARK.md`

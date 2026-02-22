@@ -1,0 +1,12 @@
+# tt-connect Production Hardening TODO (Source of Truth)
+
+- [ ] Release governance: add semver/release policy, changelog workflow, and tag-based publish pipeline.
+- [x] Trust/compliance files: add `LICENSE`, `SECURITY.md`, and `CODEOWNERS`.
+- [ ] Security hardening in CI: add dependency vulnerability scans, secret scanning, and SAST.
+- [ ] Broker live-test coverage: add AngelOne live tests alongside Zerodha.
+- [ ] Feature parity: implement and validate `calculate_margin(...)`.
+- [ ] Typed configuration: replace raw config dict usage with validated schema models.
+- [ ] Operational resilience: improve retry policy with jittered backoff and idempotency handling for order operations.
+- [ ] Observability: add structured logs, correlation IDs, and metrics hooks.
+- [ ] DB lifecycle: introduce schema versioning and migration strategy for SQLite.
+- [ ] Compatibility matrix: run CI on multiple Python versions (at least 3.11 and 3.12).
