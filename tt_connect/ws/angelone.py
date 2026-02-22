@@ -1,12 +1,11 @@
-from __future__ import annotations
-
 """AngelOne SmartStream WebSocket client and binary tick parser."""
+
+from __future__ import annotations
 
 import asyncio
 import json
 import logging
 import struct
-import time
 from datetime import datetime, timezone
 
 import websockets

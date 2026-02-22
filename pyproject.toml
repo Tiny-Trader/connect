@@ -25,6 +25,15 @@ freezegun = ">=1.4.0"
 pytest-cov = ">=5.0.0"
 pytest-mock = ">=3.14.0"
 
+[tool.poetry.scripts]
+tt-lint = "dev_tasks:lint"
+tt-typecheck = "dev_tasks:typecheck"
+tt-test = "dev_tasks:test"
+tt-test-fast = "dev_tasks:test_fast"
+tt-coverage = "dev_tasks:coverage"
+tt-precommit-install = "dev_tasks:precommit_install"
+tt-precommit-run = "dev_tasks:precommit_run"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"

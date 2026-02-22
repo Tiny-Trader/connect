@@ -1,6 +1,6 @@
-from __future__ import annotations
-
 """AngelOne REST adapter implementation."""
+
+from __future__ import annotations
 
 from tt_connect.adapters.base import BrokerAdapter
 from tt_connect.adapters.angelone.auth import AngelOneAuth

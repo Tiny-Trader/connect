@@ -1,6 +1,6 @@
-from __future__ import annotations
-
 """Zerodha authentication implementation."""
+
+from __future__ import annotations
 
 from tt_connect.auth.base import BaseAuth, SessionData, next_midnight_ist
 from tt_connect.enums import AuthMode

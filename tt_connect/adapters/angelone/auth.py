@@ -1,6 +1,6 @@
-from __future__ import annotations
-
 """AngelOne authentication implementation."""
+
+from __future__ import annotations
 
 import logging
 import socket

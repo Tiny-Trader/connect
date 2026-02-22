@@ -1,6 +1,6 @@
-from __future__ import annotations
-
 """AngelOne request/response normalization helpers."""
+
+from __future__ import annotations
 
 from datetime import datetime
 

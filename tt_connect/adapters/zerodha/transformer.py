@@ -1,12 +1,12 @@
 """Zerodha request/response normalization helpers."""
 
 from datetime import datetime
-from tt_connect.models import Profile, Fund, Holding, Position, Order, Trade, Margin, Tick
+from tt_connect.models import Profile, Fund, Holding, Position, Order, Trade, Margin
 from tt_connect.instruments import Instrument
 from tt_connect.enums import Exchange, Side, ProductType, OrderType, OrderStatus
 from tt_connect.exceptions import (
     TTConnectError, AuthenticationError, OrderError,
-    InvalidOrderError, InsufficientFundsError, BrokerError,
+    InvalidOrderError, BrokerError,
 )
 
 ERROR_MAP: dict[str, type[TTConnectError]] = {

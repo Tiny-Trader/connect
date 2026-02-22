@@ -37,6 +37,18 @@ Every PR should include:
   - package build (`poetry build`)
 - Live tests under `tests/live/` are manual and not part of required CI.
 
+## Local Developer Commands
+
+These shortcuts are defined in `pyproject.toml`:
+
+- `poetry run tt-lint`
+- `poetry run tt-typecheck`
+- `poetry run tt-test`
+- `poetry run tt-test-fast`
+- `poetry run tt-coverage`
+- `poetry run tt-precommit-install`
+- `poetry run tt-precommit-run`
+
 ## Branch Protection Settings (GitHub)
 
 Apply these rules to `main` and `dev`:
