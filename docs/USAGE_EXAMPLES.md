@@ -8,18 +8,25 @@
 from tt_connect import TTConnect
 from tt_connect.enums import OnStale
 
-# Sync
-broker = TTConnect("zerodha", config={
+# Initialize with Auto Mode (e.g., AngelOne: TTConnect handles TOTP login and session caching)
+broker = TTConnect("angelone", config={
+    "auth_mode": "auto",
     "api_key": "xxx",
-    "api_secret": "xxx",
-    "totp_secret": "xxx",
-    "on_stale": OnStale.FAIL,   # or OnStale.WARN
+    "client_id": "xxx",
+    "pin": "1234",
+    "totp_secret": "JBSWY3DPEHPK3PXP",
+    "cache_session": True,
+    "on_stale": OnStale.FAIL,
 })
 
-# Async
+# Initialize with Manual Mode (e.g., Zerodha: providing a pre-generated token)
 from tt_connect import AsyncTTConnect
 
-broker = AsyncTTConnect("zerodha", config={...})
+async_broker = AsyncTTConnect("zerodha", config={
+    "auth_mode": "manual",
+    "api_key": "xxx",
+    "access_token": "xxx",
+})
 ```
 
 Session is managed automatically. No `login()` call. No token refresh logic. No daily re-login code.
@@ -136,7 +143,7 @@ async def on_order_update(order):
     # Order(id='...', status=COMPLETE, filled_qty=10, avg_price=2952.5)
 
 async def main():
-    broker = AsyncTTConnect("zerodha", config={...})
+    broker = AsyncTTConnect("angelone", config={...})
 
     await broker.subscribe(
         instruments=[reliance, nifty_ce, nifty_fut],

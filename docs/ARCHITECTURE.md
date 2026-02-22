@@ -253,8 +253,8 @@ All runtime artifacts live in `_cache/` at the project root:
 
 ```
 _cache/
-├── instruments.db   # SQLite instrument master
-├── session.json     # broker session tokens
+├── {broker_id}_instruments.db   # SQLite instrument master (isolated per broker)
+├── {broker_id}_session.json     # broker session tokens (for auto login mode)
 ```
 
 ### Stale Data Behaviour
