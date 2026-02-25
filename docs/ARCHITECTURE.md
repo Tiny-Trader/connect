@@ -14,7 +14,7 @@ Handles the auth flow, session persistence, token refresh, and TOTP automation e
 
 Bidirectional translation layer:
 
-- **Outgoing:** canonical `Instrument` objects + enums → broker-specific request params
+- **Outgoing:** canonical `PlaceOrderRequest` / `ModifyOrderRequest` objects + enums → broker-specific request params
 - **Incoming:** broker-specific JSON envelopes → canonical Pydantic models
 
 This is what makes tt-connect an abstraction, not a wrapper. Without this, broker internals leak into user code.
@@ -25,7 +25,7 @@ Unified WebSocket wrapper — manages connection lifecycle, reconnection, and tr
 
 ### 5. Duality Wrapper
 
-Proxy layer that makes the library natively usable in both sync and async Python without maintaining two codebases. Core is async-first; sync client wraps it in one place.
+Proxy layer that makes the library natively usable in both sync and async Python without maintaining two codebases. Core is async-first; sync client wraps it in a single dedicated thread.
 
 ---
 
@@ -33,23 +33,27 @@ Proxy layer that makes the library natively usable in both sync and async Python
 
 ```
 tt_connect/
-├── __init__.py
-├── client.py              # TTConnect + AsyncTTConnect
-├── enums.py               # Exchange, OrderType, ProductType, Side, OptionType
-├── instruments.py         # Equity, Future, Option, Currency
-├── models.py              # Order, Position, Holding, Tick, Profile, Fund
-├── exceptions.py          # TTConnectError, UnsupportedFeatureError, etc.
-├── capabilities.py        # Capabilities dataclass + internal checker
+├── __init__.py           # Public exports: TTConnect, AsyncTTConnect, PlaceOrderRequest, ModifyOrderRequest
+├── client.py             # AsyncTTConnect (mixin composition, ~20 lines)
+├── lifecycle.py          # _ClientBase + LifecycleMixin (init, close, state, WebSocket)
+├── portfolio.py          # PortfolioMixin (get_profile, get_funds, holdings, positions, trades)
+├── orders.py             # OrdersMixin (place, modify, cancel, get orders, close positions)
+├── sync_client.py        # TTConnect — threaded sync wrapper over AsyncTTConnect
+├── enums.py              # Exchange, OrderType, ProductType, Side, OptionType, ClientState
+├── instruments.py        # Equity, Future, Option, Currency
+├── models.py             # Response models + PlaceOrderRequest, ModifyOrderRequest
+├── exceptions.py         # TTConnectError hierarchy + lifecycle errors
+├── capabilities.py       # Capabilities dataclass + internal checker
 ├── instrument_manager/
-│   ├── manager.py         # fetch, store, refresh lifecycle
-│   ├── db.py              # SQLite interface
-│   └── resolver.py        # Instrument → broker token/symbol
+│   ├── manager.py        # fetch, store, refresh lifecycle
+│   ├── db.py             # SQLite interface
+│   └── resolver.py       # Instrument → broker token/symbol
 ├── adapters/
-│   ├── base.py            # BrokerAdapter base + auto-registry
+│   ├── base.py           # BrokerAdapter base + auto-registry + BrokerTransformer Protocol
 │   ├── zerodha/
 │   │   ├── adapter.py
 │   │   ├── auth.py
-│   │   ├── transformer.py # request/response normalization
+│   │   ├── transformer.py  # request/response normalization
 │   │   └── capabilities.py
 │   └── angelone/
 │       ├── adapter.py
@@ -57,8 +61,8 @@ tt_connect/
 │       ├── transformer.py
 │       └── capabilities.py
 └── ws/
-    ├── client.py          # WebSocket lifecycle manager
-    └── normalizer.py      # raw tick → Tick model
+    ├── client.py           # BrokerWebSocket abstract + OnTick type
+    └── normalizer.py       # raw tick → Tick model
 ```
 
 **To add a new broker: create a folder under `adapters/`, implement 4 files. Touch nothing else.**
@@ -78,41 +82,81 @@ tt_connect/
 
 ## Components
 
-### 1. Instrument Manager
+### 1. Client Lifecycle (State Machine)
+
+`AsyncTTConnect` and `TTConnect` track an explicit `ClientState`:
+
+```
+CREATED  →  (await init())  →  CONNECTED  →  (await close())  →  CLOSED
+```
+
+All data methods call `_require_connected()` internally. Calling an operation on a `CREATED` or `CLOSED` client raises a typed, catchable error instead of a cryptic `AssertionError`:
+
+```python
+ClientNotConnectedError  # init() has not been called
+ClientClosedError        # close() has already been called — client cannot be reused
+InstrumentManagerError   # internal: instrument DB used before init()
+```
+
+Both clients support context managers as the recommended lifecycle pattern:
+
+```python
+# Async
+async with AsyncTTConnect("zerodha", config) as broker:
+    profile = await broker.get_profile()
+
+# Sync
+with TTConnect("zerodha", config) as broker:
+    profile = broker.get_profile()
+```
+
+### 2. Mixin Decomposition
+
+`AsyncTTConnect` is assembled from three mixins, each in its own file:
+
+```python
+class AsyncTTConnect(LifecycleMixin, PortfolioMixin, OrdersMixin):
+    """Async-first unified broker client."""
+```
+
+All three inherit from `_ClientBase` (defined in `lifecycle.py`), which declares the shared attributes (`_adapter`, `_resolver`, `_state`, etc.) so mypy can type-check each mixin independently.
+
+### 3. Instrument Manager
 
 - Fetches, parses and stores the instrument/symbol master into SQLite
 - Handles refresh lifecycle (NSE updates instruments, lot sizes, expiry calendars)
 - Core job: resolves a typed instrument object to the broker-specific token/symbol
 - Resolution is cached via `lru_cache` — SQLite lookups happen once per session
 
-### 2. Broker Adapters
+### 4. Broker Adapters
 
 - One adapter per broker, each subclassing `BrokerAdapter`
 - Auto-registers itself via `__init_subclass__` — no registry file to maintain
 - Each adapter has 4 files: `adapter.py`, `auth.py`, `transformer.py`, `capabilities.py`
 - Nothing outside the adapter knows about broker internals
 
-### 3. REST Client
+### 5. REST Client
 
 - Unified interface for: Auth, Profile, Funds, Holdings, Positions, Orders, Trades
 - Sits on top of the broker adapter
 - Always returns normalized Pydantic models — no broker-specific keys leak out
 
-### 4. WebSocket Client
+### 6. WebSocket Client
 
 - Manages the streaming connection lifecycle — connect, subscribe, unsubscribe, reconnect
 - Normalizes raw tick data into standard `Tick` models before emitting to the caller
 
-### 5. Models / Schemas
+### 7. Models / Schemas
 
-- Pydantic v2 models — validation, serialization, and type safety for free
-- Frozen (immutable) by default
-- `Order`, `Position`, `Holding`, `Tick`, `Profile`, `Fund`
+- **Response models** (frozen Pydantic): `Order`, `Position`, `Holding`, `Tick`, `Profile`, `Fund`
+- **Request models** (mutable Pydantic): `PlaceOrderRequest`, `ModifyOrderRequest`
 
-### 6. Instruments + Enums
+Request models are validated at construction — bad fields surface before any network call.
+
+### 8. Instruments + Enums
 
 - Typed instrument classes: `Equity`, `Future`, `Option`, `Currency`
-- Enums for all categorical inputs: `Exchange`, `OptionType`, `ProductType`, `OrderType`, `Side`
+- Enums for all categorical inputs: `Exchange`, `OptionType`, `ProductType`, `OrderType`, `Side`, `ClientState`
 - Symbols follow NSE official naming conventions as the canonical standard
 - Validation at object construction — bad inputs fail before any network call
 
@@ -138,9 +182,9 @@ class BrokerAdapter:
 class ZerodhaAdapter(BrokerAdapter, broker_id="zerodha"):
     ...
 
-# client.py — broker resolved from registry at runtime
-class AsyncTTConnect:
-    def __init__(self, broker: str, config: BrokerConfig):
+# lifecycle.py — broker resolved from registry at runtime
+class LifecycleMixin:
+    def __init__(self, broker: str, config: dict):
         self._adapter = BrokerAdapter._registry[broker](config)
 ```
 
@@ -161,13 +205,6 @@ class Capabilities:
             raise UnsupportedFeatureError(f"{instrument.exchange} segment not supported")
         if order_type not in self.order_types:
             raise UnsupportedFeatureError(f"{order_type} not supported")
-
-# adapters/zerodha/capabilities.py
-ZERODHA_CAPABILITIES = Capabilities(
-    segments=frozenset({Exchange.NSE, Exchange.BSE, Exchange.NFO, Exchange.CDS}),
-    order_types=frozenset({OrderType.MARKET, OrderType.LIMIT, OrderType.SL, OrderType.SL_M}),
-    product_types=frozenset({ProductType.CNC, ProductType.MIS, ProductType.NRML}),
-)
 ```
 
 ### Transformer Pattern
@@ -177,57 +214,83 @@ All request building and response parsing is isolated inside the broker adapter.
 ```python
 # adapters/zerodha/transformer.py
 class ZerodhaTransformer:
+
     @staticmethod
-    def to_order_params(instrument: Instrument, qty: int, side: Side, ...) -> dict:
+    def to_order_params(
+        token: str, broker_symbol: str, exchange: str, req: PlaceOrderRequest
+    ) -> dict:
         return {
-            "tradingsymbol": instrument.symbol,
-            "exchange": instrument.exchange.value,
-            "transaction_type": "BUY" if side == Side.BUY else "SELL",
-            ...
+            "tradingsymbol":    broker_symbol,
+            "exchange":         exchange,
+            "transaction_type": req.side.value,
+            "quantity":         req.qty,
+            "product":          req.product.value,
+            "order_type":       req.order_type.value,
+            "validity":         "DAY",
         }
+
+    @staticmethod
+    def to_modify_params(req: ModifyOrderRequest) -> dict:
+        params = {}
+        if req.qty is not None:   params["quantity"]      = req.qty
+        if req.price is not None: params["price"]         = req.price
+        if req.order_type:        params["order_type"]    = req.order_type.value
+        return params
 
     @staticmethod
     def to_order(raw: dict) -> Order:
         return Order(
             id=raw["order_id"],
-            status=raw["status"],
+            status=_ORDER_STATUS_MAP.get(raw["status"], OrderStatus.PENDING),
             ...
         )
 ```
 
 ### Pydantic v2 Models
 
-Validation, serialization, and IDE support for free. Frozen by default.
+Validation, serialization, and IDE support for free. Response models are frozen; request models are mutable.
 
 ```python
 # models.py
 class Order(BaseModel):
     model_config = ConfigDict(frozen=True)
-
     id: str
-    instrument: Instrument
+    instrument: Instrument | None
     side: Side
     qty: int
     status: OrderStatus
-    filled_qty: int = 0
-    average_price: float | None = None
+    filled_qty: int
+    avg_price: float | None = None
+
+class PlaceOrderRequest(BaseModel):
+    instrument: Instrument
+    side: Side
+    qty: int
+    order_type: OrderType
+    product: ProductType
+    price: float | None = None
+    trigger_price: float | None = None
 ```
 
 ### Sync Wrapper
 
-Core logic is async. Sync client wraps it in one place — zero duplication.
+Core logic is async. `TTConnect` wraps it with a dedicated background thread running an event loop — zero code duplication.
 
 ```python
-# client.py
+# sync_client.py
 class TTConnect:
-    def __init__(self, broker: str, config: BrokerConfig):
+    def __init__(self, broker: str, config: dict):
+        self._loop = asyncio.new_event_loop()
+        self._thread = threading.Thread(target=self._loop.run_forever, daemon=True)
+        self._thread.start()
         self._async = AsyncTTConnect(broker, config)
+        self._run(self._async.init())
 
-    def place_order(self, **kwargs) -> Order:
-        return asyncio.run(self._async.place_order(**kwargs))
+    def _run(self, coro) -> T:
+        return asyncio.run_coroutine_threadsafe(coro, self._loop).result()
 
-    def get_holdings(self) -> list[Holding]:
-        return asyncio.run(self._async.get_holdings())
+    def place_order(self, req: PlaceOrderRequest) -> str:
+        return self._run(self._async.place_order(req))
 ```
 
 ### Instrument Resolution with `lru_cache`
@@ -238,8 +301,8 @@ Symbol resolution is a SQLite lookup. Cached after first call.
 # instrument_manager/resolver.py
 class InstrumentResolver:
     @lru_cache(maxsize=10_000)
-    def resolve(self, instrument: Instrument, broker_id: str) -> str:
-        # SQLite lookup → broker-specific token
+    def resolve(self, instrument: Instrument, broker_id: str) -> ResolvedInstrument:
+        # SQLite lookup → broker-specific token, symbol, exchange
         ...
 ```
 
@@ -259,7 +322,7 @@ _cache/
 
 ### Stale Data Behaviour
 
-User-configurable via `BrokerConfig`:
+User-configurable via config:
 
 - `on_stale="fail"` — hard fail if instrument dump cannot be refreshed at startup (default)
 - `on_stale="warn"` — log a warning and continue with stale data
@@ -332,6 +395,12 @@ Canonical exception types shared across the entire library. User only ever catch
 ```python
 class TTConnectError(Exception): ...
 
+# Lifecycle
+class ClientNotConnectedError(TTConnectError): ...  # init() not called
+class ClientClosedError(TTConnectError): ...        # client already closed
+class InstrumentManagerError(TTConnectError): ...   # internal: DB used before init()
+
+# Broker / Network
 class AuthenticationError(TTConnectError):     retryable = False
 class RateLimitError(TTConnectError):          retryable = True
 class InsufficientFundsError(TTConnectError):  retryable = False
@@ -347,24 +416,6 @@ class BrokerError(TTConnectError):             retryable = False  # catch-all fo
 
 Each broker transformer declares a map from its own error codes to canonical exceptions.
 Unmapped errors fall back to `BrokerError`, preserving the raw code and message.
-
-```python
-# adapters/zerodha/transformer.py
-ERROR_MAP: dict[str, type[TTConnectError]] = {
-    "TokenException":      AuthenticationError,
-    "PermissionException": AuthenticationError,
-    "OrderException":      OrderError,
-    "InputException":      InvalidOrderError,
-    "NetworkException":    BrokerError,
-}
-
-@staticmethod
-def parse_error(raw: dict) -> TTConnectError:
-    code = raw.get("error_type", "")
-    message = raw.get("message", "Unknown error")
-    exc_class = ERROR_MAP.get(code, BrokerError)
-    return exc_class(message, broker_code=code)
-```
 
 ### Central Error Check in Adapter Base
 
@@ -407,6 +458,6 @@ Create a folder under `adapters/`. Implement 4 files. Touch nothing else.
 adapters/newbroker/
 ├── adapter.py       # subclass BrokerAdapter with broker_id="newbroker"
 ├── auth.py          # login, token refresh, session management
-├── transformer.py   # to_order_params(), to_order(), to_tick(), etc.
+├── transformer.py   # to_order_params(), to_modify_params(), to_order(), to_tick(), etc.
 └── capabilities.py  # NEWBROKER_CAPABILITIES = Capabilities(...)
 ```

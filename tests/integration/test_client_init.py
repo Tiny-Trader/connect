@@ -2,8 +2,9 @@ import pytest
 import respx
 import httpx
 from tt_connect.client import AsyncTTConnect
+from tt_connect.enums import ClientState, Exchange, Side, ProductType, OrderType
 from tt_connect.instruments import Equity
-from tt_connect.enums import Exchange, Side, ProductType, OrderType
+from tt_connect.models import PlaceOrderRequest
 
 @respx.mock
 async def test_init_calls_login_and_instruments(zerodha_csv, tmp_path, monkeypatch):
@@ -21,19 +22,22 @@ async def test_init_calls_login_and_instruments(zerodha_csv, tmp_path, monkeypat
         "api_key": "testkey",
         "access_token": "testtoken",
     })
-    
-    # Before init, resolver should be None
+
+    # Before init, resolver should be None and state should be CREATED
     assert broker._resolver is None
-    
+    assert broker._state == ClientState.CREATED
+
     await broker.init()
-    
-    # After init, resolver should be set
+
+    # After init, resolver should be set and state should be CONNECTED
     assert broker._resolver is not None
-    
+    assert broker._state == ClientState.CONNECTED
+
     # Instruments endpoint was called exactly once
     assert respx.calls.call_count == 1
-    
+
     await broker.close()
+    assert broker._state == ClientState.CLOSED
 
 @respx.mock
 @pytest.mark.parametrize("zerodha_response", ["profile"], indirect=True)
@@ -41,7 +45,7 @@ async def test_client_get_profile(zerodha_response, monkeypatch, tmp_path):
     respx.get("https://api.kite.trade/user/profile").mock(
         return_value=httpx.Response(200, json=zerodha_response)
     )
-    
+
     import tt_connect.instrument_manager.db as db_module
     monkeypatch.setattr(db_module, "DB_DIR", tmp_path)
 
@@ -49,13 +53,14 @@ async def test_client_get_profile(zerodha_response, monkeypatch, tmp_path):
         "api_key": "testkey",
         "access_token": "testtoken",
     })
-    
+
     import aiosqlite
     broker._instrument_manager._conn = await aiosqlite.connect(":memory:")
-    
+    broker._state = ClientState.CONNECTED
+
     profile = await broker.get_profile()
     assert profile.client_id == "ZZ0001"
-    
+
     await broker.close()
 
 @respx.mock
@@ -64,7 +69,7 @@ async def test_client_get_holdings(zerodha_response, monkeypatch, tmp_path):
     respx.get("https://api.kite.trade/portfolio/holdings").mock(
         return_value=httpx.Response(200, json=zerodha_response)
     )
-    
+
     import tt_connect.instrument_manager.db as db_module
     monkeypatch.setattr(db_module, "DB_DIR", tmp_path)
 
@@ -72,14 +77,15 @@ async def test_client_get_holdings(zerodha_response, monkeypatch, tmp_path):
         "api_key": "testkey",
         "access_token": "testtoken",
     })
-    
+
     import aiosqlite
     broker._instrument_manager._conn = await aiosqlite.connect(":memory:")
-    
+    broker._state = ClientState.CONNECTED
+
     holdings = await broker.get_holdings()
     assert len(holdings) == 1
     assert holdings[0].instrument.symbol == "SBIN"
-    
+
     await broker.close()
 
 @respx.mock
@@ -97,21 +103,23 @@ async def test_client_place_order(zerodha_response, populated_db, monkeypatch, t
         "api_key": "testkey",
         "access_token": "testtoken",
     })
-    
+
     # Use populated_db fixture directly
     broker._instrument_manager._conn = populated_db
     from tt_connect.instrument_manager.resolver import InstrumentResolver
     broker._resolver = InstrumentResolver(populated_db, "zerodha")
-    
-    order_id = await broker.place_order(
+    broker._state = ClientState.CONNECTED
+
+    req = PlaceOrderRequest(
         instrument=Equity(exchange=Exchange.NSE, symbol="RELIANCE"),
-        qty=1,
         side=Side.BUY,
+        qty=1,
         product=ProductType.CNC,
-        order_type=OrderType.MARKET
+        order_type=OrderType.MARKET,
     )
-    
+    order_id = await broker.place_order(req)
+
     assert order_id == "240221000000001"
     assert respx.calls.call_count == 1
-    
+
     await broker.close()

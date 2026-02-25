@@ -11,7 +11,7 @@ from tt_connect.exceptions import (
     InvalidOrderError, InstrumentNotFoundError, BrokerError,
 )
 from tt_connect.instruments import Instrument
-from tt_connect.models import Profile, Fund, Holding, Position, Order, Trade
+from tt_connect.models import Profile, Fund, Holding, Position, Order, Trade, PlaceOrderRequest, ModifyOrderRequest
 
 # AngelOne error code → exception class  (source: SmartAPI official error list)
 ERROR_MAP: dict[str, type[TTConnectError]] = {
@@ -127,30 +127,39 @@ class AngelOneTransformer:
         token: str,
         broker_symbol: str,
         exchange: str,
-        qty: int,
-        side: Side,
-        product: ProductType,
-        order_type: OrderType,
-        price: float | None,
-        trigger_price: float | None,
+        req: PlaceOrderRequest,
     ) -> dict[str, Any]:
-        """Build AngelOne order placement payload from canonical arguments."""
+        """Build AngelOne order placement payload from a PlaceOrderRequest."""
         params: dict[str, Any] = {
             "variety":         "NORMAL",
             "symboltoken":     token,
             "tradingsymbol":   broker_symbol,
             "exchange":        exchange,
-            "transactiontype": side.value,
-            "ordertype":       order_type.value,
-            "producttype":     product.value,
+            "transactiontype": req.side.value,
+            "ordertype":       req.order_type.value,
+            "producttype":     req.product.value,
             "duration":        "DAY",
-            "quantity":        str(qty),
-            "price":           str(price or 0),
+            "quantity":        str(req.qty),
+            "price":           str(req.price or 0),
             "squareoff":       "0",
             "stoploss":        "0",
         }
-        if trigger_price:
-            params["triggerprice"] = str(trigger_price)
+        if req.trigger_price:
+            params["triggerprice"] = str(req.trigger_price)
+        return params
+
+    @staticmethod
+    def to_modify_params(req: ModifyOrderRequest) -> dict[str, Any]:
+        """Build AngelOne order modification payload from a ModifyOrderRequest."""
+        params: dict[str, Any] = {"orderid": req.order_id}
+        if req.qty is not None:
+            params["quantity"] = str(req.qty)
+        if req.price is not None:
+            params["price"] = str(req.price)
+        if req.trigger_price is not None:
+            params["triggerprice"] = str(req.trigger_price)
+        if req.order_type is not None:
+            params["ordertype"] = req.order_type.value
         return params
 
     @staticmethod

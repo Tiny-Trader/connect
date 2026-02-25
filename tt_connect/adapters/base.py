@@ -9,7 +9,7 @@ import httpx
 
 from tt_connect.capabilities import Capabilities
 from tt_connect.exceptions import TTConnectError, UnsupportedFeatureError
-from tt_connect.models import Fund, Holding, Order, Position, Profile, Trade
+from tt_connect.models import Fund, Holding, Order, Position, Profile, Trade, PlaceOrderRequest, ModifyOrderRequest
 from tt_connect.ws.client import BrokerWebSocket
 
 logger = logging.getLogger(__name__)
@@ -34,13 +34,10 @@ class BrokerTransformer(Protocol):
         token: str,
         broker_symbol: str,
         exchange: str,
-        qty: int,
-        side: Any,
-        product: Any,
-        order_type: Any,
-        price: float | None,
-        trigger_price: float | None,
+        req: PlaceOrderRequest,
     ) -> JsonDict: ...
+    @staticmethod
+    def to_modify_params(req: ModifyOrderRequest) -> JsonDict: ...
     @staticmethod
     def to_profile(raw: JsonDict) -> Profile: ...
     @staticmethod

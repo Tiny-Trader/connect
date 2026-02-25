@@ -67,3 +67,11 @@ class AuthMode(StrEnum):
 
     MANUAL = "manual"   # User supplies access_token; library never logs in autonomously
     AUTO   = "auto"     # Library performs TOTP login + token refresh automatically
+
+
+class ClientState(StrEnum):
+    """Lifecycle state of an AsyncTTConnect / TTConnect client."""
+
+    CREATED   = "created"
+    CONNECTED = "connected"
+    CLOSED    = "closed"

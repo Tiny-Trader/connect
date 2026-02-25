@@ -73,7 +73,13 @@ class AngelOneAuth(BaseAuth):
             headers=_base_headers(cast(str, api_key)),
             json={"clientcode": client_id, "password": pin, "totp": totp},
         )
-        data = response.json()
+        try:
+            data = response.json()
+        except Exception:
+            raise AuthenticationError(
+                f"AngelOne login failed: unexpected non-JSON response "
+                f"(HTTP {response.status_code}): {response.text[:200]}"
+            )
         if not data.get("status") or "data" not in data:
             raise AuthenticationError(f"AngelOne login failed: {data.get('message', 'Unknown error')}")
 

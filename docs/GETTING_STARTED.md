@@ -32,23 +32,37 @@ See `docs/USAGE_EXAMPLES.md` for full credential examples.
 
 ## 4. Initialize Client
 
+The recommended pattern is a context manager — resources are released automatically:
+
 ```python
 from tt_connect import AsyncTTConnect
 
-broker = AsyncTTConnect("zerodha", {
+async with AsyncTTConnect("zerodha", {
     "api_key": "...",
     "access_token": "...",
-})
-await broker.init()
+}) as broker:
+    profile = await broker.get_profile()
+    # broker.close() is called automatically on exit
 ```
 
-`init()` performs auth and instrument master setup.
+Or manage the lifecycle manually:
+
+```python
+broker = AsyncTTConnect("zerodha", {"api_key": "...", "access_token": "..."})
+await broker.init()
+# ... operations ...
+await broker.close()
+```
+
+`init()` performs auth and instrument master setup. The client tracks state internally —
+calling methods before `init()` raises `ClientNotConnectedError`; calling them after
+`close()` raises `ClientClosedError`.
 
 ## 5. Run Basic Calls
 
 ```python
 profile = await broker.get_profile()
-funds = await broker.get_funds()
+funds   = await broker.get_funds()
 positions = await broker.get_positions()
 ```
 
@@ -56,24 +70,30 @@ All responses are normalized to canonical models in `tt_connect/models.py`.
 
 ## 6. Place an Order
 
+Orders are described with a `PlaceOrderRequest` model:
+
 ```python
+from tt_connect import PlaceOrderRequest
 from tt_connect.instruments import Equity
 from tt_connect.enums import Exchange, Side, ProductType, OrderType
 
-instrument = Equity(exchange=Exchange.NSE, symbol="RELIANCE")
-order_id = await broker.place_order(
-    instrument=instrument,
-    qty=1,
+req = PlaceOrderRequest(
+    instrument=Equity(exchange=Exchange.NSE, symbol="RELIANCE"),
     side=Side.BUY,
-    product=ProductType.CNC,
+    qty=1,
     order_type=OrderType.MARKET,
+    product=ProductType.CNC,
 )
+order_id = await broker.place_order(req)
 ```
 
-## 7. Close Resources
+## 7. Modify or Cancel
 
 ```python
-await broker.close()
+from tt_connect import ModifyOrderRequest
+
+await broker.modify_order(ModifyOrderRequest(order_id=order_id, price=2900.0))
+await broker.cancel_order(order_id)
 ```
 
 ## 8. Next Reads

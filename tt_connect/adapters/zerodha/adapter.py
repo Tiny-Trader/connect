@@ -7,6 +7,7 @@ from tt_connect.adapters.zerodha.transformer import ZerodhaTransformer
 from tt_connect.adapters.zerodha.capabilities import ZERODHA_CAPABILITIES
 from tt_connect.adapters.zerodha.parser import parse, ParsedInstruments
 from tt_connect.capabilities import Capabilities
+from tt_connect.ws.client import BrokerWebSocket
 
 BASE_URL = "https://api.kite.trade"
 
@@ -96,6 +97,16 @@ class ZerodhaAdapter(BrokerAdapter, broker_id="zerodha"):
         """Fetch complete order book."""
         return await self._request("GET", f"{BASE_URL}/orders",
                                    headers=self.auth.headers)
+
+    # --- WebSocket ---
+
+    def create_ws_client(self) -> BrokerWebSocket:
+        """Return a KiteTicker WebSocket client for live streaming."""
+        from tt_connect.ws.zerodha import ZerodhaWebSocket
+        return ZerodhaWebSocket(
+            api_key=str(self._config.get("api_key", "")),
+            access_token=str(self.auth.access_token or ""),
+        )
 
     # --- Capabilities ---
 

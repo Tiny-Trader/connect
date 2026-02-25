@@ -5,6 +5,28 @@ from tt_connect.enums import Side, ProductType, OrderType, OrderStatus
 from tt_connect.instruments import Instrument
 
 
+class PlaceOrderRequest(BaseModel):
+    """Canonical input model for placing an order."""
+
+    instrument: Instrument
+    side: Side
+    qty: int
+    order_type: OrderType
+    product: ProductType
+    price: float | None = None
+    trigger_price: float | None = None
+
+
+class ModifyOrderRequest(BaseModel):
+    """Canonical input model for modifying an existing order."""
+
+    order_id: str
+    qty: int | None = None
+    price: float | None = None
+    trigger_price: float | None = None
+    order_type: OrderType | None = None
+
+
 class Profile(BaseModel):
     """Normalized broker account profile."""
 

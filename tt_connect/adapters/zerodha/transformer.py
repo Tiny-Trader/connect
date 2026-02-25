@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import Any
 
-from tt_connect.models import Profile, Fund, Holding, Position, Order, Trade, Margin
+from tt_connect.models import Profile, Fund, Holding, Position, Order, Trade, Margin, PlaceOrderRequest, ModifyOrderRequest
 from tt_connect.instruments import Instrument
 from tt_connect.enums import Exchange, Side, ProductType, OrderType, OrderStatus
 from tt_connect.exceptions import (
@@ -40,24 +40,40 @@ class ZerodhaTransformer:
     # --- Outgoing ---
 
     @staticmethod
-    def to_order_params(token: str, broker_symbol: str, exchange: str,
-                        qty: int, side: Side, product: ProductType,
-                        order_type: OrderType, price: float | None,
-                        trigger_price: float | None) -> dict[str, Any]:
-        """Build Zerodha order placement payload from canonical arguments."""
+    def to_order_params(
+        token: str,
+        broker_symbol: str,
+        exchange: str,
+        req: PlaceOrderRequest,
+    ) -> dict[str, Any]:
+        """Build Zerodha order placement payload from a PlaceOrderRequest."""
         params: dict[str, Any] = {
-            "tradingsymbol": broker_symbol,
-            "exchange":       exchange,
-            "transaction_type": side.value,
-            "quantity":       qty,
-            "product":        product.value,
-            "order_type":     order_type.value,
-            "validity":       "DAY",
+            "tradingsymbol":    broker_symbol,
+            "exchange":         exchange,
+            "transaction_type": req.side.value,
+            "quantity":         req.qty,
+            "product":          req.product.value,
+            "order_type":       req.order_type.value,
+            "validity":         "DAY",
         }
-        if price:
-            params["price"] = price
-        if trigger_price:
-            params["trigger_price"] = trigger_price
+        if req.price:
+            params["price"] = req.price
+        if req.trigger_price:
+            params["trigger_price"] = req.trigger_price
+        return params
+
+    @staticmethod
+    def to_modify_params(req: ModifyOrderRequest) -> dict[str, Any]:
+        """Build Zerodha order modification payload from a ModifyOrderRequest."""
+        params: dict[str, Any] = {}
+        if req.qty is not None:
+            params["quantity"] = req.qty
+        if req.price is not None:
+            params["price"] = req.price
+        if req.trigger_price is not None:
+            params["trigger_price"] = req.trigger_price
+        if req.order_type is not None:
+            params["order_type"] = req.order_type.value
         return params
 
     @staticmethod
