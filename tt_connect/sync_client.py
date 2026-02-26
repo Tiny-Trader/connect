@@ -7,7 +7,7 @@ import threading
 from concurrent.futures import Future as ThreadFuture
 from typing import Any, Coroutine, TypeVar
 
-from tt_connect.models import Fund, Holding, ModifyOrderRequest, Order, PlaceOrderRequest, Position, Profile, Trade
+from tt_connect.models import Fund, Gtt, Holding, ModifyGttRequest, ModifyOrderRequest, Order, PlaceGttRequest, PlaceOrderRequest, Position, Profile, Trade
 
 T = TypeVar("T")
 
@@ -83,3 +83,18 @@ class TTConnect:
 
     def get_orders(self) -> list[Order]:
         return self._run(self._async.get_orders())
+
+    def place_gtt(self, req: PlaceGttRequest) -> str:
+        return self._run(self._async.place_gtt(req))
+
+    def modify_gtt(self, req: ModifyGttRequest) -> None:
+        self._run(self._async.modify_gtt(req))
+
+    def cancel_gtt(self, gtt_id: str) -> None:
+        self._run(self._async.cancel_gtt(gtt_id))
+
+    def get_gtt(self, gtt_id: str) -> Gtt:
+        return self._run(self._async.get_gtt(gtt_id))
+
+    def get_gtts(self) -> list[Gtt]:
+        return self._run(self._async.get_gtts())

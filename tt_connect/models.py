@@ -5,6 +5,50 @@ from tt_connect.enums import Side, ProductType, OrderType, OrderStatus
 from tt_connect.instruments import Instrument
 
 
+class GttLeg(BaseModel):
+    """One trigger+order leg of a GTT rule.
+
+    Used in both request models (PlaceGttRequest, ModifyGttRequest) and
+    the response model (Gtt).  Single-leg GTTs have one entry; OCO (two-leg)
+    Zerodha GTTs have two entries — one per trigger price.
+    """
+
+    trigger_price: float
+    price: float        # limit price for the order placed when triggered
+    side: Side
+    qty: int
+    product: ProductType
+
+
+class PlaceGttRequest(BaseModel):
+    """Canonical input model for placing a GTT rule."""
+
+    instrument: Instrument
+    last_price: float   # current market price — required by Zerodha for validation
+    legs: list[GttLeg]  # 1 leg = single trigger; 2 legs = OCO (Zerodha only)
+
+
+class ModifyGttRequest(BaseModel):
+    """Canonical input model for modifying an existing GTT rule."""
+
+    gtt_id: str
+    instrument: Instrument   # needed to resolve token/exchange for AngelOne
+    last_price: float
+    legs: list[GttLeg]
+
+
+class Gtt(BaseModel):
+    """Normalized GTT rule record returned by get_gtt / get_gtts."""
+
+    model_config = ConfigDict(frozen=True)
+
+    gtt_id: str
+    status: str          # raw broker status string (differs per broker)
+    symbol: str          # broker's own trading symbol
+    exchange: str
+    legs: list[GttLeg]   # 1 for single, 2 for OCO
+
+
 class PlaceOrderRequest(BaseModel):
     """Canonical input model for placing an order."""
 

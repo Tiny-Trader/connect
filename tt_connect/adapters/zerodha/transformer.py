@@ -1,9 +1,10 @@
 """Zerodha request/response normalization helpers."""
 
+import json as _json
 from datetime import datetime
 from typing import Any
 
-from tt_connect.models import Profile, Fund, Holding, Position, Order, Trade, Margin, PlaceOrderRequest, ModifyOrderRequest
+from tt_connect.models import Gtt, GttLeg, ModifyGttRequest, ModifyOrderRequest, PlaceGttRequest, PlaceOrderRequest, Profile, Fund, Holding, Position, Order, Trade, Margin
 from tt_connect.instruments import Instrument
 from tt_connect.enums import Exchange, Side, ProductType, OrderType, OrderStatus
 from tt_connect.exceptions import (
@@ -80,6 +81,93 @@ class ZerodhaTransformer:
     def to_order_id(raw: dict[str, Any]) -> str:
         """Extract order id from successful place/modify responses."""
         return str(raw["data"]["order_id"])
+
+    @staticmethod
+    def to_gtt_id(raw: dict[str, Any]) -> str:
+        """Extract GTT trigger_id from create/modify/delete responses."""
+        return str(raw["data"]["trigger_id"])
+
+    @staticmethod
+    def _gtt_orders(broker_symbol: str, exchange: str, legs: list[GttLeg]) -> str:
+        """Serialize the orders array for Zerodha GTT form params."""
+        return _json.dumps([
+            {
+                "exchange":        exchange,
+                "tradingsymbol":   broker_symbol,
+                "transaction_type": leg.side.value,
+                "quantity":        leg.qty,
+                "order_type":      "LIMIT",
+                "product":         leg.product.value,
+                "price":           leg.price,
+            }
+            for leg in legs
+        ])
+
+    @staticmethod
+    def to_gtt_params(
+        token: str,
+        broker_symbol: str,
+        exchange: str,
+        req: PlaceGttRequest,
+    ) -> dict[str, Any]:
+        """Build Zerodha GTT create form params (sent as form-encoded data)."""
+        gtt_type = "single" if len(req.legs) == 1 else "two-leg"
+        condition = _json.dumps({
+            "exchange":       exchange,
+            "tradingsymbol":  broker_symbol,
+            "trigger_values": [leg.trigger_price for leg in req.legs],
+            "last_price":     req.last_price,
+        })
+        return {
+            "type":      gtt_type,
+            "condition": condition,
+            "orders":    ZerodhaTransformer._gtt_orders(broker_symbol, exchange, req.legs),
+        }
+
+    @staticmethod
+    def to_modify_gtt_params(
+        token: str,
+        broker_symbol: str,
+        exchange: str,
+        req: ModifyGttRequest,
+    ) -> dict[str, Any]:
+        """Build Zerodha GTT modify form params (same shape as create)."""
+        gtt_type = "single" if len(req.legs) == 1 else "two-leg"
+        condition = _json.dumps({
+            "exchange":       exchange,
+            "tradingsymbol":  broker_symbol,
+            "trigger_values": [leg.trigger_price for leg in req.legs],
+            "last_price":     req.last_price,
+        })
+        return {
+            "type":      gtt_type,
+            "condition": condition,
+            "orders":    ZerodhaTransformer._gtt_orders(broker_symbol, exchange, req.legs),
+        }
+
+    @staticmethod
+    def to_gtt(raw: dict[str, Any]) -> Gtt:
+        """Normalize a Zerodha GTT trigger record."""
+        condition = raw.get("condition", {})
+        orders    = raw.get("orders", [])
+        trigger_values: list[float] = condition.get("trigger_values", [])
+        legs = [
+            GttLeg(
+                trigger_price=trigger_values[i] if i < len(trigger_values) else 0.0,
+                price=float(o.get("price", 0)),
+                side=Side(o["transaction_type"]),
+                qty=int(o.get("quantity", 0)),
+                product=ProductType(o["product"]),
+            )
+            for i, o in enumerate(orders)
+        ]
+        return Gtt(
+            gtt_id=str(raw["id"]),
+            status=str(raw.get("status", "")),
+            symbol=condition.get("tradingsymbol", ""),
+            exchange=condition.get("exchange", ""),
+            legs=legs,
+        )
 
     @staticmethod
     def to_close_position_params(pos_raw: dict[str, Any], qty: int, side: Side) -> dict[str, Any]:

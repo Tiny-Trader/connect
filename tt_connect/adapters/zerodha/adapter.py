@@ -98,6 +98,33 @@ class ZerodhaAdapter(BrokerAdapter, broker_id="zerodha"):
         return await self._request("GET", f"{BASE_URL}/orders",
                                    headers=self.auth.headers)
 
+    # --- GTT ---
+
+    async def place_gtt(self, params: JsonDict) -> JsonDict:
+        """Create a new GTT trigger (form-encoded body)."""
+        return await self._request("POST", f"{BASE_URL}/gtt/triggers",
+                                   headers=self.auth.headers, data=params)
+
+    async def modify_gtt(self, gtt_id: str, params: JsonDict) -> JsonDict:
+        """Modify an existing GTT trigger (form-encoded body)."""
+        return await self._request("PUT", f"{BASE_URL}/gtt/triggers/{gtt_id}",
+                                   headers=self.auth.headers, data=params)
+
+    async def cancel_gtt(self, gtt_id: str) -> JsonDict:
+        """Delete a GTT trigger by id."""
+        return await self._request("DELETE", f"{BASE_URL}/gtt/triggers/{gtt_id}",
+                                   headers=self.auth.headers)
+
+    async def get_gtt(self, gtt_id: str) -> JsonDict:
+        """Fetch a single GTT trigger by id."""
+        return await self._request("GET", f"{BASE_URL}/gtt/triggers/{gtt_id}",
+                                   headers=self.auth.headers)
+
+    async def get_gtts(self) -> JsonDict:
+        """Fetch all GTT triggers."""
+        return await self._request("GET", f"{BASE_URL}/gtt/triggers",
+                                   headers=self.auth.headers)
+
     # --- WebSocket ---
 
     def create_ws_client(self) -> BrokerWebSocket:

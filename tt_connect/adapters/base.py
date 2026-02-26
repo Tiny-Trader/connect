@@ -9,7 +9,7 @@ import httpx
 
 from tt_connect.capabilities import Capabilities
 from tt_connect.exceptions import TTConnectError, UnsupportedFeatureError
-from tt_connect.models import Fund, Holding, Order, Position, Profile, Trade, PlaceOrderRequest, ModifyOrderRequest
+from tt_connect.models import Fund, Gtt, Holding, ModifyGttRequest, ModifyOrderRequest, Order, PlaceGttRequest, PlaceOrderRequest, Position, Profile, Trade
 from tt_connect.ws.client import BrokerWebSocket
 
 logger = logging.getLogger(__name__)
@@ -38,6 +38,24 @@ class BrokerTransformer(Protocol):
     ) -> JsonDict: ...
     @staticmethod
     def to_modify_params(req: ModifyOrderRequest) -> JsonDict: ...
+    @staticmethod
+    def to_gtt_id(raw: JsonDict) -> str: ...
+    @staticmethod
+    def to_gtt_params(
+        token: str,
+        broker_symbol: str,
+        exchange: str,
+        req: PlaceGttRequest,
+    ) -> JsonDict: ...
+    @staticmethod
+    def to_modify_gtt_params(
+        token: str,
+        broker_symbol: str,
+        exchange: str,
+        req: ModifyGttRequest,
+    ) -> JsonDict: ...
+    @staticmethod
+    def to_gtt(raw: JsonDict) -> Gtt: ...
     @staticmethod
     def to_profile(raw: JsonDict) -> Profile: ...
     @staticmethod
@@ -114,6 +132,28 @@ class BrokerAdapter:
 
     @abstractmethod
     async def get_trades(self) -> JsonDict: ...
+
+    # --- GTT ---
+
+    async def place_gtt(self, params: JsonDict) -> JsonDict:
+        """Place a GTT rule. Override in adapters that support GTT."""
+        raise UnsupportedFeatureError(f"{self.__class__.__name__} does not support GTT.")
+
+    async def modify_gtt(self, gtt_id: str, params: JsonDict) -> JsonDict:
+        """Modify an existing GTT rule. Override in adapters that support GTT."""
+        raise UnsupportedFeatureError(f"{self.__class__.__name__} does not support GTT.")
+
+    async def cancel_gtt(self, gtt_id: str) -> JsonDict:
+        """Cancel a GTT rule. Override in adapters that support GTT."""
+        raise UnsupportedFeatureError(f"{self.__class__.__name__} does not support GTT.")
+
+    async def get_gtt(self, gtt_id: str) -> JsonDict:
+        """Fetch a single GTT rule. Override in adapters that support GTT."""
+        raise UnsupportedFeatureError(f"{self.__class__.__name__} does not support GTT.")
+
+    async def get_gtts(self) -> JsonDict:
+        """Fetch all GTT rules. Override in adapters that support GTT."""
+        raise UnsupportedFeatureError(f"{self.__class__.__name__} does not support GTT.")
 
     # --- WebSocket ---
 

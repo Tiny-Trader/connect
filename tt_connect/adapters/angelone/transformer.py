@@ -11,7 +11,7 @@ from tt_connect.exceptions import (
     InvalidOrderError, InstrumentNotFoundError, BrokerError,
 )
 from tt_connect.instruments import Instrument
-from tt_connect.models import Profile, Fund, Holding, Position, Order, Trade, PlaceOrderRequest, ModifyOrderRequest
+from tt_connect.models import Gtt, GttLeg, ModifyGttRequest, ModifyOrderRequest, PlaceGttRequest, PlaceOrderRequest, Profile, Fund, Holding, Position, Order, Trade
 
 # AngelOne error code → exception class  (source: SmartAPI official error list)
 ERROR_MAP: dict[str, type[TTConnectError]] = {
@@ -184,6 +184,72 @@ class AngelOneTransformer:
             "squareoff":       "0",
             "stoploss":        "0",
         }
+
+    @staticmethod
+    def to_gtt_id(raw: dict[str, Any]) -> str:
+        """Extract GTT rule id from create/modify/cancel response."""
+        return str(raw["data"]["id"])
+
+    @staticmethod
+    def to_gtt_params(
+        token: str,
+        broker_symbol: str,
+        exchange: str,
+        req: PlaceGttRequest,
+    ) -> dict[str, Any]:
+        """Build AngelOne GTT create payload (single-leg only)."""
+        leg = req.legs[0]
+        # AngelOne accepts DELIVERY (CNC) or MARGIN (NRML) for GTT
+        product_raw = "DELIVERY" if leg.product == ProductType.CNC else "MARGIN"
+        return {
+            "tradingsymbol": broker_symbol,
+            "symboltoken":   token,
+            "exchange":      exchange,
+            "transactiontype": leg.side.value,
+            "producttype":   product_raw,
+            "price":         str(leg.price),
+            "qty":           str(leg.qty),
+            "triggerprice":  str(leg.trigger_price),
+            "disclosedqty":  "0",
+        }
+
+    @staticmethod
+    def to_modify_gtt_params(
+        token: str,
+        broker_symbol: str,
+        exchange: str,
+        req: ModifyGttRequest,
+    ) -> dict[str, Any]:
+        """Build AngelOne GTT modify payload (single-leg only)."""
+        leg = req.legs[0]
+        return {
+            "id":           req.gtt_id,
+            "symboltoken":  token,
+            "exchange":     exchange,
+            "price":        str(leg.price),
+            "qty":          str(leg.qty),
+            "triggerprice": str(leg.trigger_price),
+            "disclosedqty": "0",
+        }
+
+    @staticmethod
+    def to_gtt(raw: dict[str, Any]) -> Gtt:
+        """Normalize an AngelOne GTT rule record."""
+        product_raw = raw.get("producttype", "DELIVERY")
+        product = ProductType.CNC if product_raw == "DELIVERY" else ProductType.NRML
+        return Gtt(
+            gtt_id=str(raw["id"]),
+            status=str(raw.get("status", "")),
+            symbol=str(raw.get("tradingsymbol", "")),
+            exchange=str(raw.get("exchange", "")),
+            legs=[GttLeg(
+                trigger_price=_f(raw.get("triggerprice")),
+                price=_f(raw.get("price")),
+                side=Side(raw["transactiontype"]),
+                qty=_i(raw.get("qty")),
+                product=product,
+            )],
+        )
 
     # --- Incoming ---
 

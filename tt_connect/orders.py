@@ -5,7 +5,7 @@ from __future__ import annotations
 from tt_connect.adapters.base import JsonDict
 from tt_connect.enums import OrderStatus, Side
 from tt_connect.lifecycle import _ClientBase
-from tt_connect.models import ModifyOrderRequest, Order, PlaceOrderRequest
+from tt_connect.models import Gtt, ModifyGttRequest, ModifyOrderRequest, Order, PlaceGttRequest, PlaceOrderRequest
 
 
 class OrdersMixin(_ClientBase):
@@ -66,6 +66,47 @@ class OrdersMixin(_ClientBase):
         self._require_connected()
         raw: JsonDict = await self._adapter.get_orders()
         return [self._adapter.transformer.to_order(o, instrument=None) for o in raw["data"]]
+
+    # --- GTT ---
+
+    async def place_gtt(self, req: PlaceGttRequest) -> str:
+        """Place a GTT rule and return the broker GTT id."""
+        self._require_connected()
+        resolved = await self._resolve(req.instrument)
+        params = self._adapter.transformer.to_gtt_params(
+            resolved.token, resolved.broker_symbol, resolved.exchange, req
+        )
+        raw = await self._adapter.place_gtt(params)
+        return self._adapter.transformer.to_gtt_id(raw)
+
+    async def modify_gtt(self, req: ModifyGttRequest) -> None:
+        """Modify an existing GTT rule."""
+        self._require_connected()
+        resolved = await self._resolve(req.instrument)
+        params = self._adapter.transformer.to_modify_gtt_params(
+            resolved.token, resolved.broker_symbol, resolved.exchange, req
+        )
+        await self._adapter.modify_gtt(req.gtt_id, params)
+
+    async def cancel_gtt(self, gtt_id: str) -> None:
+        """Cancel / delete a GTT rule by id."""
+        self._require_connected()
+        await self._adapter.cancel_gtt(gtt_id)
+
+    async def get_gtt(self, gtt_id: str) -> Gtt:
+        """Fetch and normalize a single GTT rule."""
+        self._require_connected()
+        raw: JsonDict = await self._adapter.get_gtt(gtt_id)
+        return self._adapter.transformer.to_gtt(raw["data"])
+
+    async def get_gtts(self) -> list[Gtt]:
+        """Fetch and normalize all GTT rules."""
+        self._require_connected()
+        raw: JsonDict = await self._adapter.get_gtts()
+        data = raw.get("data") or []
+        if isinstance(data, list):
+            return [self._adapter.transformer.to_gtt(g) for g in data]
+        return [self._adapter.transformer.to_gtt(data)]
 
     async def close_all_positions(self) -> tuple[list[str], list[str]]:
         """Place offsetting market orders for every open position.
