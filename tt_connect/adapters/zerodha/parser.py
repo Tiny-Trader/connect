@@ -17,6 +17,8 @@ import io
 from dataclasses import dataclass, field
 from datetime import date
 
+from tt_connect.enums import Exchange
+
 
 # ---------------------------------------------------------------------------
 # Canonical parsed types
@@ -187,7 +189,7 @@ def _parse_index(row: dict[str, str]) -> ParsedIndex:
     canonical_symbol = _BROKER_TO_CANONICAL.get(broker_symbol, broker_symbol)
 
     return ParsedIndex(
-        exchange      = row["exchange"],
+        exchange      = Exchange(row["exchange"]).value,
         symbol        = canonical_symbol,
         broker_symbol = broker_symbol,
         segment       = row["segment"],
@@ -203,7 +205,7 @@ def _parse_equity(row: dict[str, str]) -> ParsedEquity:
     symbol = row["tradingsymbol"]
 
     return ParsedEquity(
-        exchange      = row["exchange"],
+        exchange      = Exchange(row["exchange"]).value,
         symbol        = symbol,
         broker_symbol = symbol,
         segment       = row["segment"],
@@ -216,7 +218,7 @@ def _parse_equity(row: dict[str, str]) -> ParsedEquity:
 
 def _parse_future(row: dict[str, str]) -> ParsedFuture:
     """Parse one futures row."""
-    exchange = row["exchange"]
+    exchange = Exchange(row["exchange"]).value
 
     return ParsedFuture(
         exchange             = exchange,
@@ -233,7 +235,7 @@ def _parse_future(row: dict[str, str]) -> ParsedFuture:
 
 def _parse_option(row: dict[str, str]) -> ParsedOption:
     """Parse one options row."""
-    exchange = row["exchange"]
+    exchange = Exchange(row["exchange"]).value
 
     return ParsedOption(
         exchange             = exchange,

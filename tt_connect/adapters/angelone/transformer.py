@@ -5,13 +5,13 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
-from tt_connect.enums import Exchange, Side, ProductType, OrderType, OrderStatus
+from tt_connect.enums import CandleInterval, Exchange, Side, ProductType, OrderType, OrderStatus
 from tt_connect.exceptions import (
     TTConnectError, AuthenticationError, OrderError, OrderNotFoundError,
-    InvalidOrderError, InstrumentNotFoundError, BrokerError,
+    InvalidOrderError, InstrumentNotFoundError, BrokerError, UnsupportedFeatureError,
 )
 from tt_connect.instruments import Instrument
-from tt_connect.models import Profile, Fund, Holding, Position, Order, Trade
+from tt_connect.models import Candle, GetHistoricalRequest, Gtt, GttLeg, ModifyGttRequest, ModifyOrderRequest, PlaceGttRequest, PlaceOrderRequest, Profile, Fund, Holding, Position, Order, Tick, Trade
 
 # AngelOne error code → exception class  (source: SmartAPI official error list)
 ERROR_MAP: dict[str, type[TTConnectError]] = {
@@ -127,30 +127,44 @@ class AngelOneTransformer:
         token: str,
         broker_symbol: str,
         exchange: str,
-        qty: int,
-        side: Side,
-        product: ProductType,
-        order_type: OrderType,
-        price: float | None,
-        trigger_price: float | None,
+        req: PlaceOrderRequest,
     ) -> dict[str, Any]:
-        """Build AngelOne order placement payload from canonical arguments."""
+        """Build AngelOne order placement payload from a PlaceOrderRequest."""
         params: dict[str, Any] = {
             "variety":         "NORMAL",
             "symboltoken":     token,
             "tradingsymbol":   broker_symbol,
             "exchange":        exchange,
-            "transactiontype": side.value,
-            "ordertype":       order_type.value,
-            "producttype":     product.value,
+            "transactiontype": req.side.value,
+            "ordertype":       req.order_type.value,
+            "producttype":     req.product.value,
             "duration":        "DAY",
-            "quantity":        str(qty),
-            "price":           str(price or 0),
+            "quantity":        str(req.qty),
+            "price":           str(req.price or 0),
             "squareoff":       "0",
             "stoploss":        "0",
         }
-        if trigger_price:
-            params["triggerprice"] = str(trigger_price)
+        if req.trigger_price:
+            params["triggerprice"] = str(req.trigger_price)
+        params["uniqueorderid"] = req.tag
+        return params
+
+    @staticmethod
+    def to_modify_params(req: ModifyOrderRequest) -> dict[str, Any]:
+        """Build AngelOne order modification payload from a ModifyOrderRequest."""
+        params: dict[str, Any] = {
+            "variety":  "NORMAL",
+            "orderid":  req.order_id,
+            "duration": "DAY",
+        }
+        if req.qty is not None:
+            params["quantity"] = str(req.qty)
+        if req.price is not None:
+            params["price"] = str(req.price)
+        if req.trigger_price is not None:
+            params["triggerprice"] = str(req.trigger_price)
+        if req.order_type is not None:
+            params["ordertype"] = req.order_type.value
         return params
 
     @staticmethod
@@ -175,6 +189,120 @@ class AngelOneTransformer:
             "squareoff":       "0",
             "stoploss":        "0",
         }
+
+    @staticmethod
+    def to_gtt_id(raw: dict[str, Any]) -> str:
+        """Extract GTT rule id from create/modify/cancel response."""
+        return str(raw["data"]["id"])
+
+    @staticmethod
+    def to_gtt_params(
+        token: str,
+        broker_symbol: str,
+        exchange: str,
+        req: PlaceGttRequest,
+    ) -> dict[str, Any]:
+        """Build AngelOne GTT create payload (single-leg only)."""
+        leg = req.legs[0]
+        # AngelOne accepts DELIVERY (CNC) or MARGIN (NRML) for GTT
+        product_raw = "DELIVERY" if leg.product == ProductType.CNC else "MARGIN"
+        return {
+            "tradingsymbol": broker_symbol,
+            "symboltoken":   token,
+            "exchange":      exchange,
+            "transactiontype": leg.side.value,
+            "producttype":   product_raw,
+            "price":         str(leg.price),
+            "qty":           str(leg.qty),
+            "triggerprice":  str(leg.trigger_price),
+            "disclosedqty":  "0",
+        }
+
+    @staticmethod
+    def to_modify_gtt_params(
+        token: str,
+        broker_symbol: str,
+        exchange: str,
+        req: ModifyGttRequest,
+    ) -> dict[str, Any]:
+        """Build AngelOne GTT modify payload (single-leg only)."""
+        leg = req.legs[0]
+        return {
+            "id":           req.gtt_id,
+            "symboltoken":  token,
+            "exchange":     exchange,
+            "price":        str(leg.price),
+            "qty":          str(leg.qty),
+            "triggerprice": str(leg.trigger_price),
+            "disclosedqty": "0",
+        }
+
+    @staticmethod
+    def to_gtt(raw: dict[str, Any]) -> Gtt:
+        """Normalize an AngelOne GTT rule record."""
+        product_raw = raw.get("producttype", "DELIVERY")
+        product = ProductType.CNC if product_raw == "DELIVERY" else ProductType.NRML
+        return Gtt(
+            gtt_id=str(raw["id"]),
+            status=str(raw.get("status", "")),
+            symbol=str(raw.get("tradingsymbol", "")),
+            exchange=str(raw.get("exchange", "")),
+            legs=[GttLeg(
+                trigger_price=_f(raw.get("triggerprice")),
+                price=_f(raw.get("price")),
+                side=Side(raw["transactiontype"]),
+                qty=_i(raw.get("qty")),
+                product=product,
+            )],
+        )
+
+    _INTERVAL_MAP: dict[CandleInterval, str] = {
+        CandleInterval.MINUTE_1:  "ONE_MINUTE",
+        CandleInterval.MINUTE_3:  "THREE_MINUTE",
+        CandleInterval.MINUTE_5:  "FIVE_MINUTE",
+        CandleInterval.MINUTE_10: "TEN_MINUTE",
+        CandleInterval.MINUTE_15: "FIFTEEN_MINUTE",
+        CandleInterval.MINUTE_30: "THIRTY_MINUTE",
+        CandleInterval.HOUR_1:    "ONE_HOUR",
+        CandleInterval.DAY:       "ONE_DAY",
+    }
+
+    @staticmethod
+    def to_historical_params(
+        token: str,
+        broker_symbol: str,
+        exchange: str,
+        req: GetHistoricalRequest,
+    ) -> dict[str, Any]:
+        """Build AngelOne historical candle POST body."""
+        interval = AngelOneTransformer._INTERVAL_MAP[req.interval]
+        return {
+            "exchange":    exchange,
+            "symboltoken": token,
+            "interval":    interval,
+            "fromdate":    req.from_date.strftime("%Y-%m-%d %H:%M"),
+            "todate":      req.to_date.strftime("%Y-%m-%d %H:%M"),
+        }
+
+    @staticmethod
+    def to_candles(rows: list[Any], instrument: Instrument) -> list[Candle]:
+        """Convert AngelOne candle rows to canonical Candle models.
+
+        Each row: [timestamp_str, open, high, low, close, volume]
+        """
+        result: list[Candle] = []
+        for row in rows:
+            ts = datetime.fromisoformat(str(row[0]))
+            result.append(Candle(
+                instrument=instrument,
+                timestamp=ts,
+                open=float(row[1]),
+                high=float(row[2]),
+                low=float(row[3]),
+                close=float(row[4]),
+                volume=int(row[5]),
+            ))
+        return result
 
     # --- Incoming ---
 
@@ -227,10 +355,12 @@ class AngelOneTransformer:
         """Normalize positions row."""
         net_qty = _i(raw.get("netqty"))
         # avg price: buy side for long, sell side for short
+        # Use _f() before `or` — raw values are strings, so "0" is truthy and
+        # would prevent fallback to the carry-forward price if done naively.
         if net_qty >= 0:
-            avg = _f(raw.get("totalbuyavgprice") or raw.get("cfbuyavgprice"))
+            avg = _f(raw.get("totalbuyavgprice")) or _f(raw.get("cfbuyavgprice"))
         else:
-            avg = _f(raw.get("totalsellav gprice") or raw.get("cfsellavgprice"))
+            avg = _f(raw.get("totalsellavgprice")) or _f(raw.get("cfsellavgprice"))
         ltp = _f(raw.get("ltp"))
         pnl = _f(raw.get("urealised")) + _f(raw.get("realised"))
         symbol: str = (raw.get("tradingsymbol") or "").removesuffix("-EQ")
@@ -287,6 +417,10 @@ class AngelOneTransformer:
             product=_PRODUCT_MAP.get(raw.get("producttype", ""), ProductType.NRML),
             timestamp=_parse_ts(raw.get("filltime")),
         )
+
+    @staticmethod
+    def to_quote(raw: dict[str, Any], instrument: Instrument) -> Tick:
+        raise UnsupportedFeatureError("AngelOne does not support REST market quotes.")
 
     # --- Errors ---
 

@@ -16,8 +16,9 @@ Broker is a configuration detail, not an architectural one.
 - Swapping broker does not change any auth-handling code
 
 ```python
-broker = TTConnect("zerodha", config)
-# That's it. Session is managed, refreshed, and persisted automatically.
+async with AsyncTTConnect("zerodha", config) as broker:
+    # That's it. Session is managed, refreshed, and persisted automatically.
+    pass
 ```
 
 ### 2. Typed Instrument Objects + Enums, Not Strings
@@ -33,8 +34,8 @@ from tt_connect.instruments import Equity, Future, Option
 from tt_connect.enums import Exchange, OptionType, ProductType, OrderType, Side
 
 equity = Equity(exchange=Exchange.NSE, symbol="RELIANCE")
-future = Future(exchange=Exchange.NFO, symbol="NIFTY", expiry="2025-01-30")
-option = Option(exchange=Exchange.NFO, symbol="NIFTY", expiry="2025-01-30", strike=18000, option_type=OptionType.CE)
+future = Future(exchange=Exchange.NSE, symbol="NIFTY", expiry="2025-01-30")
+option = Option(exchange=Exchange.NSE, symbol="NIFTY", expiry="2025-01-30", strike=18000, option_type=OptionType.CE)
 ```
 
 Enums cover all categorical inputs: `Exchange`, `OptionType`, `ProductType`, `OrderType`, `Side`
@@ -45,36 +46,55 @@ Enums cover all categorical inputs: `Exchange`, `OptionType`, `ProductType`, `Or
 
 ### 4. One Order Interface
 
+Orders are described with request objects — validated at construction, before any network call:
+
 ```python
-broker.place_order(instrument=equity, qty=10, side=Side.BUY, product=ProductType.CNC, order_type=OrderType.MARKET)
+from tt_connect import PlaceOrderRequest, ModifyOrderRequest
+
+req = PlaceOrderRequest(
+    instrument=equity,
+    side=Side.BUY,
+    qty=10,
+    order_type=OrderType.MARKET,
+    product=ProductType.CNC,
+)
+order_id = await broker.place_order(req)
+
+await broker.modify_order(ModifyOrderRequest(order_id=order_id, price=2900.0))
 ```
 
 ### 5. One Streaming Interface
 
 ```python
-broker.subscribe([equity, option], on_tick=handler)
+await broker.subscribe([equity, option], on_tick=handler)
 ```
 
 ### 6. Both Sync and Async Clients
-- Core logic written once, exposed via two client classes
-- Sync client wraps async using `asyncio.run()`
-- Streaming is inherently async — sync streaming blocks the thread, this is documented
+
+Core logic written once, exposed via two client classes. Both support context managers.
 
 ```python
 # sync
-broker = TTConnect("zerodha", config)
-broker.place_order(...)
+with TTConnect("zerodha", config) as broker:
+    broker.place_order(req)
 
 # async
-broker = AsyncTTConnect("zerodha", config)
-await broker.place_order(...)
+async with AsyncTTConnect("zerodha", config) as broker:
+    await broker.place_order(req)
 ```
 
-### 7. Unified Error Handling
+### 7. Predictable Lifecycle Errors
+- Explicit client state: `CREATED → CONNECTED → CLOSED`
+- Typed, catchable exceptions instead of `AssertionError`:
+  - `ClientNotConnectedError` — `init()` not called
+  - `ClientClosedError` — client already closed; create a new one
+- Context managers handle the lifecycle automatically — preferred for all use cases
+
+### 8. Unified Error Handling
 - Consistent exception hierarchy — `TTConnectError` and subclasses
 - Rate limiting and retryable vs non-retryable errors handled by the library
 
-### 8. Broker is a One-Line Swap
+### 9. Broker is a One-Line Swap
 - No strategy or engine code needs to know which broker is active
 
 ---
@@ -86,3 +106,4 @@ await broker.place_order(...)
 - Translate symbol formats
 - Know which HTTP method or encoding a broker uses
 - Write broker-specific error handling
+- Manage async resource cleanup in try/finally blocks

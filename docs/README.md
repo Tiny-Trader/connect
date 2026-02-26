@@ -1,23 +1,64 @@
-# Documentation Index
+# Documentation
 
-This folder contains user-facing and internal documentation for `tt-connect`.
+Welcome to the `tt-connect` documentation.
+
+---
 
 ## Start Here
 
-- [GETTING_STARTED.md](./GETTING_STARTED.md): installation, config, first workflow.
-- [../README.md](../README.md): project overview and quick links.
+**New to tt-connect?** Start with these:
+
+1. **[Quick Start](./QUICKSTART.md)** — Get installed and place your first order in 5 minutes
+2. **[Examples](./EXAMPLES.md)** — Complete working code for Zerodha and AngelOne
+
+---
 
 ## User Guides
 
-- [USAGE_EXAMPLES.md](./USAGE_EXAMPLES.md): end-to-end usage snippets.
+| Guide | Description |
+|-------|-------------|
+| [Quick Start](./QUICKSTART.md) | Installation, credentials, first order |
+| [Examples](./EXAMPLES.md) | Full working scripts (Zerodha, AngelOne) |
+
+---
 
 ## Contributor Guides
 
-- [../CONTRIBUTING.md](../CONTRIBUTING.md): contribution policy and PR expectations.
-- [CONTRIBUTOR_GUIDE.md](./CONTRIBUTOR_GUIDE.md): local setup, testing, and implementation workflow.
+| Guide | Description |
+|-------|-------------|
+| [CONTRIBUTING.md](../CONTRIBUTING.md) | Contribution policy and PR expectations |
+| [CONTRIBUTOR_GUIDE.md](./CONTRIBUTOR_GUIDE.md) | Local setup, testing, implementation workflow |
 
-## Design and Context
+---
 
-- [ARCHITECTURE.md](./ARCHITECTURE.md): system design and core patterns.
-- [PROBLEMS.md](./PROBLEMS.md): market/broker pain points this project solves.
-- [DESIRED_STATE.md](./DESIRED_STATE.md): intended long-term product/API direction.
+## Technical Documentation
+
+| Document | Description |
+|----------|-------------|
+| [ARCHITECTURE.md](./ARCHITECTURE.md) | System design, core patterns, internals |
+| [PROBLEMS.md](./PROBLEMS.md) | Market/broker pain points this project solves |
+| [DESIRED_STATE.md](./DESIRED_STATE.md) | Intended long-term product/API direction |
+
+---
+
+## Design Plans (Historical)
+
+These documents track design decisions and future plans:
+
+| Document | Description |
+|----------|-------------|
+| [ELEGANCE_REFACTOR_PLAN.md](./ELEGANCE_REFACTOR_PLAN.md) | Refactor plan that was implemented (historical context) |
+| [PLUGIN_ARCHITECTURE_PLAN.md](./PLUGIN_ARCHITECTURE_PLAN.md) | Proposal for core + broker extension plugins |
+| [STRUCTURED_LOGGING_PLAN.md](./STRUCTURED_LOGGING_PLAN.md) | Implementation plan for structured logging |
+
+---
+
+## Legal and Risk Notices
+
+| Document | Description |
+|----------|-------------|
+| [DISCLAIMER.md](../DISCLAIMER.md) | Trading risk disclosures |
+| [SECURITY.md](../SECURITY.md) | Security policy and vulnerability reporting |
+| [COMPLIANCE.md](../COMPLIANCE.md) | Regulatory compliance information |
+| [TRADEMARK.md](../TRADEMARK.md) | Trademark usage guidelines |
+| [LICENSE](../LICENSE) | MIT License |

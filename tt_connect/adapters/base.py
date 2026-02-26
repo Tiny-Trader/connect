@@ -9,7 +9,7 @@ import httpx
 
 from tt_connect.capabilities import Capabilities
 from tt_connect.exceptions import TTConnectError, UnsupportedFeatureError
-from tt_connect.models import Fund, Holding, Order, Position, Profile, Trade
+from tt_connect.models import Candle, Fund, GetHistoricalRequest, Gtt, Holding, ModifyGttRequest, ModifyOrderRequest, Order, PlaceGttRequest, PlaceOrderRequest, Position, Profile, Tick, Trade
 from tt_connect.ws.client import BrokerWebSocket
 
 logger = logging.getLogger(__name__)
@@ -34,13 +34,28 @@ class BrokerTransformer(Protocol):
         token: str,
         broker_symbol: str,
         exchange: str,
-        qty: int,
-        side: Any,
-        product: Any,
-        order_type: Any,
-        price: float | None,
-        trigger_price: float | None,
+        req: PlaceOrderRequest,
     ) -> JsonDict: ...
+    @staticmethod
+    def to_modify_params(req: ModifyOrderRequest) -> JsonDict: ...
+    @staticmethod
+    def to_gtt_id(raw: JsonDict) -> str: ...
+    @staticmethod
+    def to_gtt_params(
+        token: str,
+        broker_symbol: str,
+        exchange: str,
+        req: PlaceGttRequest,
+    ) -> JsonDict: ...
+    @staticmethod
+    def to_modify_gtt_params(
+        token: str,
+        broker_symbol: str,
+        exchange: str,
+        req: ModifyGttRequest,
+    ) -> JsonDict: ...
+    @staticmethod
+    def to_gtt(raw: JsonDict) -> Gtt: ...
     @staticmethod
     def to_profile(raw: JsonDict) -> Profile: ...
     @staticmethod
@@ -53,6 +68,17 @@ class BrokerTransformer(Protocol):
     def to_trade(raw: JsonDict) -> Trade: ...
     @staticmethod
     def to_order(raw: JsonDict, instrument: Any = None) -> Order: ...
+    @staticmethod
+    def to_historical_params(
+        token: str,
+        broker_symbol: str,
+        exchange: str,
+        req: GetHistoricalRequest,
+    ) -> JsonDict: ...
+    @staticmethod
+    def to_candles(rows: list[Any], instrument: Any) -> list[Candle]: ...
+    @staticmethod
+    def to_quote(raw: JsonDict, instrument: Any) -> Tick: ...
 
 
 class BrokerAdapter:
@@ -117,6 +143,42 @@ class BrokerAdapter:
 
     @abstractmethod
     async def get_trades(self) -> JsonDict: ...
+
+    # --- GTT ---
+
+    async def place_gtt(self, params: JsonDict) -> JsonDict:
+        """Place a GTT rule. Override in adapters that support GTT."""
+        raise UnsupportedFeatureError(f"{self.__class__.__name__} does not support GTT.")
+
+    async def modify_gtt(self, gtt_id: str, params: JsonDict) -> JsonDict:
+        """Modify an existing GTT rule. Override in adapters that support GTT."""
+        raise UnsupportedFeatureError(f"{self.__class__.__name__} does not support GTT.")
+
+    async def cancel_gtt(self, gtt_id: str) -> JsonDict:
+        """Cancel a GTT rule. Override in adapters that support GTT."""
+        raise UnsupportedFeatureError(f"{self.__class__.__name__} does not support GTT.")
+
+    async def get_gtt(self, gtt_id: str) -> JsonDict:
+        """Fetch a single GTT rule. Override in adapters that support GTT."""
+        raise UnsupportedFeatureError(f"{self.__class__.__name__} does not support GTT.")
+
+    async def get_gtts(self) -> JsonDict:
+        """Fetch all GTT rules. Override in adapters that support GTT."""
+        raise UnsupportedFeatureError(f"{self.__class__.__name__} does not support GTT.")
+
+    # --- Historical ---
+
+    async def get_historical(self, token: str, params: JsonDict) -> JsonDict:
+        """Fetch historical OHLC candles. Override in adapters that support historical data."""
+        raise UnsupportedFeatureError(
+            f"{self.__class__.__name__} does not support historical data."
+        )
+
+    async def get_quotes(self, symbols: list[str]) -> JsonDict:
+        """Fetch market quotes by exchange:symbol keys. Override in adapters that support it."""
+        raise UnsupportedFeatureError(
+            f"{self.__class__.__name__} does not support REST market quotes."
+        )
 
     # --- WebSocket ---
 

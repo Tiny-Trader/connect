@@ -86,3 +86,7 @@ Icon
 _cache/
 dev/
 .claude/
+
+# AI Assistant Context Files
+CLAUDE.md
+GEMINI.md

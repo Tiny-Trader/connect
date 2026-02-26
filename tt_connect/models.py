@@ -1,8 +1,76 @@
 from __future__ import annotations
 from datetime import datetime
-from pydantic import BaseModel, ConfigDict
-from tt_connect.enums import Side, ProductType, OrderType, OrderStatus
+from uuid import uuid4
+from pydantic import BaseModel, ConfigDict, Field
+from tt_connect.enums import CandleInterval, Side, ProductType, OrderType, OrderStatus
 from tt_connect.instruments import Instrument
+
+
+class GttLeg(BaseModel):
+    """One trigger+order leg of a GTT rule.
+
+    Used in both request models (PlaceGttRequest, ModifyGttRequest) and
+    the response model (Gtt).  Single-leg GTTs have one entry; OCO (two-leg)
+    Zerodha GTTs have two entries — one per trigger price.
+    """
+
+    trigger_price: float
+    price: float        # limit price for the order placed when triggered
+    side: Side
+    qty: int
+    product: ProductType
+
+
+class PlaceGttRequest(BaseModel):
+    """Canonical input model for placing a GTT rule."""
+
+    instrument: Instrument
+    last_price: float   # current market price — required by Zerodha for validation
+    legs: list[GttLeg]  # 1 leg = single trigger; 2 legs = OCO (Zerodha only)
+
+
+class ModifyGttRequest(BaseModel):
+    """Canonical input model for modifying an existing GTT rule."""
+
+    gtt_id: str
+    instrument: Instrument   # needed to resolve token/exchange for AngelOne
+    last_price: float
+    legs: list[GttLeg]
+
+
+class Gtt(BaseModel):
+    """Normalized GTT rule record returned by get_gtt / get_gtts."""
+
+    model_config = ConfigDict(frozen=True)
+
+    gtt_id: str
+    status: str          # raw broker status string (differs per broker)
+    symbol: str          # broker's own trading symbol
+    exchange: str
+    legs: list[GttLeg]   # 1 for single, 2 for OCO
+
+
+class PlaceOrderRequest(BaseModel):
+    """Canonical input model for placing an order."""
+
+    instrument: Instrument
+    side: Side
+    qty: int
+    order_type: OrderType
+    product: ProductType
+    price: float | None = None
+    trigger_price: float | None = None
+    tag: str = Field(default_factory=lambda: str(uuid4()))
+
+
+class ModifyOrderRequest(BaseModel):
+    """Canonical input model for modifying an existing order."""
+
+    order_id: str
+    qty: int | None = None
+    price: float | None = None
+    trigger_price: float | None = None
+    order_type: OrderType | None = None
 
 
 class Profile(BaseModel):
@@ -114,3 +182,28 @@ class Tick(BaseModel):
     bid: float | None = None
     ask: float | None = None
     timestamp: datetime | None = None
+
+
+class GetHistoricalRequest(BaseModel):
+    """Canonical input model for requesting historical OHLC candles."""
+
+    instrument: Instrument
+    interval: CandleInterval
+    from_date: datetime
+    to_date: datetime
+    include_oi: bool = True
+
+
+class Candle(BaseModel):
+    """Normalized OHLC candle for one interval period."""
+
+    model_config = ConfigDict(frozen=True)
+
+    instrument: Instrument
+    timestamp: datetime
+    open: float
+    high: float
+    low: float
+    close: float
+    volume: int
+    oi: int | None = None

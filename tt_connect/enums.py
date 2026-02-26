@@ -67,3 +67,24 @@ class AuthMode(StrEnum):
 
     MANUAL = "manual"   # User supplies access_token; library never logs in autonomously
     AUTO   = "auto"     # Library performs TOTP login + token refresh automatically
+
+
+class ClientState(StrEnum):
+    """Lifecycle state of an AsyncTTConnect / TTConnect client."""
+
+    CREATED   = "created"
+    CONNECTED = "connected"
+    CLOSED    = "closed"
+
+
+class CandleInterval(StrEnum):
+    """Canonical OHLC candle intervals, broker-agnostic."""
+
+    MINUTE_1  = "1minute"
+    MINUTE_3  = "3minute"
+    MINUTE_5  = "5minute"
+    MINUTE_10 = "10minute"
+    MINUTE_15 = "15minute"
+    MINUTE_30 = "30minute"
+    HOUR_1    = "60minute"
+    DAY       = "day"
