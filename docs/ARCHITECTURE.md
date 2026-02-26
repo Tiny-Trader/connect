@@ -31,7 +31,7 @@ Proxy layer that makes the library natively usable in both sync and async Python
 
 ## Project Structure
 
-```
+```text
 tt_connect/
 ├── __init__.py           # Public exports: TTConnect, AsyncTTConnect, PlaceOrderRequest, ModifyOrderRequest, PlaceGttRequest, ModifyGttRequest, Gtt, GttLeg
 ├── client.py             # AsyncTTConnect (mixin composition, ~20 lines)
@@ -90,7 +90,7 @@ tt_connect/
 
 `AsyncTTConnect` and `TTConnect` track an explicit `ClientState`:
 
-```
+```text
 CREATED  →  (await init())  →  CONNECTED  →  (await close())  →  CLOSED
 ```
 

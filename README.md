@@ -4,18 +4,16 @@
 
 ## Who This Is For
 
-- Trading system developers who want broker portability.
-- Teams building execution, monitoring, or portfolio services.
-- Contributors extending broker support and reliability.
+- Trading system developers who want broker portability
+- Teams building execution, monitoring, or portfolio services
+- Contributors extending broker support and reliability
 
-## Installation
+## Quick Start
 
 ```bash
 cd connect
 poetry install
 ```
-
-## Quick Start
 
 ```python
 from tt_connect import TTConnect, PlaceOrderRequest
@@ -34,6 +32,15 @@ with TTConnect("zerodha", {"api_key": "...", "access_token": "..."}) as broker:
     print(order_id)
 ```
 
+## Documentation
+
+| Guide | Description |
+|-------|-------------|
+| **[Quick Start](docs/QUICKSTART.md)** | Get installed and place your first order in 5 minutes |
+| **[Examples](docs/EXAMPLES.md)** | Complete working code for Zerodha and AngelOne |
+| [Contributor Guide](docs/CONTRIBUTOR_GUIDE.md) | Local setup, testing, implementation workflow |
+| [Architecture](docs/ARCHITECTURE.md) | System design and internals |
+
 ## Broker Capability Snapshot
 
 | Capability | Zerodha | AngelOne |
@@ -46,13 +53,6 @@ with TTConnect("zerodha", {"api_key": "...", "access_token": "..."}) as broker:
 | Streaming (WebSocket) | Yes | Yes |
 | GTT orders | Yes | Yes |
 | Margin calculator API | Not supported | Not supported |
-
-## Documentation
-
-- User docs: [docs/README.md](./docs/README.md)
-- Getting started: [docs/GETTING_STARTED.md](./docs/GETTING_STARTED.md)
-- Contributor docs: [CONTRIBUTING.md](./CONTRIBUTING.md), [docs/CONTRIBUTOR_GUIDE.md](./docs/CONTRIBUTOR_GUIDE.md)
-- Architecture internals: [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md)
 
 ## Development Commands
 
