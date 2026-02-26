@@ -11,7 +11,7 @@ from datetime import datetime
 
 from tt_connect.enums import CandleInterval
 from tt_connect.instruments import Instrument
-from tt_connect.models import Candle, Fund, Gtt, Holding, ModifyGttRequest, ModifyOrderRequest, Order, PlaceGttRequest, PlaceOrderRequest, Position, Profile, Trade
+from tt_connect.models import Candle, Fund, Gtt, Holding, ModifyGttRequest, ModifyOrderRequest, Order, PlaceGttRequest, PlaceOrderRequest, Position, Profile, Tick, Trade
 
 T = TypeVar("T")
 
@@ -102,6 +102,9 @@ class TTConnect:
 
     def get_gtts(self) -> list[Gtt]:
         return self._run(self._async.get_gtts())
+
+    def get_quotes(self, instruments: list[Instrument]) -> list[Tick]:
+        return self._run(self._async.get_quotes(instruments))
 
     def get_historical(
         self,

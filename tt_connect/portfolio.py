@@ -8,7 +8,7 @@ from tt_connect.adapters.base import JsonDict
 from tt_connect.enums import CandleInterval
 from tt_connect.instruments import Instrument
 from tt_connect.lifecycle import _ClientBase
-from tt_connect.models import Candle, Fund, GetHistoricalRequest, Holding, Position, Profile, Trade
+from tt_connect.models import Candle, Fund, GetHistoricalRequest, Holding, Position, Profile, Tick, Trade
 
 
 class PortfolioMixin(_ClientBase):
@@ -43,6 +43,24 @@ class PortfolioMixin(_ClientBase):
         self._require_connected()
         raw: JsonDict = await self._adapter.get_trades()
         return [self._adapter.transformer.to_trade(t) for t in raw["data"]]
+
+    async def get_quotes(self, instruments: list[Instrument]) -> list[Tick]:
+        """Fetch an LTP/volume/OI market snapshot for one or more instruments.
+
+        Resolves each instrument to its broker token, requests the Zerodha
+        /quote endpoint in a single call, and returns one Tick per instrument.
+        Keys absent from the broker response are silently omitted.
+        """
+        self._require_connected()
+        resolved_list = [await self._resolve(inst) for inst in instruments]
+        keys = [f"{r.exchange}:{r.broker_symbol}" for r in resolved_list]
+        key_to_inst: dict[str, Instrument] = dict(zip(keys, instruments))
+        raw: JsonDict = await self._adapter.get_quotes(keys)
+        return [
+            self._adapter.transformer.to_quote(raw["data"][key], inst)
+            for key, inst in key_to_inst.items()
+            if key in raw["data"]
+        ]
 
     async def get_historical(
         self,

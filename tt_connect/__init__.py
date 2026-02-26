@@ -13,6 +13,7 @@ from tt_connect.models import (
     ModifyOrderRequest,
     PlaceGttRequest,
     PlaceOrderRequest,
+    Tick,
 )
 from tt_connect.sync_client import TTConnect
 
@@ -39,4 +40,6 @@ __all__ = [
     "GetHistoricalRequest",
     "Candle",
     "CandleInterval",
+    # Quotes
+    "Tick",
 ]

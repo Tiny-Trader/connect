@@ -1,0 +1,47 @@
+{
+  "status": "success",
+  "data": {
+    "NSE:RELIANCE": {
+      "instrument_token": 738561,
+      "timestamp": "2024-01-15 15:30:00",
+      "last_price": 2450.0,
+      "last_quantity": 5,
+      "last_trade_time": "2024-01-15 15:29:58",
+      "average_price": 2448.75,
+      "volume": 3542100,
+      "buy_quantity": 0,
+      "sell_quantity": 0,
+      "ohlc": {
+        "open": 2430.0,
+        "high": 2465.0,
+        "low": 2425.5,
+        "close": 2440.0
+      },
+      "net_change": 10.0,
+      "oi": 0,
+      "oi_day_high": 0,
+      "oi_day_low": 0
+    },
+    "NSE:SBIN": {
+      "instrument_token": 779521,
+      "timestamp": "2024-01-15 15:30:00",
+      "last_price": 620.5,
+      "last_quantity": 25,
+      "last_trade_time": "2024-01-15 15:29:55",
+      "average_price": 619.8,
+      "volume": 12450000,
+      "buy_quantity": 0,
+      "sell_quantity": 0,
+      "ohlc": {
+        "open": 615.0,
+        "high": 625.0,
+        "low": 613.5,
+        "close": 618.0
+      },
+      "net_change": 2.5,
+      "oi": 0,
+      "oi_day_high": 0,
+      "oi_day_low": 0
+    }
+  }
+}

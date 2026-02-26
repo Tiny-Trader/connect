@@ -4,7 +4,7 @@ import json as _json
 from datetime import datetime
 from typing import Any
 
-from tt_connect.models import Candle, GetHistoricalRequest, Gtt, GttLeg, ModifyGttRequest, ModifyOrderRequest, PlaceGttRequest, PlaceOrderRequest, Profile, Fund, Holding, Position, Order, Trade, Margin
+from tt_connect.models import Candle, GetHistoricalRequest, Gtt, GttLeg, ModifyGttRequest, ModifyOrderRequest, PlaceGttRequest, PlaceOrderRequest, Profile, Fund, Holding, Position, Order, Tick, Trade, Margin
 from tt_connect.instruments import Instrument
 from tt_connect.enums import CandleInterval, Exchange, Side, ProductType, OrderType, OrderStatus
 from tt_connect.exceptions import (
@@ -341,6 +341,20 @@ class ZerodhaTransformer:
             option_premium=initial.get("option_premium", 0.0),
             final_total=final_t,
             benefit=round(total - final_t, 2),
+        )
+
+    @staticmethod
+    def to_quote(raw: dict[str, Any], instrument: Instrument) -> Tick:
+        """Normalize one Zerodha full-quote payload into a canonical Tick."""
+        ts_str = raw.get("timestamp") or raw.get("last_trade_time")
+        ts = datetime.fromisoformat(ts_str) if ts_str else None
+        oi_raw = raw.get("oi")
+        return Tick(
+            instrument=instrument,
+            ltp=float(raw["last_price"]),
+            volume=raw.get("volume"),
+            oi=int(oi_raw) if oi_raw else None,
+            timestamp=ts,
         )
 
     # --- Errors ---

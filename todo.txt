@@ -40,7 +40,9 @@
 - [ ] Margin Calculator (both brokers) — pre-trade margin estimate
 - [ ] Zerodha order varieties — AMO, Cover Orders, Iceberg, Auction
       Needs optional variety field on PlaceOrderRequest
-- [ ] Zerodha market quotes REST (LTP snapshot without WebSocket)
+- [x] Zerodha market quotes REST (LTP snapshot without WebSocket)
+      get_quotes(instruments) -> list[Tick]. Single GET /quote call for N instruments.
+      Zero OI normalised to None. Tick exported from public API.
 
 
 ## Low Priority

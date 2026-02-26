@@ -127,6 +127,16 @@ class ZerodhaAdapter(BrokerAdapter, broker_id="zerodha"):
         return await self._request("GET", f"{BASE_URL}/gtt/triggers",
                                    headers=self.auth.headers)
 
+    # --- Market Quotes ---
+
+    async def get_quotes(self, symbols: list[str]) -> JsonDict:
+        """Fetch full market quotes for a list of 'exchange:tradingsymbol' keys."""
+        return await self._request(
+            "GET", f"{BASE_URL}/quote",
+            headers=self.auth.headers,
+            params=[("i", sym) for sym in symbols],
+        )
+
     # --- Historical ---
 
     async def get_historical(self, token: str, params: JsonDict) -> JsonDict:

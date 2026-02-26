@@ -8,10 +8,10 @@ from typing import Any
 from tt_connect.enums import CandleInterval, Exchange, Side, ProductType, OrderType, OrderStatus
 from tt_connect.exceptions import (
     TTConnectError, AuthenticationError, OrderError, OrderNotFoundError,
-    InvalidOrderError, InstrumentNotFoundError, BrokerError,
+    InvalidOrderError, InstrumentNotFoundError, BrokerError, UnsupportedFeatureError,
 )
 from tt_connect.instruments import Instrument
-from tt_connect.models import Candle, GetHistoricalRequest, Gtt, GttLeg, ModifyGttRequest, ModifyOrderRequest, PlaceGttRequest, PlaceOrderRequest, Profile, Fund, Holding, Position, Order, Trade
+from tt_connect.models import Candle, GetHistoricalRequest, Gtt, GttLeg, ModifyGttRequest, ModifyOrderRequest, PlaceGttRequest, PlaceOrderRequest, Profile, Fund, Holding, Position, Order, Tick, Trade
 
 # AngelOne error code → exception class  (source: SmartAPI official error list)
 ERROR_MAP: dict[str, type[TTConnectError]] = {
@@ -411,6 +411,10 @@ class AngelOneTransformer:
             product=_PRODUCT_MAP.get(raw.get("producttype", ""), ProductType.NRML),
             timestamp=_parse_ts(raw.get("filltime")),
         )
+
+    @staticmethod
+    def to_quote(raw: dict[str, Any], instrument: Instrument) -> Tick:
+        raise UnsupportedFeatureError("AngelOne does not support REST market quotes.")
 
     # --- Errors ---
 

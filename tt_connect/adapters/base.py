@@ -9,7 +9,7 @@ import httpx
 
 from tt_connect.capabilities import Capabilities
 from tt_connect.exceptions import TTConnectError, UnsupportedFeatureError
-from tt_connect.models import Candle, Fund, GetHistoricalRequest, Gtt, Holding, ModifyGttRequest, ModifyOrderRequest, Order, PlaceGttRequest, PlaceOrderRequest, Position, Profile, Trade
+from tt_connect.models import Candle, Fund, GetHistoricalRequest, Gtt, Holding, ModifyGttRequest, ModifyOrderRequest, Order, PlaceGttRequest, PlaceOrderRequest, Position, Profile, Tick, Trade
 from tt_connect.ws.client import BrokerWebSocket
 
 logger = logging.getLogger(__name__)
@@ -77,6 +77,8 @@ class BrokerTransformer(Protocol):
     ) -> JsonDict: ...
     @staticmethod
     def to_candles(rows: list[Any], instrument: Any) -> list[Candle]: ...
+    @staticmethod
+    def to_quote(raw: JsonDict, instrument: Any) -> Tick: ...
 
 
 class BrokerAdapter:
@@ -170,6 +172,12 @@ class BrokerAdapter:
         """Fetch historical OHLC candles. Override in adapters that support historical data."""
         raise UnsupportedFeatureError(
             f"{self.__class__.__name__} does not support historical data."
+        )
+
+    async def get_quotes(self, symbols: list[str]) -> JsonDict:
+        """Fetch market quotes by exchange:symbol keys. Override in adapters that support it."""
+        raise UnsupportedFeatureError(
+            f"{self.__class__.__name__} does not support REST market quotes."
         )
 
     # --- WebSocket ---
