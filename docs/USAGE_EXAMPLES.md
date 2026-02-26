@@ -152,6 +152,8 @@ orders = await broker.get_orders()
 
 ## 6. Streaming (Async)
 
+Both Zerodha (KiteTicker) and AngelOne (SmartAPI stream) are supported. Swap the broker name — no other changes.
+
 ```python
 from tt_connect.models import Tick
 
@@ -159,7 +161,7 @@ async def on_tick(tick: Tick) -> None:
     print(tick)
     # Tick(instrument=Equity(NSE, RELIANCE), ltp=2952.5, volume=1200340, timestamp=...)
 
-async with AsyncTTConnect("angelone", config) as broker:
+async with AsyncTTConnect("zerodha", config) as broker:
     await broker.subscribe(
         instruments=[reliance, nifty_ce, nifty_fut],
         on_tick=on_tick,
@@ -221,7 +223,58 @@ except TTConnectError as e:
 
 ---
 
-## 9. Unsupported Features Fail Immediately
+## 9. GTT Orders (Good Till Triggered)
+
+GTT orders execute when the market price crosses a trigger level. Both brokers support single-leg; Zerodha also supports two-leg OCO (One-Cancels-Other).
+
+```python
+from tt_connect import PlaceGttRequest, ModifyGttRequest, GttLeg
+from tt_connect.enums import Side, ProductType
+
+# Single-leg GTT (both brokers)
+req = PlaceGttRequest(
+    instrument=reliance,
+    last_price=2850.0,
+    legs=[
+        GttLeg(
+            trigger_price=3000.0,
+            price=3005.0,
+            side=Side.SELL,
+            qty=10,
+            product=ProductType.CNC,
+        )
+    ],
+)
+gtt_id = await broker.place_gtt(req)
+
+# Two-leg OCO — Zerodha only
+req = PlaceGttRequest(
+    instrument=reliance,
+    last_price=2850.0,
+    legs=[
+        GttLeg(trigger_price=3000.0, price=3005.0, side=Side.SELL, qty=10, product=ProductType.CNC),
+        GttLeg(trigger_price=2500.0, price=2495.0, side=Side.SELL, qty=10, product=ProductType.CNC),
+    ],
+)
+gtt_id = await broker.place_gtt(req)
+
+# Inspect, modify, cancel
+gtt = await broker.get_gtt(gtt_id)
+gtts = await broker.get_gtts()
+
+await broker.modify_gtt(ModifyGttRequest(
+    gtt_id=gtt_id,
+    instrument=reliance,
+    last_price=2850.0,
+    legs=[GttLeg(trigger_price=3100.0, price=3105.0, side=Side.SELL, qty=10, product=ProductType.CNC)],
+))
+
+await broker.cancel_gtt(gtt_id)
+```
+
+---
+
+## 10. Unsupported Features Fail Immediately
 
 ```python
 from tt_connect.instruments import Equity

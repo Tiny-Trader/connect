@@ -19,7 +19,7 @@ make test-fast
 - `tt_connect/orders.py`: order placement, modification, cancellation, position closing.
 - `tt_connect/sync_client.py`: `TTConnect` — threaded sync wrapper over `AsyncTTConnect`.
 - `tt_connect/client.py`: `AsyncTTConnect` — thin mixin composition (~20 lines).
-- `tt_connect/models.py`: all Pydantic models — both response models (frozen) and request models (`PlaceOrderRequest`, `ModifyOrderRequest`).
+- `tt_connect/models.py`: all Pydantic models — response models (frozen) and request models (`PlaceOrderRequest`, `ModifyOrderRequest`, `PlaceGttRequest`, `ModifyGttRequest`).
 - `tt_connect/adapters/`: broker-specific HTTP/auth/transform logic.
 - `tt_connect/instrument_manager/`: SQLite master lifecycle + resolver.
 - `tests/unit`: pure logic tests (no IO).
@@ -50,10 +50,11 @@ make test-fast
 
 ## Adding a New Broker
 
-1. Create `tt_connect/adapters/<broker>/` with 4 files:
+1. Create `tt_connect/adapters/<broker>/` with 5 files:
    - `adapter.py` — subclass `BrokerAdapter(broker_id="<name>")`, implement all abstract methods
    - `auth.py` — login, token refresh, session handling
    - `transformer.py` — implement `to_order_params(token, broker_symbol, exchange, req: PlaceOrderRequest)`, `to_modify_params(req: ModifyOrderRequest)`, and all `to_*` response methods
+   - `parser.py` — instrument master file parsing (CSV, JSON, etc.)
    - `capabilities.py` — declare supported segments, order types, product types
 2. Add test fixtures under `tests/fixtures/<broker>/`
 3. Add unit tests in `tests/unit/adapters/<broker>/`

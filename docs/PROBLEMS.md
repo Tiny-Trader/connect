@@ -17,7 +17,6 @@ Write once. Point at any broker.
 - Every broker has a different auth flow
   - Zerodha (Kite): OAuth + request token exchange
   - Angel One (SmartAPI): JWT + TOTP
-  - Upstox: OAuth 2.0 with its own token lifecycle
   - Finvasia (Shoonya): SHA256-hashed password auth
 - Sessions expire daily (SEBI mandate) — re-login must be automated, not manual
 - TOTP/2FA handling is inconsistent and undocumented
@@ -32,7 +31,6 @@ Write once. Point at any broker.
 ### 3. Inconsistent Symbol Naming Conventions
 - Every broker uses a different format to identify the same instrument
   - Zerodha: `NSE:RELIANCE`, `NFO:NIFTY24JAN18000CE`
-  - Upstox: `NSE_EQ|RELIANCE`, instrument keys (numeric)
   - Angel One: trading symbol + exchange as separate fields
   - Finvasia: their own internal symbol format
 - F&O naming is especially painful — expiry format, strike notation, and CE/PE suffix differ per broker
@@ -47,7 +45,6 @@ Write once. Point at any broker.
 - Response envelopes are all over the place
   - Zerodha: `{ "status": "success", "data": {...} }`
   - Angel One: `{ "status": true, "message": "...", "data": {...} }`
-  - Upstox: `{ "status": "success", "data": {...}, "errors": [] }`
 - Success/failure is indicated differently — HTTP status codes, boolean flags, string fields
 - Pagination is implemented differently (or not at all) across brokers
 - Required headers (API keys, tokens, checksums) vary per broker and per endpoint
@@ -62,7 +59,7 @@ Write once. Point at any broker.
 - No common interface for subscribing to market data or order updates
 
 ### 7. No Strategy Portability
-- A strategy written for Zerodha requires significant rework to run on Upstox or Angel
+- A strategy written for Zerodha requires significant rework to run on Angel One or any other broker
 - The trading engine ends up knowing too much about the broker — wrong separation of concerns
 
 ### 8. No Sandbox / Paper Trading API

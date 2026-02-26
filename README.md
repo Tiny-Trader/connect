@@ -18,24 +18,20 @@ poetry install
 ## Quick Start
 
 ```python
-from tt_connect import TTConnect
+from tt_connect import TTConnect, PlaceOrderRequest
 from tt_connect.instruments import Equity
 from tt_connect.enums import Exchange, Side, ProductType, OrderType
 
-broker = TTConnect("zerodha", {
-    "api_key": "...",
-    "access_token": "...",
-})
-
-instrument = Equity(exchange=Exchange.NSE, symbol="RELIANCE")
-order_id = broker.place_order(
-    instrument=instrument,
-    qty=1,
-    side=Side.BUY,
-    product=ProductType.CNC,
-    order_type=OrderType.MARKET,
-)
-print(order_id)
+with TTConnect("zerodha", {"api_key": "...", "access_token": "..."}) as broker:
+    req = PlaceOrderRequest(
+        instrument=Equity(exchange=Exchange.NSE, symbol="RELIANCE"),
+        side=Side.BUY,
+        qty=1,
+        order_type=OrderType.MARKET,
+        product=ProductType.CNC,
+    )
+    order_id = broker.place_order(req)
+    print(order_id)
 ```
 
 ## Broker Capability Snapshot
@@ -47,7 +43,8 @@ print(order_id)
 | Orders (place/modify/cancel/list) | Yes | Yes |
 | Trades | Yes | Yes |
 | Instrument fetch + resolve | Yes | Yes |
-| Streaming | Not implemented yet | In progress |
+| Streaming (WebSocket) | Yes | Yes |
+| GTT orders | Yes | Yes |
 | Margin calculator API | Planned | Planned |
 
 ## Documentation

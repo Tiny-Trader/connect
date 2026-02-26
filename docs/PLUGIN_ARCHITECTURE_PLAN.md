@@ -44,7 +44,6 @@ Create one package per broker:
 
 - `tt-connect-zerodha`
 - `tt-connect-angel`
-- future: `tt-connect-upstox`, etc.
 
 Each plugin contains:
 - adapter implementation

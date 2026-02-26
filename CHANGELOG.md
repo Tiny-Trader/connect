@@ -7,6 +7,10 @@ The format is based on Keep a Changelog and this project follows Semantic Versio
 ## [Unreleased]
 
 ### Added
+- Zerodha WebSocket streaming via KiteTicker binary protocol — `subscribe()` now works on both Zerodha and AngelOne.
+- GTT (Good Till Triggered) orders for both brokers: `place_gtt`, `modify_gtt`, `cancel_gtt`, `get_gtt`, `get_gtts`. Zerodha supports two-leg OCO; AngelOne supports single-leg.
+- New canonical models: `PlaceGttRequest`, `ModifyGttRequest`, `GttLeg`, `Gtt`.
+- Elegance refactor: explicit `ClientState` state machine, mixin decomposition (`LifecycleMixin`, `PortfolioMixin`, `OrdersMixin`), `PlaceOrderRequest`/`ModifyOrderRequest` request objects, and context manager support (`async with` / `with`).
 - Release governance docs and automation:
   - `RELEASE.md`
   - changelog validation workflow

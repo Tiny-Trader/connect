@@ -33,7 +33,7 @@ Proxy layer that makes the library natively usable in both sync and async Python
 
 ```
 tt_connect/
-├── __init__.py           # Public exports: TTConnect, AsyncTTConnect, PlaceOrderRequest, ModifyOrderRequest
+├── __init__.py           # Public exports: TTConnect, AsyncTTConnect, PlaceOrderRequest, ModifyOrderRequest, PlaceGttRequest, ModifyGttRequest, Gtt, GttLeg
 ├── client.py             # AsyncTTConnect (mixin composition, ~20 lines)
 ├── lifecycle.py          # _ClientBase + LifecycleMixin (init, close, state, WebSocket)
 ├── portfolio.py          # PortfolioMixin (get_profile, get_funds, holdings, positions, trades)
@@ -54,18 +54,22 @@ tt_connect/
 │   │   ├── adapter.py
 │   │   ├── auth.py
 │   │   ├── transformer.py  # request/response normalization
+│   │   ├── parser.py       # instrument master CSV parsing
 │   │   └── capabilities.py
 │   └── angelone/
 │       ├── adapter.py
 │       ├── auth.py
 │       ├── transformer.py
+│       ├── parser.py       # instrument master JSON parsing
 │       └── capabilities.py
 └── ws/
     ├── client.py           # BrokerWebSocket abstract + OnTick type
+    ├── angelone.py         # AngelOne WebSocket (SmartAPI stream)
+    ├── zerodha.py          # Zerodha WebSocket (KiteTicker binary protocol)
     └── normalizer.py       # raw tick → Tick model
 ```
 
-**To add a new broker: create a folder under `adapters/`, implement 4 files. Touch nothing else.**
+**To add a new broker: create a folder under `adapters/`, implement 5 files. Touch nothing else.**
 
 ---
 
@@ -148,8 +152,8 @@ All three inherit from `_ClientBase` (defined in `lifecycle.py`), which declares
 
 ### 7. Models / Schemas
 
-- **Response models** (frozen Pydantic): `Order`, `Position`, `Holding`, `Tick`, `Profile`, `Fund`
-- **Request models** (mutable Pydantic): `PlaceOrderRequest`, `ModifyOrderRequest`
+- **Response models** (frozen Pydantic): `Order`, `Position`, `Holding`, `Tick`, `Profile`, `Fund`, `Gtt`
+- **Request models** (mutable Pydantic): `PlaceOrderRequest`, `ModifyOrderRequest`, `PlaceGttRequest`, `ModifyGttRequest`
 
 Request models are validated at construction — bad fields surface before any network call.
 
@@ -452,12 +456,13 @@ No warnings. No fallbacks. No user-side capability checks.
 
 ## Adding a New Broker
 
-Create a folder under `adapters/`. Implement 4 files. Touch nothing else.
+Create a folder under `adapters/`. Implement 5 files. Touch nothing else.
 
 ```
 adapters/newbroker/
 ├── adapter.py       # subclass BrokerAdapter with broker_id="newbroker"
 ├── auth.py          # login, token refresh, session management
 ├── transformer.py   # to_order_params(), to_modify_params(), to_order(), to_tick(), etc.
+├── parser.py        # instrument master file parsing (CSV, JSON, etc.)
 └── capabilities.py  # NEWBROKER_CAPABILITIES = Capabilities(...)
 ```

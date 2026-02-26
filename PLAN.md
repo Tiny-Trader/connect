@@ -3,10 +3,11 @@
 > **Scope** — Trading, investing, and reports APIs only.
 > Historical chart data and live market quotes are out of scope for now.
 
-> **Reality check (updated: 2026-02-22):**
+> **Reality check (updated: 2026-02-26):**
 > - Auth mode architecture (`manual`/`auto`) and session stores are implemented.
 > - Unit + integration suites are in place and passing locally.
-> - WebSocket support has started (shared interface + AngelOne WS client); treat streaming as in-progress, not out-of-scope.
+> - WebSocket streaming is complete for both AngelOne and Zerodha (KiteTicker binary protocol).
+> - GTT orders are implemented for both AngelOne and Zerodha.
 
 ---
 
@@ -221,5 +222,5 @@
 - Historical OHLC data
 - Live market quotes (REST polling)
 - MCX / CDS instruments
-- Basket orders / GTT orders
+- Basket orders (multi-leg single-request)
 - Options strategy margin (multi-leg)

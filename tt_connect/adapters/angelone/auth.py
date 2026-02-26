@@ -21,7 +21,7 @@ _RENEW_URL = "https://apiconnect.angelbroking.com/rest/auth/angelbroking/user/v1
 def _local_ip() -> str:
     """Best-effort local IPv4 discovery required by AngelOne headers."""
     try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # Todo: Add 5 sec timeouts here
         s.connect(("8.8.8.8", 80))
         ip = str(s.getsockname()[0])
         s.close()
@@ -47,16 +47,16 @@ def _base_headers(api_key: str) -> dict[str, str]:
 class AngelOneAuth(BaseAuth):
     """Manual + auto auth implementation for AngelOne SmartAPI."""
 
-    _broker_id       = "angelone"
-    _default_mode    = AuthMode.AUTO
+    _broker_id = "angelone"
+    _default_mode = AuthMode.AUTO
     _supported_modes = frozenset({AuthMode.AUTO, AuthMode.MANUAL})
 
     async def _login_auto(self) -> None:
         """Perform TOTP-based SmartAPI login flow."""
-        client_id   = self._config.get("client_id")
-        pin         = self._config.get("pin")
+        client_id = self._config.get("client_id")
+        pin = self._config.get("pin")
         totp_secret = self._config.get("totp_secret")
-        api_key     = self._config.get("api_key")
+        api_key = self._config.get("api_key")
 
         if not all([client_id, pin, totp_secret, api_key]):
             raise AuthenticationError(
@@ -81,7 +81,9 @@ class AngelOneAuth(BaseAuth):
                 f"(HTTP {response.status_code}): {response.text[:200]}"
             )
         if not data.get("status") or "data" not in data:
-            raise AuthenticationError(f"AngelOne login failed: {data.get('message', 'Unknown error')}")
+            raise AuthenticationError(
+                f"AngelOne login failed: {data.get('message', 'Unknown error')}"
+            )
 
         d = data["data"]
         self._session = SessionData(
