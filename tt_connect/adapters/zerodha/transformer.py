@@ -14,24 +14,31 @@ from tt_connect.exceptions import (
 
 ERROR_MAP: dict[str, type[TTConnectError]] = {
     "TokenException":      AuthenticationError,
-    "PermissionException": AuthenticationError,
+    "UserException":       AuthenticationError,
     "OrderException":      OrderError,
     "InputException":      InvalidOrderError,
+    "MarginException":     OrderError,
+    "HoldingException":    OrderError,
     "NetworkException":    BrokerError,
+    "DataException":       BrokerError,
+    "GeneralException":    BrokerError,
 }
 
 # Zerodha statuses that don't map 1-to-1 to our OrderStatus enum
 _ORDER_STATUS_MAP: dict[str, OrderStatus] = {
-    "COMPLETE":           OrderStatus.COMPLETE,
-    "REJECTED":           OrderStatus.REJECTED,
-    "CANCELLED":          OrderStatus.CANCELLED,
-    "OPEN":               OrderStatus.OPEN,
-    "TRIGGER PENDING":    OrderStatus.PENDING,
-    "AMO REQ RECEIVED":   OrderStatus.PENDING,
-    "MODIFY PENDING":     OrderStatus.OPEN,
-    "OPEN PENDING":       OrderStatus.PENDING,
-    "CANCEL PENDING":     OrderStatus.OPEN,
-    "VALIDATION PENDING": OrderStatus.PENDING,
+    "COMPLETE":                  OrderStatus.COMPLETE,
+    "REJECTED":                  OrderStatus.REJECTED,
+    "CANCELLED":                 OrderStatus.CANCELLED,
+    "OPEN":                      OrderStatus.OPEN,
+    "MODIFIED":                  OrderStatus.OPEN,
+    "PUT ORDER REQ RECEIVED":    OrderStatus.PENDING,
+    "VALIDATION PENDING":        OrderStatus.PENDING,
+    "OPEN PENDING":              OrderStatus.PENDING,
+    "MODIFY VALIDATION PENDING": OrderStatus.OPEN,
+    "MODIFY PENDING":            OrderStatus.OPEN,
+    "TRIGGER PENDING":           OrderStatus.PENDING,
+    "CANCEL PENDING":            OrderStatus.OPEN,
+    "AMO REQ RECEIVED":          OrderStatus.PENDING,
 }
 
 
@@ -300,11 +307,14 @@ class ZerodhaTransformer:
     ) -> dict[str, Any]:
         """Build Zerodha historical candle query params."""
         interval = ZerodhaTransformer._INTERVAL_MAP[req.interval]
-        return {
+        params: dict[str, Any] = {
             "interval": interval,
             "from":     req.from_date.strftime("%Y-%m-%d %H:%M:%S"),
             "to":       req.to_date.strftime("%Y-%m-%d %H:%M:%S"),
         }
+        if req.include_oi:
+            params["oi"] = "1"
+        return params
 
     @staticmethod
     def to_candles(rows: list[Any], instrument: Instrument) -> list[Candle]:

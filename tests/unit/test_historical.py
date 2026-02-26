@@ -77,6 +77,26 @@ def test_zerodha_to_historical_params_all_intervals():
         assert isinstance(params["interval"], str)
 
 
+def test_zerodha_to_historical_params_oi_included_by_default():
+    """include_oi defaults to True — oi=1 should appear in params."""
+    req = GetHistoricalRequest(
+        instrument=INSTR, interval=CandleInterval.MINUTE_1,
+        from_date=FROM_DT, to_date=TO_DT,
+    )
+    params = ZerodhaTransformer.to_historical_params("2885", "RELIANCE", "NSE", req)
+    assert params["oi"] == "1"
+
+
+def test_zerodha_to_historical_params_oi_opt_out():
+    """When include_oi=False, the oi param must not be sent."""
+    req = GetHistoricalRequest(
+        instrument=INSTR, interval=CandleInterval.MINUTE_1,
+        from_date=FROM_DT, to_date=TO_DT, include_oi=False,
+    )
+    params = ZerodhaTransformer.to_historical_params("2885", "RELIANCE", "NSE", req)
+    assert "oi" not in params
+
+
 # ---------------------------------------------------------------------------
 # Zerodha transformer — to_candles
 # ---------------------------------------------------------------------------

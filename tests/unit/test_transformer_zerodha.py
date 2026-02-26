@@ -120,3 +120,37 @@ def test_parse_error():
     from tt_connect.exceptions import AuthenticationError
     assert isinstance(err, AuthenticationError)
     assert str(err) == "Invalid token"
+
+
+@pytest.mark.parametrize("error_type,expected_cls", [
+    ("UserException",    "AuthenticationError"),
+    ("MarginException",  "OrderError"),
+    ("HoldingException", "OrderError"),
+    ("DataException",    "BrokerError"),
+    ("GeneralException", "BrokerError"),
+])
+def test_parse_error_all_documented_types(error_type, expected_cls):
+    import tt_connect.exceptions as exc
+    raw = {"error_type": error_type, "message": "err"}
+    err = ZerodhaTransformer.parse_error(raw)
+    assert isinstance(err, getattr(exc, expected_cls))
+
+
+@pytest.mark.parametrize("status,expected", [
+    ("MODIFIED",                  OrderStatus.OPEN),
+    ("MODIFY VALIDATION PENDING", OrderStatus.OPEN),
+    ("PUT ORDER REQ RECEIVED",    OrderStatus.PENDING),
+])
+def test_to_order_new_status_mappings(status, expected):
+    raw = {
+        "order_id": "99",
+        "status": status,
+        "transaction_type": "BUY",
+        "quantity": 1,
+        "filled_quantity": 0,
+        "product": "CNC",
+        "order_type": "LIMIT",
+        "order_timestamp": "2024-01-15T10:00:00",
+    }
+    o = ZerodhaTransformer.to_order(raw)
+    assert o.status == expected

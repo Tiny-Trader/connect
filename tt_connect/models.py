@@ -191,6 +191,7 @@ class GetHistoricalRequest(BaseModel):
     interval: CandleInterval
     from_date: datetime
     to_date: datetime
+    include_oi: bool = True
 
 
 class Candle(BaseModel):
