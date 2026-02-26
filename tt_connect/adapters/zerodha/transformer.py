@@ -345,15 +345,26 @@ class ZerodhaTransformer:
 
     @staticmethod
     def to_quote(raw: dict[str, Any], instrument: Instrument) -> Tick:
-        """Normalize one Zerodha full-quote payload into a canonical Tick."""
+        """Normalize one Zerodha full-quote payload into a canonical Tick.
+
+        bid/ask come from the first level of the market depth array.
+        oi=0 is normalised to None (Zerodha returns 0 for equities).
+        """
         ts_str = raw.get("timestamp") or raw.get("last_trade_time")
         ts = datetime.fromisoformat(ts_str) if ts_str else None
         oi_raw = raw.get("oi")
+        depth = raw.get("depth", {})
+        buy_levels  = depth.get("buy", [])
+        sell_levels = depth.get("sell", [])
+        best_bid = float(buy_levels[0]["price"])  if buy_levels  else None
+        best_ask = float(sell_levels[0]["price"]) if sell_levels else None
         return Tick(
             instrument=instrument,
             ltp=float(raw["last_price"]),
             volume=raw.get("volume"),
             oi=int(oi_raw) if oi_raw else None,
+            bid=best_bid if best_bid else None,
+            ask=best_ask if best_ask else None,
             timestamp=ts,
         )
 

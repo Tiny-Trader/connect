@@ -87,6 +87,34 @@ def test_to_quote_falls_back_to_last_trade_time():
     assert isinstance(tick.timestamp, datetime)
 
 
+def test_to_quote_bid_ask_extracted_from_depth():
+    tick = ZerodhaTransformer.to_quote(_RAW_RELIANCE, INSTR)
+    assert tick.bid == pytest.approx(2449.5)
+    assert tick.ask == pytest.approx(2450.5)
+
+
+def test_to_quote_zero_bid_ask_becomes_none():
+    """Depth prices of 0 (empty book) should be normalised to None."""
+    raw = {
+        **_RAW_RELIANCE,
+        "depth": {
+            "buy":  [{"price": 0, "quantity": 0, "orders": 0}],
+            "sell": [{"price": 0, "quantity": 0, "orders": 0}],
+        },
+    }
+    tick = ZerodhaTransformer.to_quote(raw, INSTR)
+    assert tick.bid is None
+    assert tick.ask is None
+
+
+def test_to_quote_no_depth_field():
+    """Response without depth key (e.g. /quote/ltp) should give None bid/ask."""
+    raw = {k: v for k, v in _RAW_RELIANCE.items() if k != "depth"}
+    tick = ZerodhaTransformer.to_quote(raw, INSTR)
+    assert tick.bid is None
+    assert tick.ask is None
+
+
 # ---------------------------------------------------------------------------
 # AngelOneTransformer.to_quote — UnsupportedFeatureError
 # ---------------------------------------------------------------------------

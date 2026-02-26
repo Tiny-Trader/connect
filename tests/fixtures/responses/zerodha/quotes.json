@@ -9,8 +9,8 @@
       "last_trade_time": "2024-01-15 15:29:58",
       "average_price": 2448.75,
       "volume": 3542100,
-      "buy_quantity": 0,
-      "sell_quantity": 0,
+      "buy_quantity": 150,
+      "sell_quantity": 200,
       "ohlc": {
         "open": 2430.0,
         "high": 2465.0,
@@ -20,7 +20,25 @@
       "net_change": 10.0,
       "oi": 0,
       "oi_day_high": 0,
-      "oi_day_low": 0
+      "oi_day_low": 0,
+      "lower_circuit_limit": 2205.0,
+      "upper_circuit_limit": 2695.0,
+      "depth": {
+        "buy": [
+          {"price": 2449.5, "quantity": 50,  "orders": 3},
+          {"price": 2449.0, "quantity": 100, "orders": 5},
+          {"price": 2448.5, "quantity": 75,  "orders": 4},
+          {"price": 2448.0, "quantity": 200, "orders": 8},
+          {"price": 2447.5, "quantity": 150, "orders": 6}
+        ],
+        "sell": [
+          {"price": 2450.5, "quantity": 25,  "orders": 2},
+          {"price": 2451.0, "quantity": 80,  "orders": 4},
+          {"price": 2451.5, "quantity": 60,  "orders": 3},
+          {"price": 2452.0, "quantity": 120, "orders": 5},
+          {"price": 2452.5, "quantity": 90,  "orders": 4}
+        ]
+      }
     },
     "NSE:SBIN": {
       "instrument_token": 779521,
@@ -30,8 +48,8 @@
       "last_trade_time": "2024-01-15 15:29:55",
       "average_price": 619.8,
       "volume": 12450000,
-      "buy_quantity": 0,
-      "sell_quantity": 0,
+      "buy_quantity": 500,
+      "sell_quantity": 600,
       "ohlc": {
         "open": 615.0,
         "high": 625.0,
@@ -41,7 +59,25 @@
       "net_change": 2.5,
       "oi": 0,
       "oi_day_high": 0,
-      "oi_day_low": 0
+      "oi_day_low": 0,
+      "lower_circuit_limit": 556.5,
+      "upper_circuit_limit": 679.5,
+      "depth": {
+        "buy": [
+          {"price": 620.0, "quantity": 200, "orders": 10},
+          {"price": 619.5, "quantity": 300, "orders": 15},
+          {"price": 619.0, "quantity": 150, "orders": 8},
+          {"price": 618.5, "quantity": 400, "orders": 20},
+          {"price": 618.0, "quantity": 250, "orders": 12}
+        ],
+        "sell": [
+          {"price": 621.0, "quantity": 100, "orders": 5},
+          {"price": 621.5, "quantity": 200, "orders": 10},
+          {"price": 622.0, "quantity": 150, "orders": 7},
+          {"price": 622.5, "quantity": 300, "orders": 15},
+          {"price": 623.0, "quantity": 200, "orders": 9}
+        ]
+      }
     }
   }
 }
