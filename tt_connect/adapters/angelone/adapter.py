@@ -8,10 +8,13 @@ from tt_connect.adapters.angelone.transformer import AngelOneTransformer
 from tt_connect.adapters.angelone.capabilities import ANGELONE_CAPABILITIES
 from tt_connect.adapters.angelone.parser import parse, ParsedInstruments
 from tt_connect.capabilities import Capabilities
+from tt_connect.config import validate_config
 from tt_connect.exceptions import UnsupportedFeatureError
 from tt_connect.ws.client import BrokerWebSocket
 
-BASE_URL = "https://apiconnect.angelbroking.com/rest/secure/angelbroking"
+BASE_URL        = "https://apiconnect.angelbroking.com/rest/secure/angelbroking"
+GTT_BASE_URL    = "https://apiconnect.angelone.in/rest/secure/angelbroking/gtt/v1"
+HISTORICAL_URL  = "https://apiconnect.angelone.in/rest/secure/angelbroking/historical/v1/getCandleData"
 INSTRUMENTS_URL = "https://margincalculator.angelbroking.com/OpenAPI_File/files/OpenAPIScripMaster.json"
 
 
@@ -20,6 +23,7 @@ class AngelOneAdapter(BrokerAdapter, broker_id="angelone"):
 
     def __init__(self, config: JsonDict):
         """Initialize auth and transformer for AngelOne."""
+        validate_config("angelone", config)
         super().__init__(config)
         self.auth = AngelOneAuth(config, self._client)
         self._transformer = AngelOneTransformer()
@@ -107,6 +111,60 @@ class AngelOneAdapter(BrokerAdapter, broker_id="angelone"):
         return await self._request("POST", f"{BASE_URL}/order/v1/cancelOrder",
                                    headers=self.auth.headers,
                                    json={"orderid": order_id, "variety": "NORMAL"})
+
+    # --- GTT ---
+
+    async def place_gtt(self, params: JsonDict) -> JsonDict:
+        """Create a new GTT rule."""
+        return await self._request("POST", f"{GTT_BASE_URL}/createRule",
+                                   headers=self.auth.headers, json=params)
+
+    async def modify_gtt(self, gtt_id: str, params: JsonDict) -> JsonDict:
+        """Modify an existing GTT rule."""
+        payload = {**params, "id": gtt_id}
+        return await self._request("POST", f"{GTT_BASE_URL}/modifyRule",
+                                   headers=self.auth.headers, json=payload)
+
+    async def cancel_gtt(self, gtt_id: str) -> JsonDict:
+        """Cancel a GTT rule (fetches symbol details first as required by API)."""
+        details = await self._request("POST", f"{GTT_BASE_URL}/ruleDetails",
+                                      headers=self.auth.headers, json={"id": gtt_id})
+        d = details["data"]
+        return await self._request("POST", f"{GTT_BASE_URL}/cancelRule",
+                                   headers=self.auth.headers,
+                                   json={"id": gtt_id,
+                                         "symboltoken": d["symboltoken"],
+                                         "exchange": d["exchange"]})
+
+    async def get_gtt(self, gtt_id: str) -> JsonDict:
+        """Fetch a single GTT rule by id."""
+        return await self._request("POST", f"{GTT_BASE_URL}/ruleDetails",
+                                   headers=self.auth.headers, json={"id": gtt_id})
+
+    async def get_gtts(self) -> JsonDict:
+        """Fetch all GTT rules (active and recent)."""
+        raw = await self._request(
+            "POST", f"{GTT_BASE_URL}/ruleList",
+            headers=self.auth.headers,
+            json={"status": ["NEW", "CANCELLED", "ACTIVE", "SENTTOEXCHANGE", "FORALL"],
+                  "page": 1, "count": 50},
+        )
+        # Normalize data to always be a list
+        data = raw.get("data")
+        if data is None:
+            raw["data"] = []
+        elif isinstance(data, dict):
+            raw["data"] = [data]
+        return raw
+
+    # --- Historical ---
+
+    async def get_historical(self, token: str, params: JsonDict) -> JsonDict:
+        """Fetch historical OHLC candles for an instrument token."""
+        raw = await self._request("POST", HISTORICAL_URL,
+                                  headers=self.auth.headers, json=params)
+        raw["data"] = raw.get("data") or []
+        return raw
 
     # --- WebSocket ---
 

@@ -1,11 +1,20 @@
 from datetime import date, timedelta
 from unittest.mock import AsyncMock
 
-from tt_connect.instrument_manager.manager import InstrumentManager
+import aiosqlite
+import pytest
+import pytest_asyncio
+from freezegun import freeze_time
+
 from tt_connect.adapters.zerodha.parser import parse
 from tt_connect.enums import OnStale
-from tt_connect.instrument_manager.db import truncate_all
-from freezegun import freeze_time
+from tt_connect.instrument_manager.db import (
+    SCHEMA_VERSION,
+    _get_schema_version,
+    init_schema,
+    truncate_all,
+)
+from tt_connect.instrument_manager.manager import InstrumentManager
 
 async def _count(db, table: str) -> int:
     async with db.execute(f"SELECT COUNT(*) FROM {table}") as cur:
@@ -66,6 +75,89 @@ async def test_is_stale_behavior(db):
     # 3. Yesterday's meta record -> stale
     with freeze_time(date.today() + timedelta(days=1)):
         assert await manager._is_stale() is True
+
+# ---------------------------------------------------------------------------
+# Schema versioning
+# ---------------------------------------------------------------------------
+
+
+@pytest_asyncio.fixture
+async def raw_conn():
+    """Bare in-memory connection with no schema applied."""
+    conn = await aiosqlite.connect(":memory:")
+    await conn.execute("PRAGMA foreign_keys = ON")
+    yield conn
+    await conn.close()
+
+
+async def test_fresh_db_gets_current_version(raw_conn):
+    await init_schema(raw_conn)
+    assert await _get_schema_version(raw_conn) == SCHEMA_VERSION
+
+
+async def test_init_schema_is_idempotent(raw_conn):
+    await init_schema(raw_conn)
+    await init_schema(raw_conn)  # second call should be a no-op
+    assert await _get_schema_version(raw_conn) == SCHEMA_VERSION
+
+
+async def test_schema_version_mismatch_triggers_recreation(raw_conn):
+    """Simulates upgrading tt-connect with a new schema version."""
+    # Set up DB with an old version number
+    await raw_conn.executescript("""
+        CREATE TABLE _meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+        CREATE TABLE instruments (id INTEGER PRIMARY KEY, exchange TEXT, symbol TEXT,
+            segment TEXT, name TEXT, lot_size INTEGER, tick_size REAL);
+    """)
+    await raw_conn.execute(
+        "INSERT INTO _meta (key, value) VALUES ('schema_version', '0')"
+    )
+    await raw_conn.commit()
+
+    # init_schema detects version 0 != SCHEMA_VERSION, drops and recreates
+    await init_schema(raw_conn)
+
+    assert await _get_schema_version(raw_conn) == SCHEMA_VERSION
+    # New schema has options table with CHECK constraint
+    async with raw_conn.execute(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='options'"
+    ) as cur:
+        assert await cur.fetchone() is not None
+
+
+async def test_truncate_preserves_schema_version(db):
+    """truncate_all clears instrument data but keeps schema_version intact."""
+    await truncate_all(db)
+    assert await _get_schema_version(db) == SCHEMA_VERSION
+
+
+async def test_option_type_check_constraint(db):
+    """DB rejects option_type values outside CE/PE."""
+    # Insert a minimal instrument row to satisfy the FK
+    cursor = await db.execute(
+        "INSERT INTO instruments (exchange, symbol, segment, lot_size, tick_size)"
+        " VALUES ('NSE', 'NIFTY', 'INDICES', 50, 0.05)"
+    )
+    iid = cursor.lastrowid
+    await db.execute("INSERT INTO equities (instrument_id) VALUES (?)", (iid,))
+
+    with pytest.raises(aiosqlite.IntegrityError):
+        await db.execute(
+            "INSERT INTO options (instrument_id, underlying_id, expiry, strike, option_type)"
+            " VALUES (?, ?, '2025-01-30', 23000.0, 'XX')",
+            (iid, iid),
+        )
+
+
+async def test_exchange_check_constraint(raw_conn):
+    """DB rejects exchange values outside the Exchange enum set."""
+    await init_schema(raw_conn)
+    with pytest.raises(aiosqlite.IntegrityError):
+        await raw_conn.execute(
+            "INSERT INTO instruments (exchange, symbol, segment, lot_size, tick_size)"
+            " VALUES ('INVALID', 'TEST', 'TEST', 1, 0.05)"
+        )
+
 
 async def test_ensure_fresh_calls_refresh_only_when_stale(db):
     manager = InstrumentManager(broker_id="zerodha")

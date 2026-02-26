@@ -178,7 +178,10 @@ class AngelOneWebSocket(BrokerWebSocket):
                     if isinstance(message, bytes):
                         tick = self._parse_binary(message)
                         if tick and self._on_tick:
-                            await self._on_tick(tick)
+                            try:
+                                await self._on_tick(tick)
+                            except Exception:
+                                logger.exception("AngelOne WS on_tick callback failed")
                     # text "pong" — ignore
             finally:
                 ping_task.cancel()

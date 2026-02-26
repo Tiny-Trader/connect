@@ -4,39 +4,42 @@
 
 ## Who This Is For
 
-- Trading system developers who want broker portability.
-- Teams building execution, monitoring, or portfolio services.
-- Contributors extending broker support and reliability.
+- Trading system developers who want broker portability
+- Teams building execution, monitoring, or portfolio services
+- Contributors extending broker support and reliability
 
-## Installation
+## Quick Start
 
 ```bash
 cd connect
 poetry install
 ```
 
-## Quick Start
-
 ```python
-from tt_connect import TTConnect
+from tt_connect import TTConnect, PlaceOrderRequest
 from tt_connect.instruments import Equity
 from tt_connect.enums import Exchange, Side, ProductType, OrderType
 
-broker = TTConnect("zerodha", {
-    "api_key": "...",
-    "access_token": "...",
-})
-
-instrument = Equity(exchange=Exchange.NSE, symbol="RELIANCE")
-order_id = broker.place_order(
-    instrument=instrument,
-    qty=1,
-    side=Side.BUY,
-    product=ProductType.CNC,
-    order_type=OrderType.MARKET,
-)
-print(order_id)
+with TTConnect("zerodha", {"api_key": "...", "access_token": "..."}) as broker:
+    req = PlaceOrderRequest(
+        instrument=Equity(exchange=Exchange.NSE, symbol="RELIANCE"),
+        side=Side.BUY,
+        qty=1,
+        order_type=OrderType.MARKET,
+        product=ProductType.CNC,
+    )
+    order_id = broker.place_order(req)
+    print(order_id)
 ```
+
+## Documentation
+
+| Guide | Description |
+|-------|-------------|
+| **[Quick Start](docs/QUICKSTART.md)** | Get installed and place your first order in 5 minutes |
+| **[Examples](docs/EXAMPLES.md)** | Complete working code for Zerodha and AngelOne |
+| [Contributor Guide](docs/CONTRIBUTOR_GUIDE.md) | Local setup, testing, implementation workflow |
+| [Architecture](docs/ARCHITECTURE.md) | System design and internals |
 
 ## Broker Capability Snapshot
 
@@ -47,15 +50,9 @@ print(order_id)
 | Orders (place/modify/cancel/list) | Yes | Yes |
 | Trades | Yes | Yes |
 | Instrument fetch + resolve | Yes | Yes |
-| Streaming | Not implemented yet | In progress |
-| Margin calculator API | Planned | Planned |
-
-## Documentation
-
-- User docs: [docs/README.md](./docs/README.md)
-- Getting started: [docs/GETTING_STARTED.md](./docs/GETTING_STARTED.md)
-- Contributor docs: [CONTRIBUTING.md](./CONTRIBUTING.md), [docs/CONTRIBUTOR_GUIDE.md](./docs/CONTRIBUTOR_GUIDE.md)
-- Architecture internals: [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md)
+| Streaming (WebSocket) | Yes | Yes |
+| GTT orders | Yes | Yes |
+| Margin calculator API | Not supported | Not supported |
 
 ## Development Commands
 

@@ -32,6 +32,8 @@ from dataclasses import dataclass, field
 from datetime import date, datetime
 from typing import Any
 
+from tt_connect.enums import Exchange
+
 
 # ---------------------------------------------------------------------------
 # Canonical parsed types (identical shape to Zerodha parser — InstrumentManager
@@ -206,7 +208,7 @@ def _parse_index(row: dict[str, Any]) -> ParsedIndex:
     broker_sym = (row.get("symbol") or "").strip()  # "Nifty 50", "Nifty Bank", "SENSEX"
 
     return ParsedIndex(
-        exchange      = row["exch_seg"].strip(),     # "NSE" or "BSE"
+        exchange      = Exchange(row["exch_seg"].strip()).value,  # "NSE" or "BSE"
         symbol        = canonical,
         broker_symbol = broker_sym,
         segment       = "INDICES",
@@ -225,12 +227,13 @@ def _parse_equity(row: dict[str, Any]) -> ParsedEquity:
     """
     broker_sym = (row.get("symbol") or "").strip()   # e.g. "RELIANCE-EQ"
     canonical  = broker_sym.removesuffix("-EQ")       # e.g. "RELIANCE"
+    exchange   = Exchange(row["exch_seg"].strip()).value  # validated "NSE" or "BSE"
 
     return ParsedEquity(
-        exchange      = row["exch_seg"].strip(),
+        exchange      = exchange,
         symbol        = canonical,
         broker_symbol = broker_sym,
-        segment       = row["exch_seg"].strip(),     # "NSE" or "BSE"
+        segment       = exchange,
         name          = (row.get("name") or "").strip() or None,
         lot_size      = int(row.get("lotsize") or 1),
         tick_size     = float(row.get("tick_size") or 0.05),
@@ -244,7 +247,7 @@ def _parse_future(row: dict[str, Any]) -> ParsedFuture:
     The `name` field carries the underlying's canonical symbol — same value
     used in our DB. e.g. "NIFTY", "BANKNIFTY", "RELIANCE".
     """
-    exch_seg = row["exch_seg"].strip()               # NFO or BFO
+    exch_seg = Exchange(row["exch_seg"].strip()).value  # validated "NFO" or "BFO"
 
     return ParsedFuture(
         exchange            = exch_seg,
@@ -264,7 +267,7 @@ def _parse_option(row: dict[str, Any]) -> ParsedOption:
     AngelOne options: OPTIDX (index options) and OPTSTK (stock options).
     Strike is stored as strike * 100 in AngelOne's master — divide by 100.
     """
-    exch_seg = row["exch_seg"].strip()               # NFO or BFO
+    exch_seg = Exchange(row["exch_seg"].strip()).value  # validated "NFO" or "BFO"
 
     # AngelOne stores strike as strike * 100 (e.g. 2300000 → 23000.0)
     raw_strike = float(row.get("strike") or 0)

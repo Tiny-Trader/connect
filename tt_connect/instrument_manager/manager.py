@@ -6,7 +6,7 @@ from typing import Any, Protocol
 
 import aiosqlite
 from tt_connect.enums import OnStale
-from tt_connect.exceptions import TTConnectError
+from tt_connect.exceptions import TTConnectError, InstrumentManagerError
 from tt_connect.instrument_manager.db import get_connection, init_schema, truncate_all
 
 logger = logging.getLogger(__name__)
@@ -27,7 +27,8 @@ class InstrumentManager:
         self._conn: aiosqlite.Connection | None = None
 
     def _conn_or_raise(self) -> aiosqlite.Connection:
-        assert self._conn is not None, "InstrumentManager not initialized"
+        if self._conn is None:
+            raise InstrumentManagerError("InstrumentManager not initialized. Call init() first.")
         return self._conn
 
     async def init(self, fetch_fn: Callable[[], Awaitable[ParsedInstrumentsLike]]) -> None:
@@ -280,5 +281,6 @@ class InstrumentManager:
     @property
     def connection(self) -> aiosqlite.Connection:
         """Expose initialized DB connection to resolver/client layers."""
-        assert self._conn, "InstrumentManager not initialized"
+        if not self._conn:
+            raise InstrumentManagerError("InstrumentManager not initialized. Call init() first.")
         return self._conn

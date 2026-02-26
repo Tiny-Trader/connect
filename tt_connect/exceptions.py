@@ -63,3 +63,27 @@ class OrderNotFoundError(OrderError):
     """Referenced order id does not exist or is not accessible."""
 
     retryable = False
+
+
+class ConfigurationError(TTConnectError):
+    """Invalid or incomplete broker configuration supplied at construction time."""
+
+    retryable = False
+
+
+class ClientNotConnectedError(TTConnectError):
+    """Client must be connected before this operation. Call init() first."""
+
+    retryable = False
+
+
+class ClientClosedError(TTConnectError):
+    """Client has been closed and cannot be reused."""
+
+    retryable = False
+
+
+class InstrumentManagerError(TTConnectError):
+    """InstrumentManager not initialized. Call init() first."""
+
+    retryable = False
