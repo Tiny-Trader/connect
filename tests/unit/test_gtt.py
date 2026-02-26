@@ -50,7 +50,7 @@ class TestAngelOneGtt:
     BROKER_SYMBOL = "SBIN-EQ"
     EXCHANGE      = "NSE"
 
-    def test_to_gtt_params_single_leg(self):
+    def test_to_gtt_params_single_leg(self) -> None:
         params = AngelOneTransformer.to_gtt_params(
             self.TOKEN, self.BROKER_SYMBOL, self.EXCHANGE, PLACE_REQ
         )
@@ -63,7 +63,7 @@ class TestAngelOneGtt:
         assert params["price"]           == "195.0"
         assert params["qty"]             == "10"
 
-    def test_to_gtt_params_margin_product(self):
+    def test_to_gtt_params_margin_product(self) -> None:
         leg = GttLeg(trigger_price=100.0, price=99.0, side=Side.SELL,
                      qty=5, product=ProductType.NRML)
         req = PlaceGttRequest(instrument=INSTR, last_price=105.0, legs=[leg])
@@ -72,7 +72,7 @@ class TestAngelOneGtt:
         )
         assert params["producttype"] == "MARGIN"
 
-    def test_to_modify_gtt_params(self):
+    def test_to_modify_gtt_params(self) -> None:
         params = AngelOneTransformer.to_modify_gtt_params(
             self.TOKEN, self.BROKER_SYMBOL, self.EXCHANGE, MODIFY_REQ
         )
@@ -82,11 +82,11 @@ class TestAngelOneGtt:
         assert params["price"]        == "195.0"
         assert params["qty"]          == "10"
 
-    def test_to_gtt_id_extracts_id(self):
+    def test_to_gtt_id_extracts_id(self) -> None:
         raw = {"status": True, "data": {"id": "7"}}
         assert AngelOneTransformer.to_gtt_id(raw) == "7"
 
-    def test_to_gtt_normalizes_record(self):
+    def test_to_gtt_normalizes_record(self) -> None:
         raw = {
             "id":              "1",
             "status":          "NEW",
@@ -111,7 +111,7 @@ class TestAngelOneGtt:
         assert leg.qty           == 10
         assert leg.product       == ProductType.CNC
 
-    def test_to_gtt_margin_product(self):
+    def test_to_gtt_margin_product(self) -> None:
         raw = {
             "id": "2", "status": "ACTIVE",
             "tradingsymbol": "INFY-EQ", "exchange": "NSE",
@@ -131,7 +131,7 @@ class TestZerodhaGtt:
     BROKER_SYMBOL = "INFY"
     EXCHANGE      = "NSE"
 
-    def test_to_gtt_params_single(self):
+    def test_to_gtt_params_single(self) -> None:
         params = ZerodhaTransformer.to_gtt_params(
             self.TOKEN, self.BROKER_SYMBOL, self.EXCHANGE, PLACE_REQ
         )
@@ -151,7 +151,7 @@ class TestZerodhaGtt:
         assert orders[0]["price"]            == 195.0
         assert orders[0]["order_type"]       == "LIMIT"
 
-    def test_to_gtt_params_two_leg(self):
+    def test_to_gtt_params_two_leg(self) -> None:
         leg2 = GttLeg(
             trigger_price=210.0, price=211.0, side=Side.SELL,
             qty=10, product=ProductType.CNC
@@ -168,7 +168,7 @@ class TestZerodhaGtt:
         orders = json.loads(params["orders"])
         assert len(orders) == 2
 
-    def test_to_modify_gtt_params(self):
+    def test_to_modify_gtt_params(self) -> None:
         params = ZerodhaTransformer.to_modify_gtt_params(
             self.TOKEN, self.BROKER_SYMBOL, self.EXCHANGE, MODIFY_REQ
         )
@@ -176,11 +176,11 @@ class TestZerodhaGtt:
         condition = json.loads(params["condition"])
         assert condition["trigger_values"] == [196.0]
 
-    def test_to_gtt_id(self):
+    def test_to_gtt_id(self) -> None:
         raw = {"status": "success", "data": {"trigger_id": 123}}
         assert ZerodhaTransformer.to_gtt_id(raw) == "123"
 
-    def test_to_gtt_single(self):
+    def test_to_gtt_single(self) -> None:
         raw = {
             "id": 112127,
             "type": "single",
@@ -217,7 +217,7 @@ class TestZerodhaGtt:
         assert leg.qty           == 1
         assert leg.product       == ProductType.CNC
 
-    def test_to_gtt_two_leg(self):
+    def test_to_gtt_two_leg(self) -> None:
         raw = {
             "id": 105099,
             "type": "two-leg",
@@ -242,7 +242,7 @@ class TestZerodhaGtt:
         assert gtt.legs[0].trigger_price == pytest.approx(102.0)
         assert gtt.legs[1].trigger_price == pytest.approx(103.7)
 
-    def test_to_gtt_empty_orders(self):
+    def test_to_gtt_empty_orders(self) -> None:
         """GTT with no orders list still produces a valid Gtt with empty legs."""
         raw = {
             "id": 999, "type": "single", "status": "expired",

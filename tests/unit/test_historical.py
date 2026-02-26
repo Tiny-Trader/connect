@@ -8,10 +8,12 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from tt_connect.adapters.angelone.transformer import AngelOneTransformer
+from tt_connect.adapters.zerodha.adapter import ZerodhaAdapter
 from tt_connect.adapters.zerodha.transformer import ZerodhaTransformer
 from tt_connect.enums import CandleInterval
+from tt_connect.exceptions import AuthenticationError, BrokerError
 from tt_connect.instrument_manager.resolver import ResolvedInstrument
-from tt_connect.instruments import Equity
+from tt_connect.instruments import Equity, Instrument
 from tt_connect.models import Candle, GetHistoricalRequest
 from tt_connect.portfolio import PortfolioMixin
 
@@ -32,7 +34,7 @@ def _make_client() -> PortfolioMixin:
         def _require_connected(self) -> None:
             pass
 
-        async def _resolve(self, instrument):  # type: ignore[override]
+        async def _resolve(self, instrument: Instrument) -> ResolvedInstrument:
             return RESOLVED
 
     client: _Fake = object.__new__(_Fake)
@@ -233,3 +235,28 @@ async def test_get_historical_empty_data_returns_empty_list():
     result = await client.get_historical(INSTR, CandleInterval.DAY, FROM_DT, TO_DT)
 
     assert result == []
+
+
+@pytest.mark.asyncio
+async def test_zerodha_adapter_get_historical_raises_on_malformed_payload() -> None:
+    adapter = ZerodhaAdapter({"api_key": "k", "access_token": "t"})
+    adapter._request = AsyncMock(return_value={"status": "success", "data": {}})  # type: ignore[method-assign]
+
+    with pytest.raises(BrokerError, match="data.candles"):
+        await adapter.get_historical("2885", {"interval": "day", "from": "x", "to": "y"})
+
+
+def test_zerodha_create_ws_client_raises_when_access_token_missing() -> None:
+    adapter = ZerodhaAdapter({"api_key": "k", "access_token": "t"})
+    adapter.auth._session = None
+
+    with pytest.raises(AuthenticationError, match="access_token"):
+        adapter.create_ws_client()
+
+
+def test_zerodha_create_ws_client_raises_when_api_key_missing() -> None:
+    adapter = ZerodhaAdapter({"api_key": "k", "access_token": "t"})
+    adapter._config["api_key"] = ""
+
+    with pytest.raises(AuthenticationError, match="api_key"):
+        adapter.create_ws_client()

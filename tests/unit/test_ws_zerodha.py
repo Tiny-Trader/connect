@@ -89,7 +89,7 @@ TOKEN = 408065
 INSTR = Equity(exchange="NSE", symbol="INFY")
 
 
-def test_ltp_packet_parsed_correctly():
+def test_ltp_packet_parsed_correctly() -> None:
     ltp_paise = 175050  # ₹1750.50
     ws = _ws_with_instrument(TOKEN, INSTR)
     packet = _build_ltp_packet(TOKEN, ltp_paise)
@@ -106,7 +106,7 @@ def test_ltp_packet_parsed_correctly():
     assert ticks[0].instrument is INSTR
 
 
-def test_quote_packet_includes_volume():
+def test_quote_packet_includes_volume() -> None:
     ws = _ws_with_instrument(TOKEN, INSTR)
     packet = _build_quote_packet(TOKEN, ltp_paise=25000_00, volume=12345)
     msg = _frame(packet)
@@ -119,7 +119,7 @@ def test_quote_packet_includes_volume():
     assert ticks[0].oi is None
 
 
-def test_full_packet_includes_oi_and_depth():
+def test_full_packet_includes_oi_and_depth() -> None:
     ws = _ws_with_instrument(TOKEN, INSTR)
     packet = _build_full_packet(
         TOKEN,
@@ -140,7 +140,7 @@ def test_full_packet_includes_oi_and_depth():
     assert tick.ask == pytest.approx(2501.00)
 
 
-def test_multi_packet_message():
+def test_multi_packet_message() -> None:
     TOKEN2 = 884737
     INSTR2 = Equity(exchange="NSE", symbol="TATAMOTORS")
     ws = _ws_with_instrument(TOKEN, INSTR)
@@ -159,7 +159,7 @@ def test_multi_packet_message():
     assert ticks[1].ltp == pytest.approx(200.0)
 
 
-def test_one_byte_heartbeat_produces_no_ticks():
+def test_one_byte_heartbeat_produces_no_ticks() -> None:
     ws = _ws_with_instrument(TOKEN, INSTR)
     # The heartbeat guard is in _connect_and_run; _parse_binary_message handles
     # remaining edge cases (empty frame).
@@ -167,7 +167,7 @@ def test_one_byte_heartbeat_produces_no_ticks():
     assert result == []
 
 
-def test_unknown_token_skipped():
+def test_unknown_token_skipped() -> None:
     ws = ZerodhaWebSocket(api_key="key", access_token="tok")
     # Token map is empty — no instrument registered
     packet = _build_ltp_packet(99999, 100_00)
@@ -177,7 +177,7 @@ def test_unknown_token_skipped():
     assert ticks == []
 
 
-def test_full_packet_timestamp():
+def test_full_packet_timestamp() -> None:
     ws = _ws_with_instrument(TOKEN, INSTR)
     ts_epoch = 1700000000
     packet = _build_full_packet(TOKEN, ltp_paise=100_00, exchange_ts=ts_epoch)
@@ -190,12 +190,12 @@ def test_full_packet_timestamp():
     assert ticks[0].timestamp.tzinfo == timezone.utc
 
 
-def test_empty_message_returns_empty():
+def test_empty_message_returns_empty() -> None:
     ws = _ws_with_instrument(TOKEN, INSTR)
     assert ws._parse_binary_message(b"") == []
 
 
-def test_text_error_message_logged(caplog):
+def test_text_error_message_logged(caplog: pytest.LogCaptureFixture) -> None:
     import logging
     ws = ZerodhaWebSocket(api_key="key", access_token="tok")
     with caplog.at_level(logging.ERROR, logger="tt_connect.ws.zerodha"):
@@ -203,7 +203,7 @@ def test_text_error_message_logged(caplog):
     assert "Rate limit exceeded" in caplog.text
 
 
-def test_text_broker_message_logged(caplog):
+def test_text_broker_message_logged(caplog: pytest.LogCaptureFixture) -> None:
     import logging
     ws = ZerodhaWebSocket(api_key="key", access_token="tok")
     with caplog.at_level(logging.INFO, logger="tt_connect.ws.zerodha"):
@@ -211,7 +211,7 @@ def test_text_broker_message_logged(caplog):
     assert "Market closed" in caplog.text
 
 
-def test_depth_all_zero_prices_returns_none():
+def test_depth_all_zero_prices_returns_none() -> None:
     """If all depth prices are zero, bid and ask stay None."""
     ws = _ws_with_instrument(TOKEN, INSTR)
     # Build a full packet with zero depth prices
@@ -228,3 +228,56 @@ def test_depth_all_zero_prices_returns_none():
     assert len(ticks) == 1
     assert ticks[0].bid is None
     assert ticks[0].ask is None
+
+
+class _FakeWs:
+    """Minimal async websocket double for _connect_and_run tests."""
+
+    def __init__(self, messages: list[bytes | str]) -> None:
+        self._messages = messages
+        self._iter = iter(self._messages)
+
+    async def __aenter__(self) -> "_FakeWs":
+        return self
+
+    async def __aexit__(self, exc_type, exc, tb) -> None:
+        return None
+
+    def __aiter__(self) -> "_FakeWs":
+        self._iter = iter(self._messages)
+        return self
+
+    async def __anext__(self) -> bytes | str:
+        try:
+            return next(self._iter)
+        except StopIteration as e:
+            raise StopAsyncIteration from e
+
+    async def send(self, data: str) -> None:
+        _ = data
+
+
+async def test_on_tick_exception_is_logged_and_stream_continues(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    import logging
+    from unittest.mock import patch
+
+    ws = ZerodhaWebSocket(api_key="key", access_token="tok")
+    calls = 0
+
+    async def on_tick(tick: object) -> None:
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            raise RuntimeError("boom")
+
+    ws._on_tick = on_tick
+    ws._parse_binary_message = lambda _m: [object(), object()]  # type: ignore[method-assign]
+
+    with patch("tt_connect.ws.zerodha.websockets.connect", return_value=_FakeWs([b"ab"])):
+        with caplog.at_level(logging.ERROR, logger="tt_connect.ws.zerodha"):
+            await ws._connect_and_run()
+
+    assert calls == 2
+    assert "Zerodha WS on_tick callback failed" in caplog.text

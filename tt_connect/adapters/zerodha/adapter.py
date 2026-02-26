@@ -8,6 +8,7 @@ from tt_connect.adapters.zerodha.capabilities import ZERODHA_CAPABILITIES
 from tt_connect.adapters.zerodha.parser import parse, ParsedInstruments
 from tt_connect.capabilities import Capabilities
 from tt_connect.config import validate_config
+from tt_connect.exceptions import AuthenticationError, BrokerError
 from tt_connect.ws.client import BrokerWebSocket
 
 BASE_URL = "https://api.kite.trade"
@@ -148,7 +149,11 @@ class ZerodhaAdapter(BrokerAdapter, broker_id="zerodha"):
             headers=self.auth.headers, params=query,
         )
         # Normalize: flatten candles out of the nested data dict
-        raw["data"] = raw["data"]["candles"]
+        data = raw.get("data")
+        candles = data.get("candles") if isinstance(data, dict) else None
+        if not isinstance(candles, list):
+            raise BrokerError("Unexpected historical payload from Zerodha: missing data.candles")
+        raw["data"] = candles
         return raw
 
     # --- WebSocket ---
@@ -156,10 +161,20 @@ class ZerodhaAdapter(BrokerAdapter, broker_id="zerodha"):
     def create_ws_client(self) -> BrokerWebSocket:
         """Return a KiteTicker WebSocket client for live streaming."""
         from tt_connect.ws.zerodha import ZerodhaWebSocket
-        return ZerodhaWebSocket(
-            api_key=str(self._config.get("api_key", "")),
-            access_token=str(self.auth.access_token or ""),
-        )
+        api_key = str(self._config.get("api_key", "")).strip()
+        access_token = str(self.auth.access_token or "").strip()
+
+        missing: list[str] = []
+        if not api_key:
+            missing.append("api_key")
+        if not access_token:
+            missing.append("access_token")
+        if missing:
+            raise AuthenticationError(
+                "Cannot create Zerodha WebSocket client. Missing: " + ", ".join(missing)
+            )
+
+        return ZerodhaWebSocket(api_key=api_key, access_token=access_token)
 
     # --- Capabilities ---
 

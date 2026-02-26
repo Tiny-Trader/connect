@@ -105,10 +105,16 @@ def validate_config(broker_id: str, raw: dict[str, Any] | BrokerConfig) -> Broke
     Raises :exc:`ConfigurationError` with a human-readable message on failure.
     Already-validated ``BrokerConfig`` instances pass through unchanged.
     """
+    model_cls = _CONFIG_MODELS.get(broker_id)
+
     if isinstance(raw, BrokerConfig):
+        if model_cls is not None and not isinstance(raw, model_cls):
+            raise ConfigurationError(
+                f"Config type mismatch for broker '{broker_id}': expected "
+                f"{model_cls.__name__}, got {type(raw).__name__}."
+            )
         return raw
 
-    model_cls = _CONFIG_MODELS.get(broker_id)
     if model_cls is None:
         # Unknown broker — skip validation; let the adapter registry raise later
         return BrokerConfig.model_validate({})

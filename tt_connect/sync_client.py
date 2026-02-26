@@ -33,7 +33,13 @@ class TTConnect:
         self._thread = threading.Thread(target=self._loop.run_forever, daemon=True)
         self._thread.start()
         self._async = AsyncTTConnect(broker, config)
-        self._run(self._async.init())
+        try:
+            self._run(self._async.init())
+        except Exception:
+            self._loop.call_soon_threadsafe(self._loop.stop)
+            self._thread.join()
+            self._loop.close()
+            raise
 
     def _run(self, coro: Coroutine[Any, Any, T]) -> T:
         """Execute a coroutine on the internal loop and block for result."""

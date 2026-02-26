@@ -74,7 +74,10 @@ class LifecycleMixin(_ClientBase):
         self._state = ClientState.CLOSED
         if self._ws:
             await self._ws.close()
-        await self._instrument_manager.connection.close()
+        # close() may be called before init() completes; DB connection exists only
+        # after resolver/manager initialization succeeds.
+        if self._resolver is not None:
+            await self._instrument_manager.connection.close()
         await self._adapter._client.aclose()
 
     async def __aenter__(self) -> Self:

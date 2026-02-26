@@ -121,8 +121,9 @@ class AngelOneAdapter(BrokerAdapter, broker_id="angelone"):
 
     async def modify_gtt(self, gtt_id: str, params: JsonDict) -> JsonDict:
         """Modify an existing GTT rule."""
+        payload = {**params, "id": gtt_id}
         return await self._request("POST", f"{GTT_BASE_URL}/modifyRule",
-                                   headers=self.auth.headers, json=params)
+                                   headers=self.auth.headers, json=payload)
 
     async def cancel_gtt(self, gtt_id: str) -> JsonDict:
         """Cancel a GTT rule (fetches symbol details first as required by API)."""

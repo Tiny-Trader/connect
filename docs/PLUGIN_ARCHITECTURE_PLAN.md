@@ -191,7 +191,7 @@ Cons:
 
 ## Option B: Monorepo with multiple distributables
 
-```
+```text
 repo/
   packages/
     tt-connect/          # core

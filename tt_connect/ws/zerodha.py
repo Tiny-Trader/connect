@@ -178,7 +178,10 @@ class ZerodhaWebSocket(BrokerWebSocket):
                             continue
                         for tick in self._parse_binary_message(message):
                             if self._on_tick:
-                                await self._on_tick(tick)
+                                try:
+                                    await self._on_tick(tick)
+                                except Exception:
+                                    logger.exception("Zerodha WS on_tick callback failed")
                     else:
                         self._handle_text(message)
             finally:

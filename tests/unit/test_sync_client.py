@@ -103,6 +103,40 @@ def test_context_manager_calls_close():
         mock_async.close.assert_awaited()
 
 
+def test_init_failure_cleans_up_loop_and_thread(monkeypatch: pytest.MonkeyPatch) -> None:
+    stop_sentinel = object()
+
+    fake_loop = MagicMock()
+    fake_loop.stop = stop_sentinel
+
+    fake_thread = MagicMock()
+
+    mock_async = MagicMock()
+    mock_async.init = AsyncMock(return_value=None)
+
+    class InitBoom(RuntimeError):
+        pass
+
+    def fake_run(self: TTConnect, coro):
+        coro.close()
+        raise InitBoom("init failed")
+
+    with (
+        patch("asyncio.new_event_loop", return_value=fake_loop),
+        patch("threading.Thread", return_value=fake_thread),
+        patch("tt_connect.client.AsyncTTConnect", return_value=mock_async),
+    ):
+        monkeypatch.setattr(TTConnect, "_run", fake_run)
+
+        with pytest.raises(InitBoom):
+            TTConnect("zerodha", {})
+
+    fake_thread.start.assert_called_once()
+    fake_loop.call_soon_threadsafe.assert_called_once_with(stop_sentinel)
+    fake_thread.join.assert_called_once()
+    fake_loop.close.assert_called_once()
+
+
 # ---------------------------------------------------------------------------
 # Portfolio delegations
 # ---------------------------------------------------------------------------

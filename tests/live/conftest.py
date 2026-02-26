@@ -14,8 +14,8 @@ def broker_config() -> dict:
         "access_token": os.environ.get("ZERODHA_ACCESS_TOKEN"),
     }
 
-@pytest.fixture
-async def broker(broker_config):
+@pytest_asyncio.fixture
+async def broker(broker_config: dict[str, str | None]):
     b = AsyncTTConnect("zerodha", broker_config)
     await b.init()
     yield b
@@ -34,16 +34,21 @@ def angelone_config() -> dict:
     }
 
 @pytest_asyncio.fixture(scope="module", loop_scope="module")
-async def angelone_broker(angelone_config):
+async def angelone_broker(angelone_config: dict[str, str | None]):
     async with AsyncTTConnect("angelone", angelone_config) as b:
         yield b
 
 # --- Skip guard ---
 
-def pytest_collection_modifyitems(items):
+def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
     """Skip live tests when required credentials are absent."""
     missing_zerodha  = not os.environ.get("ZERODHA_API_KEY") or not os.environ.get("ZERODHA_ACCESS_TOKEN")
-    missing_angelone = not os.environ.get("ANGELONE_API_KEY") or not os.environ.get("ANGELONE_CLIENT_ID")
+    missing_angelone = (
+        not os.environ.get("ANGELONE_API_KEY")
+        or not os.environ.get("ANGELONE_CLIENT_ID")
+        or not os.environ.get("ANGELONE_PIN")
+        or not os.environ.get("ANGELONE_TOTP_SECRET")
+    )
 
     for item in items:
         if "live" not in item.keywords:

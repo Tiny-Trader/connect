@@ -99,7 +99,7 @@ def _ws_with_token(token: str, instrument: Equity) -> AngelOneWebSocket:
 # ---------------------------------------------------------------------------
 
 
-def test_ltp_packet_parsed():
+def test_ltp_packet_parsed() -> None:
     ws = _ws_with_token(TOKEN_STR, INSTR)
     data = _ao_ltp_packet(TOKEN_STR, ltp_paise=49500_00)  # ₹49500.00
 
@@ -114,7 +114,7 @@ def test_ltp_packet_parsed():
     assert tick.ask is None
 
 
-def test_ltp_timestamp_zero_gives_none():
+def test_ltp_timestamp_zero_gives_none() -> None:
     ws = _ws_with_token(TOKEN_STR, INSTR)
     data = _ao_ltp_packet(TOKEN_STR, ltp_paise=100_00, ts_ms=0)
 
@@ -124,7 +124,7 @@ def test_ltp_timestamp_zero_gives_none():
     assert tick.timestamp is None
 
 
-def test_ltp_timestamp_nonzero_parsed():
+def test_ltp_timestamp_nonzero_parsed() -> None:
     ws = _ws_with_token(TOKEN_STR, INSTR)
     ts_ms = 1700000000_000  # epoch ms
     data = _ao_ltp_packet(TOKEN_STR, ltp_paise=100_00, ts_ms=ts_ms)
@@ -136,12 +136,12 @@ def test_ltp_timestamp_nonzero_parsed():
     assert tick.timestamp.tzinfo == timezone.utc
 
 
-def test_packet_too_short_returns_none():
+def test_packet_too_short_returns_none() -> None:
     ws = _ws_with_token(TOKEN_STR, INSTR)
     assert ws._parse_binary(b"\x01\x02") is None
 
 
-def test_unknown_token_returns_none():
+def test_unknown_token_returns_none() -> None:
     auth = MagicMock()
     ws = AngelOneWebSocket(auth=auth)   # empty token map
     data = _ao_ltp_packet(TOKEN_STR, ltp_paise=100_00)
@@ -149,7 +149,7 @@ def test_unknown_token_returns_none():
     assert ws._parse_binary(data) is None
 
 
-def test_token_with_null_padding_parsed():
+def test_token_with_null_padding_parsed() -> None:
     """Token bytes may be null-padded; ensure stripping works."""
     ws = _ws_with_token(TOKEN_STR, INSTR)
     # Build with null-padded token manually
@@ -171,7 +171,7 @@ def test_token_with_null_padding_parsed():
 # ---------------------------------------------------------------------------
 
 
-def test_quote_packet_includes_volume():
+def test_quote_packet_includes_volume() -> None:
     ws = _ws_with_token(TOKEN_STR, INSTR)
     data = _ao_quote_packet(TOKEN_STR, ltp_paise=100_00, volume=98765, mode=2)
 
@@ -183,7 +183,7 @@ def test_quote_packet_includes_volume():
     assert tick.oi is None
 
 
-def test_ltp_mode_in_larger_packet_skips_volume():
+def test_ltp_mode_in_larger_packet_skips_volume() -> None:
     """Mode=1 in a 123-byte packet should NOT populate volume."""
     ws = _ws_with_token(TOKEN_STR, INSTR)
     data = _ao_quote_packet(TOKEN_STR, ltp_paise=100_00, volume=12345, mode=1)
@@ -199,7 +199,7 @@ def test_ltp_mode_in_larger_packet_skips_volume():
 # ---------------------------------------------------------------------------
 
 
-def test_snap_quote_includes_oi_and_depth():
+def test_snap_quote_includes_oi_and_depth() -> None:
     ws = _ws_with_token(TOKEN_STR, INSTR)
     data = _ao_snap_quote_packet(
         TOKEN_STR, ltp_paise=2000_00,
@@ -215,7 +215,7 @@ def test_snap_quote_includes_oi_and_depth():
     assert tick.ask    == pytest.approx(2001.0)
 
 
-def test_snap_quote_zero_bid_ask_stays_none():
+def test_snap_quote_zero_bid_ask_stays_none() -> None:
     ws = _ws_with_token(TOKEN_STR, INSTR)
     data = _ao_snap_quote_packet(TOKEN_STR, ltp_paise=100_00, bid_paise=0, ask_paise=0)
 
@@ -231,7 +231,7 @@ def test_snap_quote_zero_bid_ask_stays_none():
 # ---------------------------------------------------------------------------
 
 
-def test_parse_best5_returns_bid_and_ask():
+def test_parse_best5_returns_bid_and_ask() -> None:
     block = bytearray(200)
     # Entry 0: flag=0 (buy), price=₹1999
     struct.pack_into("<HqqH", block, 0,  0,   10, 1999_00, 1)
@@ -244,7 +244,7 @@ def test_parse_best5_returns_bid_and_ask():
     assert ask == pytest.approx(2001.0)
 
 
-def test_parse_best5_skips_zero_prices():
+def test_parse_best5_skips_zero_prices() -> None:
     block = bytearray(200)
     # Entry 0: buy with price=0 (should be skipped)
     struct.pack_into("<HqqH", block, 0,  0, 5, 0, 1)
@@ -259,7 +259,7 @@ def test_parse_best5_skips_zero_prices():
     assert ask == pytest.approx(505.0)
 
 
-def test_parse_best5_empty_block_returns_none():
+def test_parse_best5_empty_block_returns_none() -> None:
     bid, ask = AngelOneWebSocket._parse_best5_top(b"")
     assert bid is None
     assert ask is None
@@ -270,7 +270,7 @@ def test_parse_best5_empty_block_returns_none():
 # ---------------------------------------------------------------------------
 
 
-def test_build_token_list_groups_by_exchange():
+def test_build_token_list_groups_by_exchange() -> None:
     auth = MagicMock()
     ws = AngelOneWebSocket(auth=auth)
     ws._token_exchange_type = {"T1": 1, "T2": 1, "T3": 2}
@@ -282,13 +282,13 @@ def test_build_token_list_groups_by_exchange():
     assert by_et[2] == ["T3"]
 
 
-def test_build_token_list_empty_returns_empty():
+def test_build_token_list_empty_returns_empty() -> None:
     auth = MagicMock()
     ws = AngelOneWebSocket(auth=auth)
     assert ws._build_token_list([]) == []
 
 
-def test_build_token_list_unknown_token_defaults_exchange_1():
+def test_build_token_list_unknown_token_defaults_exchange_1() -> None:
     auth = MagicMock()
     ws = AngelOneWebSocket(auth=auth)
     # No entry in _token_exchange_type — should default to 1
@@ -303,7 +303,7 @@ def test_build_token_list_unknown_token_defaults_exchange_1():
 # ---------------------------------------------------------------------------
 
 
-async def test_subscribe_populates_token_map():
+async def test_subscribe_populates_token_map() -> None:
     from tt_connect.instrument_manager.resolver import ResolvedInstrument
 
     auth = MagicMock()
@@ -322,7 +322,7 @@ async def test_subscribe_populates_token_map():
     assert ws._on_tick is on_tick
 
 
-async def test_unsubscribe_removes_tokens():
+async def test_unsubscribe_removes_tokens() -> None:
     auth = MagicMock()
     ws = AngelOneWebSocket(auth=auth)
     instr = Equity(exchange="NSE", symbol="INFY")
@@ -336,7 +336,7 @@ async def test_unsubscribe_removes_tokens():
     assert "1594" not in ws._token_exchange_type
 
 
-async def test_unsubscribe_no_match_is_noop():
+async def test_unsubscribe_no_match_is_noop() -> None:
     auth = MagicMock()
     ws = AngelOneWebSocket(auth=auth)
     instr = Equity(exchange="NSE", symbol="INFY")
@@ -350,7 +350,7 @@ async def test_unsubscribe_no_match_is_noop():
 # ---------------------------------------------------------------------------
 
 
-async def test_close_sets_closed_flag():
+async def test_close_sets_closed_flag() -> None:
     auth = MagicMock()
     ws = AngelOneWebSocket(auth=auth)
 
@@ -359,7 +359,7 @@ async def test_close_sets_closed_flag():
     assert ws._closed is True
 
 
-async def test_close_cancels_running_task():
+async def test_close_cancels_running_task() -> None:
     import asyncio
 
     auth = MagicMock()
@@ -374,3 +374,63 @@ async def test_close_cancels_running_task():
     await ws.close()
 
     assert ws._task.cancelled() or ws._task.done()
+
+
+class _FakeWs:
+    """Minimal async websocket double for _connect_and_run tests."""
+
+    def __init__(self, messages: list[bytes | str]) -> None:
+        self._messages = messages
+        self._iter = iter(self._messages)
+
+    async def __aenter__(self) -> "_FakeWs":
+        return self
+
+    async def __aexit__(self, exc_type, exc, tb) -> None:
+        return None
+
+    def __aiter__(self) -> "_FakeWs":
+        self._iter = iter(self._messages)
+        return self
+
+    async def __anext__(self) -> bytes | str:
+        try:
+            return next(self._iter)
+        except StopIteration as e:
+            raise StopAsyncIteration from e
+
+    async def send(self, data: str) -> None:
+        _ = data
+
+
+async def test_on_tick_exception_is_logged_and_stream_continues(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    import logging
+    from unittest.mock import AsyncMock
+
+    auth = MagicMock()
+    auth._session = MagicMock(feed_token="feedtok")
+    auth.access_token = "accesstok"
+    auth._config = {"api_key": "key", "client_id": "cid"}
+
+    ws = AngelOneWebSocket(auth=auth)
+    ws._ping_loop = AsyncMock(return_value=None)  # type: ignore[method-assign]
+
+    calls = 0
+
+    async def on_tick(tick: object) -> None:
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            raise RuntimeError("boom")
+
+    ws._on_tick = on_tick
+    ws._parse_binary = lambda _m: object()  # type: ignore[method-assign]
+
+    with patch("tt_connect.ws.angelone.websockets.connect", return_value=_FakeWs([b"a", b"b"])):
+        with caplog.at_level(logging.ERROR, logger="tt_connect.ws.angelone"):
+            await ws._connect_and_run()
+
+    assert calls == 2
+    assert "AngelOne WS on_tick callback failed" in caplog.text
