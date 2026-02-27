@@ -52,6 +52,9 @@ class TTConnect:
         self._loop.call_soon_threadsafe(self._loop.stop)
         self._thread.join()
 
+    def __dir__(self) -> list[str]:
+        return [name for name in super().__dir__() if not name.startswith("_")]
+
     def __enter__(self) -> "TTConnect":
         return self
 

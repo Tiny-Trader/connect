@@ -24,20 +24,20 @@ async def test_init_calls_login_and_instruments(zerodha_csv, tmp_path, monkeypat
     })
 
     # Before init, resolver should be None and state should be CREATED
-    assert broker._resolver is None
-    assert broker._state == ClientState.CREATED
+    assert broker._core._resolver is None
+    assert broker._core._state == ClientState.CREATED
 
     await broker.init()
 
     # After init, resolver should be set and state should be CONNECTED
-    assert broker._resolver is not None
-    assert broker._state == ClientState.CONNECTED
+    assert broker._core._resolver is not None
+    assert broker._core._state == ClientState.CONNECTED
 
     # Instruments endpoint was called exactly once
     assert respx.calls.call_count == 1
 
     await broker.close()
-    assert broker._state == ClientState.CLOSED
+    assert broker._core._state == ClientState.CLOSED
 
 @respx.mock
 @pytest.mark.parametrize("zerodha_response", ["profile"], indirect=True)
@@ -55,8 +55,8 @@ async def test_client_get_profile(zerodha_response, monkeypatch, tmp_path):
     })
 
     import aiosqlite
-    broker._instrument_manager._conn = await aiosqlite.connect(":memory:")
-    broker._state = ClientState.CONNECTED
+    broker._core._instrument_manager._conn = await aiosqlite.connect(":memory:")
+    broker._core._state = ClientState.CONNECTED
 
     profile = await broker.get_profile()
     assert profile.client_id == "ZZ0001"
@@ -79,8 +79,8 @@ async def test_client_get_holdings(zerodha_response, monkeypatch, tmp_path):
     })
 
     import aiosqlite
-    broker._instrument_manager._conn = await aiosqlite.connect(":memory:")
-    broker._state = ClientState.CONNECTED
+    broker._core._instrument_manager._conn = await aiosqlite.connect(":memory:")
+    broker._core._state = ClientState.CONNECTED
 
     holdings = await broker.get_holdings()
     assert len(holdings) == 1
@@ -105,10 +105,10 @@ async def test_client_place_order(zerodha_response, populated_db, monkeypatch, t
     })
 
     # Use populated_db fixture directly
-    broker._instrument_manager._conn = populated_db
+    broker._core._instrument_manager._conn = populated_db
     from tt_connect.instrument_manager.resolver import InstrumentResolver
-    broker._resolver = InstrumentResolver(populated_db, "zerodha")
-    broker._state = ClientState.CONNECTED
+    broker._core._resolver = InstrumentResolver(populated_db, "zerodha")
+    broker._core._state = ClientState.CONNECTED
 
     req = PlaceOrderRequest(
         instrument=Equity(exchange=Exchange.NSE, symbol="RELIANCE"),
