@@ -26,6 +26,7 @@ Every PR should include:
 2. Test evidence (commands run, output summary).
 3. Any risk/rollback notes.
 4. `CHANGELOG.md` update for user-visible changes to code, behavior, or APIs.
+5. Exactly one semver label (`semver:major`, `semver:minor`, or `semver:patch`) for PRs targeting `dev`.
 
 ## CI Policy
 
@@ -37,6 +38,7 @@ Every PR should include:
   - package build (`poetry build`)
   - changelog gate for code-impacting changes
 - Live tests under `tests/live/` are manual and not part of required CI.
+- Release and versioning automation policy is documented in [`docs/RELEASE_VERSIONING.md`](./docs/RELEASE_VERSIONING.md).
 
 ## Local Developer Commands
 
