@@ -7,10 +7,10 @@ import threading
 from concurrent.futures import Future as ThreadFuture
 from typing import Any, Coroutine, TypeVar
 
-from datetime import datetime
+from datetime import date, datetime
 
 from tt_connect.enums import CandleInterval
-from tt_connect.instruments import Instrument
+from tt_connect.instruments import Future, Instrument, Option
 from tt_connect.models import Candle, Fund, Gtt, Holding, ModifyGttRequest, ModifyOrderRequest, Order, PlaceGttRequest, PlaceOrderRequest, Position, Profile, Tick, Trade
 
 T = TypeVar("T")
@@ -120,3 +120,16 @@ class TTConnect:
         to_date: datetime,
     ) -> list[Candle]:
         return self._run(self._async.get_historical(instrument, interval, from_date, to_date))
+
+    def get_futures(self, instrument: Instrument) -> list[Future]:
+        return self._run(self._async.get_futures(instrument))
+
+    def get_options(
+        self,
+        instrument: Instrument,
+        expiry: date | None = None,
+    ) -> list[Option]:
+        return self._run(self._async.get_options(instrument, expiry))
+
+    def get_expiries(self, instrument: Instrument) -> list[date]:
+        return self._run(self._async.get_expiries(instrument))

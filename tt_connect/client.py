@@ -1,5 +1,6 @@
 """Async-first unified broker client."""
 
+from tt_connect.instruments_mixin import InstrumentsMixin
 from tt_connect.lifecycle import LifecycleMixin
 from tt_connect.orders import OrdersMixin
 from tt_connect.portfolio import PortfolioMixin
@@ -8,7 +9,7 @@ from tt_connect.sync_client import TTConnect
 __all__ = ["AsyncTTConnect", "TTConnect"]
 
 
-class AsyncTTConnect(LifecycleMixin, PortfolioMixin, OrdersMixin):
+class AsyncTTConnect(LifecycleMixin, PortfolioMixin, OrdersMixin, InstrumentsMixin):
     """Async-first public client for normalized broker operations.
 
     Lifecycle:

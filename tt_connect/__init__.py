@@ -4,6 +4,7 @@ from tt_connect.client import AsyncTTConnect
 from tt_connect.config import AngelOneConfig, ZerodhaConfig
 from tt_connect.enums import CandleInterval
 from tt_connect.exceptions import ConfigurationError
+from tt_connect.instruments import Equity, Future, Index, Option
 from tt_connect.models import (
     Candle,
     GetHistoricalRequest,
@@ -42,4 +43,9 @@ __all__ = [
     "CandleInterval",
     # Quotes
     "Tick",
+    # Instruments
+    "Equity",
+    "Future",
+    "Index",
+    "Option",
 ]
