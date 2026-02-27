@@ -20,6 +20,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
+          ref: dev
           fetch-depth: 0
 
       - name: Determine semver bump from merged PR label
@@ -145,4 +146,5 @@ jobs:
           PY
           )
           git commit -m "chore(release): bump version to ${NEW_VERSION} [skip ci]"
+          git pull --rebase origin dev
           git push origin HEAD:dev
