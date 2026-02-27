@@ -434,3 +434,29 @@ async def test_on_tick_exception_is_logged_and_stream_continues(
 
     assert calls == 2
     assert "AngelOne WS on_tick callback failed" in caplog.text
+
+
+async def test_sync_on_tick_callback_is_supported() -> None:
+    from unittest.mock import AsyncMock
+
+    auth = MagicMock()
+    auth._session = MagicMock(feed_token="feedtok")
+    auth.access_token = "accesstok"
+    auth._config = {"api_key": "key", "client_id": "cid"}
+
+    ws = AngelOneWebSocket(auth=auth)
+    ws._ping_loop = AsyncMock(return_value=None)  # type: ignore[method-assign]
+
+    calls = 0
+
+    def on_tick(tick: object) -> None:
+        nonlocal calls
+        calls += 1
+
+    ws._on_tick = on_tick
+    ws._parse_binary = lambda _m: object()  # type: ignore[method-assign]
+
+    with patch("tt_connect.ws.angelone.websockets.connect", return_value=_FakeWs([b"a", b"b"])):
+        await ws._connect_and_run()
+
+    assert calls == 2
