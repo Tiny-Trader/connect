@@ -16,7 +16,6 @@ Use these branch names:
 1. Branch from `main`.
 2. Open PR into `main`.
 3. Merge only after CI passes and review is complete.
-4. Use release tags (`vX.Y.Z`) from `main` per `RELEASE.md`.
 
 ## PR Rules
 
@@ -25,7 +24,6 @@ Every PR should include:
 1. Problem and change summary.
 2. Test evidence (commands run, output summary).
 3. Any risk/rollback notes.
-4. `CHANGELOG.md` update for user-visible changes to code, behavior, or APIs.
 
 ## CI Policy
 
@@ -35,7 +33,6 @@ Every PR should include:
   - tests (`pytest` unit + integration)
   - coverage gate (`>=64%` for `tt_connect`, raise as coverage improves)
   - package build (`poetry build`)
-  - changelog gate for code-impacting changes
 - Live tests under `tests/live/` are manual and not part of required CI.
 
 ## Local Developer Commands

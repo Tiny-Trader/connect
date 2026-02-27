@@ -31,8 +31,7 @@ make test-fast
 1. Branch from `main`: `feat/<topic>` or `fix/<topic>`.
 2. Make focused changes with tests.
 3. Run `make ci` locally when possible.
-4. Update `CHANGELOG.md` for user-visible behavior/API changes.
-5. Open PR to `main` with test evidence and risk notes.
+4. Open PR to `main` with test evidence and risk notes.
 
 ## Testing Expectations
 
@@ -60,11 +59,3 @@ make test-fast
 3. Add unit tests in `tests/unit/adapters/<broker>/`
 4. Add integration tests in `tests/integration/`
 5. Touch nothing in `client.py`, `lifecycle.py`, `portfolio.py`, or `orders.py`
-
-## Release-Related Changes
-
-If your PR affects release behavior or user-facing functionality:
-
-1. Update `CHANGELOG.md` under `Unreleased`.
-2. Ensure versioning/release implications are clear in PR notes.
-3. Follow [../RELEASE.md](../RELEASE.md) for tag and publish policy.
