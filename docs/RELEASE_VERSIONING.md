@@ -75,6 +75,7 @@ Use PyPI Trusted Publisher (OIDC) for GitHub Actions.
    - runs on `push` tag `v*.*.*` only
    - verifies branch/tag/version alignment
    - publishes to PyPI and creates release
+   - pins third-party GitHub Actions to immutable commit SHAs
 
 ## Branch Protection Rules
 
