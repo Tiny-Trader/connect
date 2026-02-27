@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import inspect
 import json
 import logging
 import struct
@@ -179,7 +180,9 @@ class AngelOneWebSocket(BrokerWebSocket):
                         tick = self._parse_binary(message)
                         if tick and self._on_tick:
                             try:
-                                await self._on_tick(tick)
+                                result = self._on_tick(tick)
+                                if inspect.isawaitable(result):
+                                    await result
                             except Exception:
                                 logger.exception("AngelOne WS on_tick callback failed")
                     # text "pong" — ignore
