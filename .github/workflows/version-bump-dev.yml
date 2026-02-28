@@ -22,6 +22,7 @@ jobs:
         with:
           ref: dev
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Determine semver bump from merged PR label
         id: semver
@@ -150,5 +151,7 @@ jobs:
           if [ -n "${RELEASE_BYPASS_TOKEN}" ]; then
             git remote set-url origin "https://x-access-token:${RELEASE_BYPASS_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           fi
+          # Remove any auth header injected by checkout so remote URL token is used.
+          git config --local --unset-all http.https://github.com/.extraheader || true
           git pull --rebase origin dev
           git push origin HEAD:dev
