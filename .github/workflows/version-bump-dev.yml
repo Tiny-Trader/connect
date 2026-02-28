@@ -53,8 +53,8 @@ jobs:
               // Merge commit: "Merge pull request #123 ..."
               // Squash merge title: "... (#123)"
               const m =
-                message.match(/Merge pull request #(\\d+)/i) ||
-                message.match(/\\(#(\\d+)\\)\\s*$/m);
+                message.match(/Merge pull request #(\d+)/i) ||
+                message.match(/\(#(\d+)\)\s*$/m);
 
               if (m) {
                 const prNum = Number(m[1]);
