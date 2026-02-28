@@ -28,11 +28,13 @@ make test-fast
 
 ## Development Workflow
 
-1. Branch from `main`: `feat/<topic>` or `fix/<topic>`.
+1. Branch from `dev`: `feat/<topic>` or `fix/<topic>` (use `hotfix/<topic>` from `main` only for urgent production fixes).
 2. Make focused changes with tests.
 3. Run `make ci` locally when possible.
-4. Update `CHANGELOG.md` for user-visible behavior/API changes.
-5. Open PR to `main` with test evidence and risk notes.
+4. Update `CHANGELOG.md` for code-impacting changes.
+5. Add exactly one semver label for PRs targeting `dev`: `semver:major|semver:minor|semver:patch`.
+6. Open PR to `dev` with test evidence and risk notes.
+7. Release promotion is done by merging `dev` to `main`, then tagging on `main` as `vX.Y.Z`.
 
 ## Testing Expectations
 
@@ -65,6 +67,6 @@ make test-fast
 
 If your PR affects release behavior or user-facing functionality:
 
-1. Update `CHANGELOG.md` under `Unreleased`.
+1. Update `CHANGELOG.md` (for code-impacting changes, this is required by CI).
 2. Ensure versioning/release implications are clear in PR notes.
-3. Follow [../RELEASE.md](../RELEASE.md) for tag and publish policy.
+3. Follow [RELEASE_VERSIONING.md](./RELEASE_VERSIONING.md) for tag and publish policy.

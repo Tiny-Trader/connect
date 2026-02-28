@@ -46,11 +46,12 @@ Rules:
 - Publishing is triggered by Git tag on `main`: `vX.Y.Z`.
 - Workflow validates:
   - tag version equals `pyproject.toml` version
-  - full CI checks passed
+  - tag commit is on `main`
+  - quality gates pass (`make ci`)
   - package build passes (`poetry build`)
 - On success:
   - publish wheel + sdist to PyPI
-  - create GitHub Release notes with changelog slice
+  - create GitHub Release notes from GitHub metadata and attach built artifacts
 
 Optional:
 
@@ -81,6 +82,10 @@ Use PyPI Trusted Publisher (OIDC) for GitHub Actions.
    - publishes to PyPI and creates release
    - pins third-party GitHub Actions to immutable commit SHAs
 
+Release note:
+
+- `publish-main.yml` is the source of truth for production publishing behavior.
+
 ## Branch Protection Rules
 
 ### `dev`
@@ -108,5 +113,5 @@ Use PyPI Trusted Publisher (OIDC) for GitHub Actions.
 ## Failure Handling
 
 - If version bump job fails on `dev`, block further promotion until fixed.
-- If publish job fails on `main`, do not retag blindly. Fix and rerun workflow against same tag when possible.
+- If publish job fails on `main`, fix root cause first. Prefer rerun on same tag; if the fix is a workflow change on `main`, retarget the tag once to the fixed commit and republish.
 - If broken package is published, release next patch (`X.Y.(Z+1)`) with remediation notes.

@@ -57,10 +57,10 @@ Use `make` targets from `connect/`:
 
 ## Branch Protection Settings (GitHub)
 
-Apply these rules to `main`:
+Branch governance is managed through GitHub rulesets for both `dev` and `main`.
 
 1. Require pull request before merging.
-2. Require at least 1 approval.
-3. Require status checks to pass.
-4. Require branches to be up to date before merge.
-5. Disable force pushes and branch deletion.
+2. Require status checks to pass.
+3. Require branches to be up to date before merge.
+4. Block direct pushes to protected branches.
+5. For `dev`, enforce exactly one semver label via required check.
