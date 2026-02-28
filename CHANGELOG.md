@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.1 - 2026-02-28
+
+- Bump: **patch**
+- Source PR: #16 ci(release): fix auth precedence for dev auto-bump push
+
+
 All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog and this project follows Semantic Versioning.
