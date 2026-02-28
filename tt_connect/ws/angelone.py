@@ -200,7 +200,7 @@ class AngelOneWebSocket(BrokerWebSocket):
     # ------------------------------------------------- subscribe / unsubscribe
 
     async def _send_subscribe(
-        self, ws: Any, tokens: list[str], mode: int = _MODE_QUOTE
+        self, ws: Any, tokens: list[str], mode: int = _MODE_SNAP_QUOTE
     ) -> None:
         token_list = self._build_token_list(tokens)
         if not token_list:

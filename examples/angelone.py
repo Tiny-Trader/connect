@@ -322,42 +322,47 @@ print()
 # tt-connect is built strictly async-first. The `AsyncTTConnect` class provides
 # the exact same API but returns awaiting coroutines.
 #
-# AngelOne supports live tick streaming via WebSocket.
-# subscribe() resolves each instrument to its broker token automatically,
-# then opens the WS connection and calls on_tick for every incoming tick.
+# AngelOne streams in SNAP_QUOTE mode automatically — every tick includes ltp,
+# volume, oi, bid, and ask. No extra configuration needed.
 # ---------------------------------------------------------------------------
 
 async def run_async_demo() -> None:
     print("── Async API & WebSockets ──────────────")
     from tt_connect import AsyncTTConnect
-    
+
     # Initialize the fully async client
     async_broker = AsyncTTConnect("angelone", config=config)
     await async_broker.init()
-    
+
     # Fetch funds asynchronously just as an example
     funds = await async_broker.get_funds()
     print(f"  [Async] Available Funds: ₹{funds.available:,.2f}")
 
-    # WebSocket setup
+    # WebSocket setup — streams in SNAP_QUOTE mode (ltp, volume, oi, bid, ask)
     instruments = [
         Index(exchange=Exchange.NSE, symbol="NIFTY"),
         Equity(exchange=Exchange.NSE, symbol="RELIANCE"),
     ]
 
     def on_tick(tick) -> None:
-        print(
-            f"  TICK  {tick.instrument.exchange}:{tick.instrument.symbol:<20}"
-            f"  ltp=₹{tick.ltp:.2f}"
-            + (f"  vol={tick.volume}" if tick.volume is not None else "")
-        )
+        parts = [
+            f"  TICK  {tick.instrument.exchange}:{tick.instrument.symbol:<20}",
+            f"  ltp=₹{tick.ltp:.2f}",
+        ]
+        if tick.volume is not None:
+            parts.append(f"  vol={tick.volume}")
+        if tick.oi is not None:
+            parts.append(f"  oi={tick.oi}")
+        if tick.bid is not None and tick.ask is not None:
+            parts.append(f"  bid=₹{tick.bid:.2f}  ask=₹{tick.ask:.2f}")
+        print("".join(parts))
 
     print("── Streaming ticks (10 seconds) ────────")
     await async_broker.subscribe(instruments, on_tick)
-    
+
     # Stream for a short time
     await asyncio.sleep(10)
-    
+
     await async_broker.unsubscribe(instruments)
     await async_broker.close()
     print("── Stream closed ───────────────────────")
