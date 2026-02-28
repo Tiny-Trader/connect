@@ -71,7 +71,7 @@ jobs:
         run: poetry build
 
       - name: Publish to PyPI (Trusted Publisher)
-        uses: pypa/gh-action-pypi-publish@106e0b0b7c337fa67ed433972f777c6357f78598 # v1.13.0
+        uses: pypa/gh-action-pypi-publish@ed0c53931b1dc9bd32cbe73a98c7f6766f8a527e # v1.13.0
 
       - name: Upload dist artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
