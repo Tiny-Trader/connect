@@ -1,0 +1,52 @@
+name: changelog-check
+
+on:
+  pull_request:
+    branches:
+      - main
+      - dev
+    paths:
+      - "tt_connect/**"
+      - "tests/**"
+      - "pyproject.toml"
+      - "poetry.lock"
+      - "CHANGELOG.md"
+      - ".github/workflows/changelog-check.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  require_changelog_update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify CHANGELOG update for code-impacting changes
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          base_sha="${{ github.event.pull_request.base.sha }}"
+          head_sha="${{ github.event.pull_request.head.sha }}"
+
+          changed="$(git diff --name-only "$base_sha" "$head_sha")"
+          echo "Changed files:"
+          echo "$changed"
+
+          if ! echo "$changed" | grep -Eq '^(tt_connect/|tests/|pyproject.toml|poetry.lock)'; then
+            echo "No code-impacting files changed; changelog update not required."
+            exit 0
+          fi
+
+          if echo "$changed" | grep -Eq '^CHANGELOG.md$'; then
+            echo "CHANGELOG.md updated."
+            exit 0
+          fi
+
+          echo "CHANGELOG.md must be updated for code-impacting changes." >&2
+          exit 1

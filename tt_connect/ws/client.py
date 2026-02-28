@@ -1,14 +1,14 @@
 from __future__ import annotations
 
 from abc import abstractmethod
-from typing import Awaitable, Callable
+from typing import Callable, Awaitable
 
 from tt_connect.instrument_manager.resolver import ResolvedInstrument
 from tt_connect.instruments import Instrument
 from tt_connect.models import Tick
 
-# Callback type: supports both async and sync handlers.
-OnTick = Callable[[Tick], Awaitable[None] | None]
+# Callback type: async function that receives a Tick
+OnTick = Callable[[Tick], Awaitable[None]]
 
 
 class BrokerWebSocket:

@@ -28,6 +28,7 @@ Welcome to the `tt-connect` documentation.
 |-------|-------------|
 | [CONTRIBUTING.md](../CONTRIBUTING.md) | Contribution policy and PR expectations |
 | [CONTRIBUTOR_GUIDE.md](./CONTRIBUTOR_GUIDE.md) | Local setup, testing, implementation workflow |
+| [RELEASE_VERSIONING.md](./RELEASE_VERSIONING.md) | Branching, automated version bumps, and publish policy |
 
 ---
 

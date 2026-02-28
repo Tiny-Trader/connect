@@ -7,10 +7,10 @@ import threading
 from concurrent.futures import Future as ThreadFuture
 from typing import Any, Coroutine, TypeVar
 
-from datetime import datetime
+from datetime import date, datetime
 
 from tt_connect.enums import CandleInterval
-from tt_connect.instruments import Instrument
+from tt_connect.instruments import Equity, Future, Instrument, Option
 from tt_connect.models import Candle, Fund, Gtt, Holding, ModifyGttRequest, ModifyOrderRequest, Order, PlaceGttRequest, PlaceOrderRequest, Position, Profile, Tick, Trade
 
 T = TypeVar("T")
@@ -51,6 +51,13 @@ class TTConnect:
         self._run(self._async.close())
         self._loop.call_soon_threadsafe(self._loop.stop)
         self._thread.join()
+
+    def __dir__(self) -> list[str]:
+        return [
+            name
+            for name in super().__dir__()
+            if not (name.startswith("_") and not name.startswith("__"))
+        ]
 
     def __enter__(self) -> "TTConnect":
         return self
@@ -120,3 +127,24 @@ class TTConnect:
         to_date: datetime,
     ) -> list[Candle]:
         return self._run(self._async.get_historical(instrument, interval, from_date, to_date))
+
+    def get_futures(self, instrument: Instrument) -> list[Future]:
+        return self._run(self._async.get_futures(instrument))
+
+    def get_options(
+        self,
+        instrument: Instrument,
+        expiry: date | None = None,
+    ) -> list[Option]:
+        return self._run(self._async.get_options(instrument, expiry))
+
+    def get_expiries(self, instrument: Instrument) -> list[date]:
+        return self._run(self._async.get_expiries(instrument))
+
+    def search_instruments(
+        self,
+        query: str,
+        exchange: str | None = None,
+    ) -> list[Equity]:
+        return self._run(self._async.search_instruments(query, exchange))
+

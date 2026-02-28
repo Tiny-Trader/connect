@@ -5,9 +5,10 @@ from collections.abc import Awaitable, Callable
 from typing import Any, Protocol
 
 import aiosqlite
-from tt_connect.enums import OnStale
+from tt_connect.enums import Exchange, OnStale, OptionType
 from tt_connect.exceptions import TTConnectError, InstrumentManagerError
 from tt_connect.instrument_manager.db import get_connection, init_schema, truncate_all
+from tt_connect.instruments import Equity, Future, Instrument, Option
 
 logger = logging.getLogger(__name__)
 
@@ -277,6 +278,132 @@ class InstrumentManager:
             (date.today().isoformat(),),
         )
         await self._conn_or_raise().commit()
+
+    # ---------------------------------------------------------------------------
+    # Instrument master queries
+    # ---------------------------------------------------------------------------
+
+    async def get_futures(self, underlying: Instrument) -> list[Future]:
+        """Return all active futures for an underlying instrument, sorted by expiry."""
+        query = """
+            SELECT u.exchange, u.symbol, f.expiry
+            FROM instruments fut
+            JOIN futures f     ON f.instrument_id = fut.id
+            JOIN instruments u ON u.id = f.underlying_id
+            WHERE u.exchange = ? AND u.symbol = ?
+            ORDER BY f.expiry ASC
+        """
+        async with self._conn_or_raise().execute(
+            query, (str(underlying.exchange), underlying.symbol)
+        ) as cur:
+            rows = await cur.fetchall()
+        return [
+            Future(
+                exchange=Exchange(row[0]),
+                symbol=row[1],
+                expiry=date.fromisoformat(row[2]),
+            )
+            for row in rows
+        ]
+
+    async def get_options(
+        self,
+        underlying: Instrument,
+        expiry: date | None = None,
+    ) -> list[Option]:
+        """Return options for an underlying, optionally filtered by expiry.
+
+        Results are sorted by expiry → strike → option_type (CE before PE).
+        """
+        if expiry is not None:
+            query = """
+                SELECT u.exchange, u.symbol, o.expiry, o.strike, o.option_type
+                FROM instruments opt
+                JOIN options o     ON o.instrument_id = opt.id
+                JOIN instruments u ON u.id = o.underlying_id
+                WHERE u.exchange = ? AND u.symbol = ? AND o.expiry = ?
+                ORDER BY o.expiry ASC, o.strike ASC, o.option_type ASC
+            """
+            params: tuple[Any, ...] = (str(underlying.exchange), underlying.symbol, expiry.isoformat())
+        else:
+            query = """
+                SELECT u.exchange, u.symbol, o.expiry, o.strike, o.option_type
+                FROM instruments opt
+                JOIN options o     ON o.instrument_id = opt.id
+                JOIN instruments u ON u.id = o.underlying_id
+                WHERE u.exchange = ? AND u.symbol = ?
+                ORDER BY o.expiry ASC, o.strike ASC, o.option_type ASC
+            """
+            params = (str(underlying.exchange), underlying.symbol)
+        async with self._conn_or_raise().execute(query, params) as cur:
+            rows = await cur.fetchall()
+        return [
+            Option(
+                exchange=Exchange(row[0]),
+                symbol=row[1],
+                expiry=date.fromisoformat(row[2]),
+                strike=float(row[3]),
+                option_type=OptionType(row[4]),
+            )
+            for row in rows
+        ]
+
+    async def get_expiries(self, underlying: Instrument) -> list[date]:
+        """Return all distinct expiry dates for an underlying across futures and options."""
+        query = """
+            SELECT DISTINCT expiry FROM (
+                SELECT f.expiry FROM futures f
+                JOIN instruments u ON u.id = f.underlying_id
+                WHERE u.exchange = ? AND u.symbol = ?
+                UNION
+                SELECT o.expiry FROM options o
+                JOIN instruments u ON u.id = o.underlying_id
+                WHERE u.exchange = ? AND u.symbol = ?
+            )
+            ORDER BY expiry ASC
+        """
+        async with self._conn_or_raise().execute(
+            query,
+            (str(underlying.exchange), underlying.symbol,
+             str(underlying.exchange), underlying.symbol),
+        ) as cur:
+            rows = await cur.fetchall()
+        return [date.fromisoformat(row[0]) for row in rows]
+
+    async def search_instruments(
+        self,
+        query: str,
+        exchange: str | None = None,
+    ) -> list[Equity]:
+        """Search underlyings (equities + indices) by symbol substring.
+
+        Matching is case-insensitive. Results are sorted by exchange then symbol
+        and capped at 50 entries.
+        """
+        pattern = f"%{query.upper()}%"
+        if exchange is not None:
+            sql = """
+                SELECT i.exchange, i.symbol
+                FROM instruments i
+                JOIN equities e ON e.instrument_id = i.id
+                WHERE UPPER(i.symbol) LIKE ? AND i.exchange = ?
+                ORDER BY i.exchange, i.symbol
+                LIMIT 50
+            """
+            params: tuple[Any, ...] = (pattern, exchange)
+        else:
+            sql = """
+                SELECT i.exchange, i.symbol
+                FROM instruments i
+                JOIN equities e ON e.instrument_id = i.id
+                WHERE UPPER(i.symbol) LIKE ?
+                ORDER BY i.exchange, i.symbol
+                LIMIT 50
+            """
+            params = (pattern,)
+        async with self._conn_or_raise().execute(sql, params) as cur:
+            rows = await cur.fetchall()
+        return [Equity(exchange=Exchange(row[0]), symbol=row[1]) for row in rows]
 
     @property
     def connection(self) -> aiosqlite.Connection:

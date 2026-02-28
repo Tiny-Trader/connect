@@ -64,9 +64,6 @@ class LifecycleMixin(_ClientBase):
         )
         self._state = ClientState.CONNECTED
 
-    #: Alias for :meth:`init` — kept for discoverability.
-    connect = init
-
     async def close(self) -> None:
         """Close WebSocket (if open), instrument DB connection, and HTTP client."""
         if self._state == ClientState.CLOSED:

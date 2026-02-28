@@ -1,12 +1,32 @@
 # Changelog
 
+## 0.2.1 - 2026-02-28
+
+- Bump: **patch**
+- Source PR: #19 ci(release): harden dev merge PR detection for auto-bump
+
+
+## 0.2.0 - 2026-02-28
+
+- Bump: **minor**
+- Source PR: #17 feat: add instrument helper APIs (futures/options/expiries/search)
+
+
+## 0.1.1 - 2026-02-28
+
+- Bump: **patch**
+- Source PR: #16 ci(release): fix auth precedence for dev auto-bump push
+
+
 All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog and this project follows Semantic Versioning.
 
-## [0.1.0] - 2026-02-27
+## [Unreleased]
 
 ### Added
+- Instrument helper APIs for discovery and contract lookup: `search_instruments`, `get_futures`, `get_options`, and `get_expiries`.
+- Facade hardening for client internals to reduce accidental use of private attributes and methods.
 - Zerodha WebSocket streaming via KiteTicker binary protocol — `subscribe()` now works on both Zerodha and AngelOne.
 - GTT (Good Till Triggered) orders for both brokers: `place_gtt`, `modify_gtt`, `cancel_gtt`, `get_gtt`, `get_gtts`. Zerodha supports two-leg OCO; AngelOne supports single-leg.
 - New canonical models: `PlaceGttRequest`, `ModifyGttRequest`, `GttLeg`, `Gtt`.
@@ -23,4 +43,3 @@ The format is based on Keep a Changelog and this project follows Semantic Versio
 - Zerodha and AngelOne adapter foundations.
 - Canonical models/enums, instrument manager, and resolver.
 - Unit and integration test suites with CI lint/type/test gates.
-

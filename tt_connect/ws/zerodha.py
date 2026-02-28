@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import asyncio
-import inspect
 import json
 import logging
 import struct
@@ -180,9 +179,7 @@ class ZerodhaWebSocket(BrokerWebSocket):
                         for tick in self._parse_binary_message(message):
                             if self._on_tick:
                                 try:
-                                    result = self._on_tick(tick)
-                                    if inspect.isawaitable(result):
-                                        await result
+                                    await self._on_tick(tick)
                                 except Exception:
                                     logger.exception("Zerodha WS on_tick callback failed")
                     else:
