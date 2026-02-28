@@ -116,7 +116,7 @@ Or manage the lifecycle manually:
 from tt_connect import TTConnect
 
 broker = TTConnect("zerodha", {"api_key": "...", "access_token": "..."})
-broker.init()  # Performs auth + instrument setup
+# init() is called automatically — broker is ready to use immediately
 
 # ... use broker ...
 
@@ -124,7 +124,7 @@ broker.close()  # Always close when done
 ```
 
 **State Management:** The client tracks connection state internally:
-- Calling methods before `init()` raises `ClientNotConnectedError`
+- Calling methods before the client is connected raises `ClientNotConnectedError`
 - Calling methods after `close()` raises `ClientClosedError`
 
 ---
@@ -265,7 +265,7 @@ nifty_ce = Option(
 
 ---
 
-## Step 9: Real-Time Streaming (AngelOne)
+## Step 9: Real-Time Streaming
 
 ```python
 import asyncio

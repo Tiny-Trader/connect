@@ -38,6 +38,13 @@ The format is based on Keep a Changelog and this project follows Semantic Versio
 
 ### Added
 - Instrument helper APIs for discovery and contract lookup: `search_instruments`, `get_futures`, `get_options`, and `get_expiries`.
+
+### Fixed
+- Zerodha WebSocket now subscribes in `full` mode (was `quote`) — `Tick.oi`, `Tick.bid`, `Tick.ask`, and `Tick.timestamp` are now always populated.
+- AngelOne WebSocket now subscribes in `SNAP_QUOTE` mode (was `QUOTE`) — `Tick.oi`, `Tick.bid`, and `Tick.ask` are now always populated.
+
+### Removed
+- Deleted unused `ws/normalizer.py` stub (`TickNormalizer` base class was never wired up).
 - Facade hardening for client internals to reduce accidental use of private attributes and methods.
 - Zerodha WebSocket streaming via KiteTicker binary protocol — `subscribe()` now works on both Zerodha and AngelOne.
 - GTT (Good Till Triggered) orders for both brokers: `place_gtt`, `modify_gtt`, `cancel_gtt`, `get_gtt`, `get_gtts`. Zerodha supports two-leg OCO; AngelOne supports single-leg.

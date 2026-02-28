@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import struct
 from datetime import timezone
 import pytest
@@ -281,3 +282,20 @@ async def test_on_tick_exception_is_logged_and_stream_continues(
 
     assert calls == 2
     assert "Zerodha WS on_tick callback failed" in caplog.text
+
+
+async def test_subscribe_requests_full_mode() -> None:
+    """_send_subscribe sends mode=full, not mode=quote."""
+    sent: list[str] = []
+
+    class _CapturingWs:
+        async def send(self, data: str) -> None:
+            sent.append(data)
+
+    ws = ZerodhaWebSocket(api_key="key", access_token="tok")
+    await ws._send_subscribe(_CapturingWs(), [408065])
+
+    # Second message sets the subscription mode
+    mode_msg = json.loads(sent[1])
+    assert mode_msg["a"] == "mode"
+    assert mode_msg["v"][0] == "full"
