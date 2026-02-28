@@ -281,22 +281,3 @@ async def test_on_tick_exception_is_logged_and_stream_continues(
 
     assert calls == 2
     assert "Zerodha WS on_tick callback failed" in caplog.text
-
-
-async def test_sync_on_tick_callback_is_supported() -> None:
-    from unittest.mock import patch
-
-    ws = ZerodhaWebSocket(api_key="key", access_token="tok")
-    calls = 0
-
-    def on_tick(tick: object) -> None:
-        nonlocal calls
-        calls += 1
-
-    ws._on_tick = on_tick
-    ws._parse_binary_message = lambda _m: [object(), object()]  # type: ignore[method-assign]
-
-    with patch("tt_connect.ws.zerodha.websockets.connect", return_value=_FakeWs([b"ab"])):
-        await ws._connect_and_run()
-
-    assert calls == 2

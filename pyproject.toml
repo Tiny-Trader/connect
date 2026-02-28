@@ -1,31 +1,10 @@
 [tool.poetry]
 name = "tt-connect"
-version = "0.1.0"
+version = "0.2.1"
 description = "A unified API layer for all Indian brokers"
 authors = ["Apurv Salunke <salunke.apurv7@gmail.com>"]
 readme = "README.md"
 packages = [{include = "tt_connect"}]
-license = "AGPL-3.0"
-keywords = ["trading", "indian-markets", "zerodha", "angelone", "broker-api", "stock-market", "fintech"]
-classifiers = [
-    "Development Status :: 4 - Beta",
-    "Intended Audience :: Developers",
-    "Intended Audience :: Financial and Insurance Industry",
-    "License :: OSI Approved :: GNU Affero General Public License v3",
-    "Operating System :: OS Independent",
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
-    "Programming Language :: Python :: 3.13",
-    "Topic :: Office/Business :: Financial :: Investment",
-    "Topic :: Software Development :: Libraries :: Python Modules",
-    "Typing :: Typed",
-]
-
-[tool.poetry.urls]
-Homepage = "https://github.com/Tiny-Trader/connect"
-Repository = "https://github.com/Tiny-Trader/connect.git"
-Changelog = "https://github.com/Tiny-Trader/connect/blob/main/CHANGELOG.md"
 
 [tool.poetry.dependencies]
 python = ">=3.11"
