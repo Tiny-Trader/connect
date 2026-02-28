@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.2 - 2026-02-28
+
+- Bump: **patch**
+- Source PR: #24 ci(release): fix fallback PR lookup regex
+
+
 ## 0.2.1 - 2026-02-28
 
 - Bump: **patch**
