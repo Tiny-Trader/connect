@@ -69,6 +69,7 @@ Use PyPI Trusted Publisher (OIDC) for GitHub Actions.
 
 1. `connect-ci.yml`
    - lint, typecheck, tests, coverage, package build
+   - includes `require_single_semver_label` check for PRs targeting `dev`
 2. `version-bump-dev.yml`
    - runs on merge to `dev`
    - validates semver label

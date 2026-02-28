@@ -21,6 +21,27 @@ permissions:
   contents: read
 
 jobs:
+  require_single_semver_label:
+    if: github.event_name == 'pull_request' && github.base_ref == 'dev'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Validate semver label
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const labels = context.payload.pull_request.labels.map(l => l.name);
+            const semver = labels.filter(name => /^semver:(major|minor|patch)$/.test(name));
+
+            if (semver.length !== 1) {
+              core.setFailed(
+                `PRs into dev must have exactly one semver label: semver:major | semver:minor | semver:patch. Found: ${semver.length}. Labels: ${labels.join(", ") || "<none>"}`
+              );
+              return;
+            }
+
+            core.info(`Semver label OK: ${semver[0]}`);
+
   lint_type:
     runs-on: ubuntu-latest
     timeout-minutes: 10
