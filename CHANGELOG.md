@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.4 - 2026-02-28
+
+- Bump: **patch**
+- Source PR: #26 fix(brokers): update the subscription mode for ws
+
+
 ## 0.2.3 - 2026-02-28
 
 - Bump: **patch**
