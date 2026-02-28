@@ -6,6 +6,14 @@ from tt_connect.enums import ClientState, Exchange, Side, ProductType, OrderType
 from tt_connect.instruments import Equity
 from tt_connect.models import PlaceOrderRequest
 
+
+async def _bootstrap_connected_state(broker) -> None:
+    import aiosqlite
+
+    broker._core._instrument_manager._conn = await aiosqlite.connect(":memory:")
+    broker._core._state = ClientState.CONNECTED
+
+
 @respx.mock
 async def test_init_calls_login_and_instruments(zerodha_csv, tmp_path, monkeypatch):
     # Mock the instruments endpoint
@@ -54,9 +62,7 @@ async def test_client_get_profile(zerodha_response, monkeypatch, tmp_path):
         "access_token": "testtoken",
     })
 
-    import aiosqlite
-    broker._core._instrument_manager._conn = await aiosqlite.connect(":memory:")
-    broker._core._state = ClientState.CONNECTED
+    await _bootstrap_connected_state(broker)
 
     profile = await broker.get_profile()
     assert profile.client_id == "ZZ0001"
@@ -78,9 +84,7 @@ async def test_client_get_holdings(zerodha_response, monkeypatch, tmp_path):
         "access_token": "testtoken",
     })
 
-    import aiosqlite
-    broker._core._instrument_manager._conn = await aiosqlite.connect(":memory:")
-    broker._core._state = ClientState.CONNECTED
+    await _bootstrap_connected_state(broker)
 
     holdings = await broker.get_holdings()
     assert len(holdings) == 1

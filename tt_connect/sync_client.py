@@ -53,7 +53,11 @@ class TTConnect:
         self._thread.join()
 
     def __dir__(self) -> list[str]:
-        return [name for name in super().__dir__() if not name.startswith("_")]
+        return [
+            name
+            for name in super().__dir__()
+            if not (name.startswith("_") and not name.startswith("__"))
+        ]
 
     def __enter__(self) -> "TTConnect":
         return self
