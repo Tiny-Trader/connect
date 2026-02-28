@@ -1,6 +1,7 @@
 from __future__ import annotations
 from datetime import date
 import logging
+import time
 from collections.abc import Awaitable, Callable
 from typing import Any, Protocol
 
@@ -49,6 +50,10 @@ class InstrumentManager:
             try:
                 await self.refresh(fetch_fn)
             except Exception as e:
+                logger.warning(
+                    f"Instrument refresh failed: {e}",
+                    extra={"event": "instruments.refresh.failed", "broker": self._broker_id},
+                )
                 if self._on_stale == OnStale.FAIL:
                     raise
                 # WARN mode: only fall back to stale data if data actually exists.
@@ -58,16 +63,30 @@ class InstrumentManager:
                         "Instrument data download failed and no cached data exists. "
                         "Check your network connection and try again."
                     ) from e
-                logger.warning(f"Instrument refresh failed, using stale data: {e}")
+                logger.warning(
+                    f"Instrument refresh failed, using stale data: {e}",
+                    extra={"event": "instruments.stale_fallback", "broker": self._broker_id},
+                )
 
     async def refresh(self, fetch_fn: Callable[[], Awaitable[ParsedInstrumentsLike]]) -> None:
         """Fetch broker instruments and atomically rebuild local tables."""
-        logger.info(f"Refreshing instruments for {self._broker_id}")
+        logger.info(
+            f"Refreshing instruments for {self._broker_id}",
+            extra={"event": "instruments.refresh.start", "broker": self._broker_id},
+        )
+        t0 = time.monotonic()
         parsed: ParsedInstrumentsLike = await fetch_fn()
         await truncate_all(self._conn_or_raise())
         await self._insert(parsed)
         await self._set_last_updated()
-        logger.info("Instrument refresh complete")
+        logger.info(
+            "Instrument refresh complete",
+            extra={
+                "event": "instruments.refresh.end",
+                "broker": self._broker_id,
+                "elapsed_ms": int((time.monotonic() - t0) * 1000),
+            },
+        )
 
     async def _insert(self, parsed: ParsedInstrumentsLike) -> None:
         """Insert parsed instruments in dependency-safe order."""

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from abc import ABC, abstractmethod
 from typing import Any, Self
 
@@ -12,6 +13,8 @@ from tt_connect.instrument_manager.manager import InstrumentManager
 from tt_connect.instrument_manager.resolver import InstrumentResolver, ResolvedInstrument
 from tt_connect.instruments import Instrument
 from tt_connect.ws.client import BrokerWebSocket, OnTick
+
+logger = logging.getLogger(__name__)
 
 
 class _ClientBase(ABC):
@@ -63,12 +66,20 @@ class LifecycleMixin(_ClientBase):
             self._broker_id,
         )
         self._state = ClientState.CONNECTED
+        logger.info(
+            "client connected",
+            extra={"event": "client.state_change", "broker": self._broker_id, "state": "connected"},
+        )
 
     async def close(self) -> None:
         """Close WebSocket (if open), instrument DB connection, and HTTP client."""
         if self._state == ClientState.CLOSED:
             return
         self._state = ClientState.CLOSED
+        logger.info(
+            "client closed",
+            extra={"event": "client.state_change", "broker": self._broker_id, "state": "closed"},
+        )
         if self._ws:
             await self._ws.close()
         # close() may be called before init() completes; DB connection exists only

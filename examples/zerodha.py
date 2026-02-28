@@ -70,9 +70,26 @@ if not API_KEY or not ACCESS_TOKEN:
 # tt-connect: the public API
 # ---------------------------------------------------------------------------
 
-from tt_connect import TTConnect  # noqa: E402
+from tt_connect import TTConnect, setup_logging  # noqa: E402
 from tt_connect.instruments import Index, Equity, Future, Option  # noqa: E402
 from tt_connect.enums import Exchange, OptionType  # noqa: E402
+
+# ---------------------------------------------------------------------------
+# Structured logging (optional)
+#
+# By default tt-connect is completely silent.  Call setup_logging() once at
+# startup to emit structured JSON lines to stderr for every significant event
+# (auth, instrument refresh, HTTP requests, WebSocket lifecycle, etc.).
+#
+# Each line is a self-contained JSON object, e.g.:
+#   {"ts":"2026-02-28T10:00:01.123+00:00","level":"INFO","logger":"tt_connect.auth.base",
+#    "message":"[zerodha] login complete","event":"auth.login","broker":"zerodha","mode":"manual"}
+#
+# To use plain text instead: setup_logging(fmt="text")
+# To change verbosity:        setup_logging(level="DEBUG")
+# ---------------------------------------------------------------------------
+
+setup_logging()   # JSON to stderr, INFO level
 
 broker = TTConnect(
     "zerodha",

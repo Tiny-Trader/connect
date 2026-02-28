@@ -61,15 +61,23 @@ class FileSessionStore(BaseSessionStore):
             obtained_at = datetime.fromisoformat(
                 data.get("obtained_at", datetime.now(timezone.utc).isoformat())
             )
-            return SessionData(
+            session = SessionData(
                 access_token=data["access_token"],
                 refresh_token=data.get("refresh_token"),
                 feed_token=data.get("feed_token"),
                 obtained_at=obtained_at,
                 expires_at=expires_at,
             )
+            logger.debug(
+                f"[{broker_id}] session loaded",
+                extra={"event": "auth.session_loaded", "broker": broker_id, "path": str(path)},
+            )
+            return session
         except Exception as exc:
-            logger.warning(f"[{broker_id}] Failed to load cached session: {exc}. Re-login required.")
+            logger.warning(
+                f"[{broker_id}] Failed to load cached session: {exc}. Re-login required.",
+                extra={"event": "auth.session_load_failed", "broker": broker_id},
+            )
             return None
 
     def save(self, broker_id: str, session: SessionData) -> None:
@@ -85,11 +93,17 @@ class FileSessionStore(BaseSessionStore):
             "expires_at": session.expires_at.isoformat() if session.expires_at else None,
         }
         path.write_text(json.dumps(data, indent=2))
-        logger.debug(f"[{broker_id}] Session cached to {path}")
+        logger.debug(
+            f"[{broker_id}] Session cached to {path}",
+            extra={"event": "auth.session_saved", "broker": broker_id, "path": str(path)},
+        )
 
     def clear(self, broker_id: str) -> None:
         """Delete broker session JSON file if it exists."""
         path = self._path(broker_id)
         if path.exists():
             path.unlink()
-            logger.debug(f"[{broker_id}] Cached session cleared")
+            logger.debug(
+                f"[{broker_id}] Cached session cleared",
+                extra={"event": "auth.session_cleared", "broker": broker_id},
+            )

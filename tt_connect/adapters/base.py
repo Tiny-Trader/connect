@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import time
 from abc import abstractmethod
 from typing import Any, ClassVar, Protocol
+from urllib.parse import urlparse
 
 import httpx
 
@@ -15,6 +17,10 @@ from tt_connect.ws.client import BrokerWebSocket
 logger = logging.getLogger(__name__)
 
 _TIMEOUT = httpx.Timeout(connect=5.0, read=30.0, write=10.0, pool=5.0)
+
+
+def _url_path(url: str) -> str:
+    return urlparse(url).path or url
 _MAX_RETRIES = 3
 _RETRY_BACKOFF = 1.0  # seconds; doubled on each attempt
 JsonDict = dict[str, Any]
@@ -89,12 +95,14 @@ class BrokerAdapter:
     """
 
     _registry: ClassVar[dict[str, type[BrokerAdapter]]] = {}
+    _broker_id: ClassVar[str] = "unknown"
 
     def __init_subclass__(cls, broker_id: str | None = None, **kwargs: Any) -> None:
         """Auto-register adapter classes by `broker_id` for client lookup."""
         super().__init_subclass__(**kwargs)
         if broker_id:
             BrokerAdapter._registry[broker_id] = cls
+            cls._broker_id = broker_id
 
     def __init__(self, config: JsonDict):
         """Initialize adapter with config and a shared async HTTP client."""
@@ -213,18 +221,50 @@ class BrokerAdapter:
         """
         last_exc: Exception | None = None
         for attempt in range(1, _MAX_RETRIES + 1):
+            t0 = time.monotonic()
+            logger.debug(
+                f"Request start ({attempt}/{_MAX_RETRIES}): {method} {url}",
+                extra={
+                    "event": "request.start",
+                    "broker": self._broker_id,
+                    "method": method,
+                    "url": _url_path(url),
+                    "attempt": attempt,
+                },
+            )
             try:
                 response = await self._client.request(method, url, **kwargs)
             except httpx.TimeoutException as exc:
+                latency_ms = int((time.monotonic() - t0) * 1000)
                 last_exc = exc
-                logger.warning(f"Request timed out ({attempt}/{_MAX_RETRIES}): {method} {url}")
+                logger.warning(
+                    f"Request timed out ({attempt}/{_MAX_RETRIES}): {method} {url}",
+                    extra={
+                        "event": "request.timeout",
+                        "broker": self._broker_id,
+                        "method": method,
+                        "url": _url_path(url),
+                        "attempt": attempt,
+                        "max_retries": _MAX_RETRIES,
+                        "latency_ms": latency_ms,
+                    },
+                )
                 await asyncio.sleep(_RETRY_BACKOFF * (2 ** (attempt - 1)))
                 continue
 
             try:
                 raw = response.json()
             except Exception:
-                logger.error(f"Failed to parse JSON. Status: {response.status_code}, body: {response.text[:200]}")
+                logger.error(
+                    f"Failed to parse JSON. Status: {response.status_code}, body: {response.text[:200]}",
+                    extra={
+                        "event": "request.json_error",
+                        "broker": self._broker_id,
+                        "method": method,
+                        "url": _url_path(url),
+                        "status_code": response.status_code,
+                    },
+                )
                 raise
             if not isinstance(raw, dict):
                 raise TTConnectError(f"Expected JSON object from {url}, got {type(raw).__name__}")
@@ -232,7 +272,18 @@ class BrokerAdapter:
             # 5xx — transient server error, retry
             if response.status_code >= 500:
                 last_exc = TTConnectError(f"Server error {response.status_code} from {url}")
-                logger.warning(f"Server error {response.status_code} ({attempt}/{_MAX_RETRIES}): {method} {url}")
+                logger.warning(
+                    f"Server error {response.status_code} ({attempt}/{_MAX_RETRIES}): {method} {url}",
+                    extra={
+                        "event": "request.server_error",
+                        "broker": self._broker_id,
+                        "method": method,
+                        "url": _url_path(url),
+                        "status_code": response.status_code,
+                        "attempt": attempt,
+                        "max_retries": _MAX_RETRIES,
+                    },
+                )
                 await asyncio.sleep(_RETRY_BACKOFF * (2 ** (attempt - 1)))
                 continue
 
@@ -240,6 +291,19 @@ class BrokerAdapter:
             if self._is_error(raw, response.status_code):
                 raise self.transformer.parse_error(raw)
 
+            latency_ms = int((time.monotonic() - t0) * 1000)
+            logger.debug(
+                f"Request end ({attempt}/{_MAX_RETRIES}): {method} {url} → {response.status_code}",
+                extra={
+                    "event": "request.end",
+                    "broker": self._broker_id,
+                    "method": method,
+                    "url": _url_path(url),
+                    "status_code": response.status_code,
+                    "latency_ms": latency_ms,
+                    "attempt": attempt,
+                },
+            )
             return raw
 
         raise TTConnectError(f"Request failed after {_MAX_RETRIES} attempts: {method} {url}") from last_exc

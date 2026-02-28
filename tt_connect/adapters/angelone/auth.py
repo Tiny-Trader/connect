@@ -92,7 +92,10 @@ class AngelOneAuth(BaseAuth):
             feed_token=d.get("feedToken"),
             expires_at=next_midnight_ist(),
         )
-        logger.info(f"AngelOne login successful for {client_id}")
+        logger.info(
+            f"AngelOne login successful for {client_id}",
+            extra={"event": "auth.login", "broker": "angelone", "mode": "auto"},
+        )
 
     async def _login_manual(self) -> None:
         """Create a session from user-provided JWT access token."""
@@ -125,7 +128,10 @@ class AngelOneAuth(BaseAuth):
             )
             data = response.json()
             if not data.get("status") or "data" not in data:
-                logger.warning("AngelOne token refresh failed, falling back to full login")
+                logger.warning(
+                    "AngelOne token refresh failed, falling back to full login",
+                    extra={"event": "auth.refresh_failed", "broker": "angelone"},
+                )
                 await self._login_auto()
                 return
 
@@ -137,7 +143,10 @@ class AngelOneAuth(BaseAuth):
                 expires_at=next_midnight_ist(),
             )
         except Exception as e:
-            logger.warning(f"AngelOne token refresh error: {e}. Falling back to full login.")
+            logger.warning(
+                f"AngelOne token refresh error: {e}. Falling back to full login.",
+                extra={"event": "auth.refresh_failed", "broker": "angelone"},
+            )
             await self._login_auto()
 
     @property

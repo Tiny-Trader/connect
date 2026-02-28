@@ -151,10 +151,16 @@ class ZerodhaWebSocket(BrokerWebSocket):
             except asyncio.CancelledError:
                 break
             except Exception as exc:
-                logger.warning(f"Zerodha WS error: {exc}")
+                logger.warning(
+                    f"Zerodha WS error: {exc}",
+                    extra={"event": "ws.error", "broker": "zerodha"},
+                )
             if self._closed:
                 break
-            logger.info(f"Zerodha WS reconnecting in {self._reconnect_delay:.0f}s …")
+            logger.info(
+                f"Zerodha WS reconnecting in {self._reconnect_delay:.0f}s …",
+                extra={"event": "ws.reconnect", "broker": "zerodha", "delay_s": self._reconnect_delay},
+            )
             await asyncio.sleep(self._reconnect_delay)
             self._reconnect_delay = min(self._reconnect_delay * 2, self.MAX_RECONNECT_DELAY)
 
@@ -165,7 +171,7 @@ class ZerodhaWebSocket(BrokerWebSocket):
 
         async with websockets.connect(url) as ws:
             self._ws = ws
-            logger.info("Zerodha WS connected")
+            logger.info("Zerodha WS connected", extra={"event": "ws.connect", "broker": "zerodha"})
 
             if self._token_map:
                 await self._send_subscribe(ws, list(self._token_map.keys()))
@@ -181,12 +187,15 @@ class ZerodhaWebSocket(BrokerWebSocket):
                                 try:
                                     await self._on_tick(tick)
                                 except Exception:
-                                    logger.exception("Zerodha WS on_tick callback failed")
+                                    logger.exception(
+                                        "Zerodha WS on_tick callback failed",
+                                        extra={"event": "ws.tick_error", "broker": "zerodha"},
+                                    )
                     else:
                         self._handle_text(message)
             finally:
                 self._ws = None
-                logger.info("Zerodha WS disconnected")
+                logger.info("Zerodha WS disconnected", extra={"event": "ws.disconnect", "broker": "zerodha"})
 
     # ------------------------------------------------- subscribe / unsubscribe
 
@@ -194,11 +203,17 @@ class ZerodhaWebSocket(BrokerWebSocket):
         """Send subscribe + mode messages for the given token list."""
         await ws.send(json.dumps({"a": "subscribe", "v": tokens}))
         await ws.send(json.dumps({"a": "mode", "v": [_MODE_FULL, tokens]}))
-        logger.debug(f"Subscribed to {len(tokens)} tokens (mode={_MODE_FULL})")
+        logger.debug(
+            f"Subscribed to {len(tokens)} tokens (mode={_MODE_FULL})",
+            extra={"event": "ws.subscribe", "broker": "zerodha", "token_count": len(tokens), "mode": _MODE_FULL},
+        )
 
     async def _send_unsubscribe(self, ws: Any, tokens: list[int]) -> None:
         await ws.send(json.dumps({"a": "unsubscribe", "v": tokens}))
-        logger.debug(f"Unsubscribed from {len(tokens)} tokens")
+        logger.debug(
+            f"Unsubscribed from {len(tokens)} tokens",
+            extra={"event": "ws.unsubscribe", "broker": "zerodha", "token_count": len(tokens)},
+        )
 
     # ------------------------------------------------------ binary parser
 

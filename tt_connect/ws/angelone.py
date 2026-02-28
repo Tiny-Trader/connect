@@ -145,10 +145,16 @@ class AngelOneWebSocket(BrokerWebSocket):
             except asyncio.CancelledError:
                 break
             except Exception as exc:
-                logger.warning(f"AngelOne WS error: {exc}")
+                logger.warning(
+                    f"AngelOne WS error: {exc}",
+                    extra={"event": "ws.error", "broker": "angelone"},
+                )
             if self._closed:
                 break
-            logger.info(f"AngelOne WS reconnecting in {self._reconnect_delay:.0f}s …")
+            logger.info(
+                f"AngelOne WS reconnecting in {self._reconnect_delay:.0f}s …",
+                extra={"event": "ws.reconnect", "broker": "angelone", "delay_s": self._reconnect_delay},
+            )
             await asyncio.sleep(self._reconnect_delay)
             self._reconnect_delay = min(self._reconnect_delay * 2, self.MAX_RECONNECT_DELAY)
 
@@ -166,7 +172,7 @@ class AngelOneWebSocket(BrokerWebSocket):
 
         async with websockets.connect(_WS_URL, additional_headers=headers) as ws:
             self._ws = ws
-            logger.info("AngelOne WS connected")
+            logger.info("AngelOne WS connected", extra={"event": "ws.connect", "broker": "angelone"})
 
             # On (re)connect, resubscribe to everything currently tracked
             if self._token_map:
@@ -181,12 +187,15 @@ class AngelOneWebSocket(BrokerWebSocket):
                             try:
                                 await self._on_tick(tick)
                             except Exception:
-                                logger.exception("AngelOne WS on_tick callback failed")
+                                logger.exception(
+                                    "AngelOne WS on_tick callback failed",
+                                    extra={"event": "ws.tick_error", "broker": "angelone"},
+                                )
                     # text "pong" — ignore
             finally:
                 ping_task.cancel()
                 self._ws = None
-                logger.info("AngelOne WS disconnected")
+                logger.info("AngelOne WS disconnected", extra={"event": "ws.disconnect", "broker": "angelone"})
 
     async def _ping_loop(self, ws: Any) -> None:
         """Send periodic ping text frames to keep the socket alive."""
@@ -210,7 +219,10 @@ class AngelOneWebSocket(BrokerWebSocket):
             "action": 1,
             "params": {"mode": mode, "tokenList": token_list},
         }))
-        logger.debug(f"Subscribed to {len(tokens)} tokens (mode={mode})")
+        logger.debug(
+            f"Subscribed to {len(tokens)} tokens (mode={mode})",
+            extra={"event": "ws.subscribe", "broker": "angelone", "token_count": len(tokens), "mode": _MODE_SNAP_QUOTE},
+        )
 
     async def _send_unsubscribe(
         self, ws: Any, tokens: list[str], mode: int = _MODE_QUOTE
@@ -223,7 +235,10 @@ class AngelOneWebSocket(BrokerWebSocket):
             "action": 0,
             "params": {"mode": mode, "tokenList": token_list},
         }))
-        logger.debug(f"Unsubscribed from {len(tokens)} tokens")
+        logger.debug(
+            f"Unsubscribed from {len(tokens)} tokens",
+            extra={"event": "ws.unsubscribe", "broker": "angelone", "token_count": len(tokens)},
+        )
 
     def _build_token_list(self, tokens: list[str]) -> list[dict[str, Any]]:
         """Group tokens by exchangeType for the AngelOne subscribe payload."""

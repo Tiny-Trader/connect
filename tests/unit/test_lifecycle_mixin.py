@@ -15,6 +15,7 @@ class _FakeLifecycle(LifecycleMixin):
 def _make_client(state: ClientState, resolver_set: bool = False) -> _FakeLifecycle:
     client: _FakeLifecycle = object.__new__(_FakeLifecycle)
     client._state = state
+    client._broker_id = "test"
     client._ws = None
     client._resolver = object() if resolver_set else None
     client._instrument_manager = MagicMock()

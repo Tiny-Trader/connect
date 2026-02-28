@@ -119,7 +119,10 @@ class BaseAuth:
         # Check cache first — avoids a network round-trip on every init
         cached = self._store.load(self._broker_id)
         if cached and not cached.is_expired():
-            logger.debug(f"[{self._broker_id}] Using cached session (expires {cached.expires_at})")
+            logger.debug(
+                f"[{self._broker_id}] Using cached session (expires {cached.expires_at})",
+                extra={"event": "auth.cache_hit", "broker": self._broker_id, "expires_at": str(cached.expires_at)},
+            )
             self._session = cached
             return
 
@@ -129,10 +132,18 @@ class BaseAuth:
             await self._login_auto()
 
         if self._session:
+            logger.info(
+                f"[{self._broker_id}] login complete",
+                extra={"event": "auth.login", "broker": self._broker_id, "mode": self._mode.value},
+            )
             self._store.save(self._broker_id, self._session)
 
     async def refresh(self) -> None:
         """Refresh auth session according to mode semantics."""
+        logger.info(
+            f"[{self._broker_id}] refreshing session",
+            extra={"event": "auth.refresh", "broker": self._broker_id, "mode": self._mode.value},
+        )
         if self._mode == AuthMode.AUTO:
             await self._refresh_auto()
         else:
