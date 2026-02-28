@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import struct
 from datetime import timezone
 from unittest.mock import MagicMock, patch
@@ -434,3 +435,21 @@ async def test_on_tick_exception_is_logged_and_stream_continues(
 
     assert calls == 2
     assert "AngelOne WS on_tick callback failed" in caplog.text
+
+
+async def test_subscribe_requests_snap_quote_mode() -> None:
+    """_send_subscribe defaults to SNAP_QUOTE mode (mode=3)."""
+    sent: list[str] = []
+
+    class _CapturingWs:
+        async def send(self, data: str) -> None:
+            sent.append(data)
+
+    auth = MagicMock()
+    ws = AngelOneWebSocket(auth=auth)
+    ws._token_exchange_type[TOKEN_STR] = 1
+
+    await ws._send_subscribe(_CapturingWs(), [TOKEN_STR])
+
+    msg = json.loads(sent[0])
+    assert msg["params"]["mode"] == 3

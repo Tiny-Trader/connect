@@ -34,10 +34,11 @@ Proxy layer that makes the library natively usable in both sync and async Python
 ```text
 tt_connect/
 ├── __init__.py           # Public exports: TTConnect, AsyncTTConnect, PlaceOrderRequest, ModifyOrderRequest, PlaceGttRequest, ModifyGttRequest, Gtt, GttLeg
-├── client.py             # AsyncTTConnect (mixin composition, ~20 lines)
+├── client.py             # AsyncTTConnect (public facade) + _AsyncTTConnectCore (internal)
 ├── lifecycle.py          # _ClientBase + LifecycleMixin (init, close, state, WebSocket)
 ├── portfolio.py          # PortfolioMixin (get_profile, get_funds, holdings, positions, trades)
 ├── orders.py             # OrdersMixin (place, modify, cancel, get orders, close positions)
+├── instruments_mixin.py  # InstrumentsMixin (get_futures, get_options, get_expiries, search)
 ├── sync_client.py        # TTConnect — threaded sync wrapper over AsyncTTConnect
 ├── enums.py              # Exchange, OrderType, ProductType, Side, OptionType, ClientState
 ├── instruments.py        # Equity, Future, Option, Currency
@@ -65,8 +66,7 @@ tt_connect/
 └── ws/
     ├── client.py           # BrokerWebSocket abstract + OnTick type
     ├── angelone.py         # AngelOne WebSocket (SmartAPI stream)
-    ├── zerodha.py          # Zerodha WebSocket (KiteTicker binary protocol)
-    └── normalizer.py       # raw tick → Tick model
+    └── zerodha.py          # Zerodha WebSocket (KiteTicker binary protocol)
 ```
 
 **To add a new broker: create a folder under `adapters/`, implement 5 files. Touch nothing else.**
@@ -116,14 +116,14 @@ with TTConnect("zerodha", config) as broker:
 
 ### 2. Mixin Decomposition
 
-`AsyncTTConnect` is assembled from three mixins, each in its own file:
+`AsyncTTConnect` is a clean public facade that delegates to an internal `_AsyncTTConnectCore`, which is assembled from four mixins each in its own file:
 
 ```python
-class AsyncTTConnect(LifecycleMixin, PortfolioMixin, OrdersMixin):
-    """Async-first unified broker client."""
+class _AsyncTTConnectCore(LifecycleMixin, PortfolioMixin, OrdersMixin, InstrumentsMixin):
+    """Internal implementation class. Use AsyncTTConnect publicly."""
 ```
 
-All three inherit from `_ClientBase` (defined in `lifecycle.py`), which declares the shared attributes (`_adapter`, `_resolver`, `_state`, etc.) so mypy can type-check each mixin independently.
+All four inherit from `_ClientBase` (defined in `lifecycle.py`), which declares the shared attributes (`_adapter`, `_resolver`, `_state`, etc.) so mypy can type-check each mixin independently. The facade pattern keeps internal state and methods (`_require_connected`, `_resolve`, etc.) off the public API surface.
 
 ### 3. Instrument Manager
 
@@ -136,7 +136,7 @@ All three inherit from `_ClientBase` (defined in `lifecycle.py`), which declares
 
 - One adapter per broker, each subclassing `BrokerAdapter`
 - Auto-registers itself via `__init_subclass__` — no registry file to maintain
-- Each adapter has 4 files: `adapter.py`, `auth.py`, `transformer.py`, `capabilities.py`
+- Each adapter has 5 files: `adapter.py`, `auth.py`, `transformer.py`, `parser.py`, `capabilities.py`
 - Nothing outside the adapter knows about broker internals
 
 ### 5. REST Client
@@ -149,6 +149,7 @@ All three inherit from `_ClientBase` (defined in `lifecycle.py`), which declares
 
 - Manages the streaming connection lifecycle — connect, subscribe, unsubscribe, reconnect
 - Normalizes raw tick data into standard `Tick` models before emitting to the caller
+- Always subscribes in the richest available mode: `full` for Zerodha (OI, bid/ask, timestamps, market depth) and `SNAP_QUOTE` (mode 3) for AngelOne (OI, best-5 bid/ask). Binary parsers already handle all fields — no user configuration needed.
 
 ### 7. Models / Schemas
 

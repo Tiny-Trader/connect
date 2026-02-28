@@ -9,6 +9,7 @@ This example shows the full user-facing API:
   4. Portfolio — holdings and positions
   5. Reports   — order book and trade book
   6. Order management — place, modify, cancel, cancel-all, close-all
+  7. WebSocket — real-time tick streaming (FULL mode: ltp, volume, oi, bid, ask)
 
 Prerequisites
 -------------
@@ -30,6 +31,7 @@ Run
     python examples/zerodha.py
 """
 
+import asyncio
 import os
 from datetime import date
 from pathlib import Path
@@ -263,27 +265,55 @@ print()
 
 
 # ---------------------------------------------------------------------------
-# 7. Async API
+# 7. Async API & WebSocket streaming
 #
 # tt-connect is built strictly async-first. The `AsyncTTConnect` class provides
 # the exact same API but returns awaiting coroutines.
 #
-# (Note: Zerodha WebSockets are not yet implemented in tt-connect)
+# Zerodha streams in FULL mode automatically — every tick includes ltp, volume,
+# oi, bid, ask, and exchange timestamp. No extra configuration needed.
 # ---------------------------------------------------------------------------
 
 async def run_async_demo() -> None:
-    print("── Async API ───────────────────────────")
+    print("── Async API & WebSockets ──────────────")
     from tt_connect import AsyncTTConnect
-    
+
     # Initialize the fully async client
     async_broker = AsyncTTConnect("zerodha", config=broker._async._config)
     await async_broker.init()
-    
+
     # Fetch funds asynchronously just as an example
     funds = await async_broker.get_funds()
     print(f"  [Async] Available Funds: ₹{funds.available:,.2f}")
-    
+
+    # WebSocket setup — streams in FULL mode (ltp, volume, oi, bid, ask)
+    instruments = [
+        Index(exchange=Exchange.NSE, symbol="NIFTY"),
+        Equity(exchange=Exchange.NSE, symbol="RELIANCE"),
+    ]
+
+    def on_tick(tick) -> None:
+        parts = [
+            f"  TICK  {tick.instrument.exchange}:{tick.instrument.symbol:<20}",
+            f"  ltp=₹{tick.ltp:.2f}",
+        ]
+        if tick.volume is not None:
+            parts.append(f"  vol={tick.volume}")
+        if tick.oi is not None:
+            parts.append(f"  oi={tick.oi}")
+        if tick.bid is not None and tick.ask is not None:
+            parts.append(f"  bid=₹{tick.bid:.2f}  ask=₹{tick.ask:.2f}")
+        print("".join(parts))
+
+    print("── Streaming ticks (10 seconds) ────────")
+    await async_broker.subscribe(instruments, on_tick)
+
+    # Stream for a short time
+    await asyncio.sleep(10)
+
+    await async_broker.unsubscribe(instruments)
     await async_broker.close()
+    print("── Stream closed ───────────────────────")
 
 # Uncomment to run the async demo:
 # asyncio.run(run_async_demo())

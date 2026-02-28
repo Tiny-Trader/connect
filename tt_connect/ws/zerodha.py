@@ -193,8 +193,8 @@ class ZerodhaWebSocket(BrokerWebSocket):
     async def _send_subscribe(self, ws: Any, tokens: list[int]) -> None:
         """Send subscribe + mode messages for the given token list."""
         await ws.send(json.dumps({"a": "subscribe", "v": tokens}))
-        await ws.send(json.dumps({"a": "mode", "v": [_MODE_QUOTE, tokens]}))
-        logger.debug(f"Subscribed to {len(tokens)} tokens (mode={_MODE_QUOTE})")
+        await ws.send(json.dumps({"a": "mode", "v": [_MODE_FULL, tokens]}))
+        logger.debug(f"Subscribed to {len(tokens)} tokens (mode={_MODE_FULL})")
 
     async def _send_unsubscribe(self, ws: Any, tokens: list[int]) -> None:
         await ws.send(json.dumps({"a": "unsubscribe", "v": tokens}))
