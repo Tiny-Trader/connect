@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.3 - 2026-02-28
+
+- Bump: **patch**
+- Source PR: #25 ci(docs): remove legacy release workflow and align pipeline docs
+
+
 ## 0.2.2 - 2026-02-28
 
 - Bump: **patch**
