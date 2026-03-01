@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.0 - 2026-03-01
+
+- Bump: **minor**
+- Source PR: #27 feat(core): add logging
+
+
 ## [Unreleased]
 
 ### Added

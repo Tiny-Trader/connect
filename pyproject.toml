@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "tt-connect"
-version = "0.2.4"
+version = "0.3.0"
 description = "A unified API layer for all Indian brokers"
 authors = ["Apurv Salunke <salunke.apurv7@gmail.com>"]
 readme = "README.md"
