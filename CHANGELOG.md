@@ -1,5 +1,15 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+- Structured JSON logging via `setup_logging()` (opt-in, zero new dependencies).
+  - `TTConnectJsonFormatter` emits one JSON line per record with stable fields: `ts`, `level`, `logger`, `message`, plus any caller-supplied `extra` fields merged in.
+  - 27 named events across auth, HTTP, instrument refresh, client lifecycle, and WebSocket layers (e.g. `auth.login`, `request.end`, `ws.connect`).
+  - `setup_logging(level="INFO", fmt="json"|"text")` exported from the top-level package.
+  - Library remains silent by default (`NullHandler`) — existing users see no change.
+- Usage demonstrated in `examples/zerodha.py` and `examples/angelone.py`.
+
 ## 0.2.4 - 2026-02-28
 
 - Bump: **patch**
