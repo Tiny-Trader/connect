@@ -93,7 +93,7 @@ class AngelOneAuth(BaseAuth):
             expires_at=next_midnight_ist(),
         )
         logger.info(
-            f"AngelOne login successful for {client_id}",
+            "AngelOne login successful",
             extra={"event": "auth.login", "broker": "angelone", "mode": "auto"},
         )
 

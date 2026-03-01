@@ -221,7 +221,7 @@ class AngelOneWebSocket(BrokerWebSocket):
         }))
         logger.debug(
             f"Subscribed to {len(tokens)} tokens (mode={mode})",
-            extra={"event": "ws.subscribe", "broker": "angelone", "token_count": len(tokens), "mode": _MODE_SNAP_QUOTE},
+            extra={"event": "ws.subscribe", "broker": "angelone", "token_count": len(tokens), "mode": mode},
         )
 
     async def _send_unsubscribe(

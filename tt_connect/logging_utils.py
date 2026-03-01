@@ -42,18 +42,32 @@ class TTConnectJsonFormatter(logging.Formatter):
         return json.dumps(payload, default=str)
 
 
+_HANDLER_MARKER = "_tt_connect_handler"
+
+
 def setup_logging(level: str = "INFO", fmt: Literal["json", "text"] = "json") -> None:
     """Configure the tt_connect package logger to emit to stderr.
 
-    Call once at application startup to enable structured output.
+    Idempotent — repeated calls update the formatter and level without
+    stacking duplicate handlers. Call once at application startup.
     By default the tt_connect logger ships with a NullHandler (silent).
     """
-    handler = logging.StreamHandler(sys.stderr)
-    handler.setFormatter(
+    pkg_logger = logging.getLogger("tt_connect")
+    pkg_logger.setLevel(getattr(logging, level.upper(), logging.INFO))
+
+    formatter = (
         TTConnectJsonFormatter()
         if fmt == "json"
         else logging.Formatter("%(asctime)s %(levelname)-8s %(name)s %(message)s")
     )
-    pkg_logger = logging.getLogger("tt_connect")
-    pkg_logger.setLevel(getattr(logging, level.upper(), logging.INFO))
+
+    # If our handler is already attached, just swap the formatter.
+    for h in pkg_logger.handlers:
+        if getattr(h, _HANDLER_MARKER, False):
+            h.setFormatter(formatter)
+            return
+
+    handler = logging.StreamHandler(sys.stderr)
+    handler.setFormatter(formatter)
+    setattr(handler, _HANDLER_MARKER, True)
     pkg_logger.addHandler(handler)

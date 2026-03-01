@@ -20,7 +20,10 @@ _TIMEOUT = httpx.Timeout(connect=5.0, read=30.0, write=10.0, pool=5.0)
 
 
 def _url_path(url: str) -> str:
-    return urlparse(url).path or url
+    parsed = urlparse(url)
+    if parsed.scheme or parsed.netloc:
+        return parsed.path or "/"
+    return parsed.path or url
 _MAX_RETRIES = 3
 _RETRY_BACKOFF = 1.0  # seconds; doubled on each attempt
 JsonDict = dict[str, Any]
@@ -220,15 +223,16 @@ class BrokerAdapter:
         - Does not retry broker-declared/business errors (`_is_error`)
         """
         last_exc: Exception | None = None
+        url_path = _url_path(url)
         for attempt in range(1, _MAX_RETRIES + 1):
             t0 = time.monotonic()
             logger.debug(
-                f"Request start ({attempt}/{_MAX_RETRIES}): {method} {url}",
+                f"Request start ({attempt}/{_MAX_RETRIES}): {method} {url_path}",
                 extra={
                     "event": "request.start",
                     "broker": self._broker_id,
                     "method": method,
-                    "url": _url_path(url),
+                    "url": url_path,
                     "attempt": attempt,
                 },
             )
@@ -238,12 +242,12 @@ class BrokerAdapter:
                 latency_ms = int((time.monotonic() - t0) * 1000)
                 last_exc = exc
                 logger.warning(
-                    f"Request timed out ({attempt}/{_MAX_RETRIES}): {method} {url}",
+                    f"Request timed out ({attempt}/{_MAX_RETRIES}): {method} {url_path}",
                     extra={
                         "event": "request.timeout",
                         "broker": self._broker_id,
                         "method": method,
-                        "url": _url_path(url),
+                        "url": url_path,
                         "attempt": attempt,
                         "max_retries": _MAX_RETRIES,
                         "latency_ms": latency_ms,
@@ -256,29 +260,31 @@ class BrokerAdapter:
                 raw = response.json()
             except Exception:
                 logger.error(
-                    f"Failed to parse JSON. Status: {response.status_code}, body: {response.text[:200]}",
+                    "Failed to parse JSON from broker response",
                     extra={
                         "event": "request.json_error",
                         "broker": self._broker_id,
                         "method": method,
-                        "url": _url_path(url),
+                        "url": url_path,
                         "status_code": response.status_code,
+                        "content_type": response.headers.get("content-type", ""),
+                        "body_len": len(response.text),
                     },
                 )
                 raise
             if not isinstance(raw, dict):
-                raise TTConnectError(f"Expected JSON object from {url}, got {type(raw).__name__}")
+                raise TTConnectError(f"Expected JSON object from {url_path}, got {type(raw).__name__}")
 
             # 5xx — transient server error, retry
             if response.status_code >= 500:
-                last_exc = TTConnectError(f"Server error {response.status_code} from {url}")
+                last_exc = TTConnectError(f"Server error {response.status_code} from {url_path}")
                 logger.warning(
-                    f"Server error {response.status_code} ({attempt}/{_MAX_RETRIES}): {method} {url}",
+                    f"Server error {response.status_code} ({attempt}/{_MAX_RETRIES}): {method} {url_path}",
                     extra={
                         "event": "request.server_error",
                         "broker": self._broker_id,
                         "method": method,
-                        "url": _url_path(url),
+                        "url": url_path,
                         "status_code": response.status_code,
                         "attempt": attempt,
                         "max_retries": _MAX_RETRIES,
@@ -293,12 +299,12 @@ class BrokerAdapter:
 
             latency_ms = int((time.monotonic() - t0) * 1000)
             logger.debug(
-                f"Request end ({attempt}/{_MAX_RETRIES}): {method} {url} → {response.status_code}",
+                f"Request end ({attempt}/{_MAX_RETRIES}): {method} {url_path} → {response.status_code}",
                 extra={
                     "event": "request.end",
                     "broker": self._broker_id,
                     "method": method,
-                    "url": _url_path(url),
+                    "url": url_path,
                     "status_code": response.status_code,
                     "latency_ms": latency_ms,
                     "attempt": attempt,

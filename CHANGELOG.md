@@ -46,31 +46,6 @@
 - Source PR: #16 ci(release): fix auth precedence for dev auto-bump push
 
 
-All notable changes to this project will be documented in this file.
-
-The format is based on Keep a Changelog and this project follows Semantic Versioning.
-
-## [Unreleased]
-
-### Added
-- Instrument helper APIs for discovery and contract lookup: `search_instruments`, `get_futures`, `get_options`, and `get_expiries`.
-
-### Fixed
-- Zerodha WebSocket now subscribes in `full` mode (was `quote`) — `Tick.oi`, `Tick.bid`, `Tick.ask`, and `Tick.timestamp` are now always populated.
-- AngelOne WebSocket now subscribes in `SNAP_QUOTE` mode (was `QUOTE`) — `Tick.oi`, `Tick.bid`, and `Tick.ask` are now always populated.
-
-### Removed
-- Deleted unused `ws/normalizer.py` stub (`TickNormalizer` base class was never wired up).
-- Facade hardening for client internals to reduce accidental use of private attributes and methods.
-- Zerodha WebSocket streaming via KiteTicker binary protocol — `subscribe()` now works on both Zerodha and AngelOne.
-- GTT (Good Till Triggered) orders for both brokers: `place_gtt`, `modify_gtt`, `cancel_gtt`, `get_gtt`, `get_gtts`. Zerodha supports two-leg OCO; AngelOne supports single-leg.
-- New canonical models: `PlaceGttRequest`, `ModifyGttRequest`, `GttLeg`, `Gtt`.
-- Elegance refactor: explicit `ClientState` state machine, mixin decomposition (`LifecycleMixin`, `PortfolioMixin`, `OrdersMixin`), `PlaceOrderRequest`/`ModifyOrderRequest` request objects, and context manager support (`async with` / `with`).
-- Release governance docs and automation:
-  - `RELEASE.md`
-  - changelog validation workflow
-  - tag-driven publish workflow
-
 ## [0.1.0] - 2026-02-22
 
 ### Added

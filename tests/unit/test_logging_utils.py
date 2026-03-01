@@ -73,11 +73,34 @@ class TestTTConnectJsonFormatter:
 
     def test_setup_logging_adds_handler(self) -> None:
         pkg_logger = logging.getLogger("tt_connect")
-        # Remove any handlers from a previous test run
-        pkg_logger.handlers.clear()
+        original_handlers = list(pkg_logger.handlers)
+        original_level = pkg_logger.level
+        try:
+            pkg_logger.handlers.clear()
 
-        setup_logging(level="DEBUG", fmt="json")
+            setup_logging(level="DEBUG", fmt="json")
 
-        assert len(pkg_logger.handlers) >= 1
-        handler = pkg_logger.handlers[-1]
-        assert isinstance(handler.formatter, TTConnectJsonFormatter)
+            assert len(pkg_logger.handlers) >= 1
+            handler = pkg_logger.handlers[-1]
+            assert isinstance(handler.formatter, TTConnectJsonFormatter)
+        finally:
+            pkg_logger.handlers.clear()
+            pkg_logger.handlers.extend(original_handlers)
+            pkg_logger.setLevel(original_level)
+
+    def test_setup_logging_is_idempotent(self) -> None:
+        pkg_logger = logging.getLogger("tt_connect")
+        original_handlers = list(pkg_logger.handlers)
+        original_level = pkg_logger.level
+        try:
+            pkg_logger.handlers.clear()
+
+            setup_logging(fmt="json")
+            setup_logging(fmt="json")  # second call must not stack a second handler
+
+            tt_handlers = [h for h in pkg_logger.handlers if hasattr(h, "_tt_connect_handler")]
+            assert len(tt_handlers) == 1
+        finally:
+            pkg_logger.handlers.clear()
+            pkg_logger.handlers.extend(original_handlers)
+            pkg_logger.setLevel(original_level)
