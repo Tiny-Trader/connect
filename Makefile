@@ -1,6 +1,6 @@
 SHELL := /bin/sh
 
-.PHONY: lint typecheck test test-fast coverage precommit-install precommit-run ci
+.PHONY: lint typecheck test test-fast coverage docs-serve docs-build precommit-install precommit-run ci
 
 lint:
 	poetry run ruff check .
@@ -16,6 +16,12 @@ test-fast:
 
 coverage:
 	poetry run pytest tests/unit tests/integration --cov=tt_connect --cov-report=xml --cov-fail-under=64
+
+docs-serve:
+	poetry run mkdocs serve
+
+docs-build:
+	poetry run mkdocs build --strict
 
 precommit-install:
 	pre-commit install --hook-type pre-commit --hook-type pre-push
