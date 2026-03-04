@@ -1,4 +1,4 @@
-from tt_connect.adapters.zerodha.parser import parse
+from tt_connect.brokers.zerodha.parser import parse
 
 def test_parse_counts(zerodha_csv):
     result = parse(zerodha_csv)

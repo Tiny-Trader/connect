@@ -1,5 +1,5 @@
 import pytest
-from tt_connect.enums import Exchange, OptionType, ProductType, OrderType, Side, OrderStatus, AuthMode
+from tt_connect.core.models.enums import Exchange, OptionType, ProductType, OrderType, Side, OrderStatus, AuthMode
 
 def test_exchange_values():
     assert Exchange.NSE == "NSE"

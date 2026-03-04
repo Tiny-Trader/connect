@@ -6,11 +6,11 @@ import json
 
 import pytest
 
-from tt_connect.adapters.angelone.transformer import AngelOneTransformer
-from tt_connect.adapters.zerodha.transformer import ZerodhaTransformer
-from tt_connect.enums import ProductType, Side
-from tt_connect.instruments import Equity
-from tt_connect.models import GttLeg, ModifyGttRequest, PlaceGttRequest
+from tt_connect.brokers.angelone.transformer import AngelOneTransformer
+from tt_connect.brokers.zerodha.transformer import ZerodhaTransformer
+from tt_connect.core.models.enums import ProductType, Side
+from tt_connect.core.models.instruments import Equity
+from tt_connect.core.models import GttLeg, ModifyGttRequest, PlaceGttRequest
 
 
 # ---------------------------------------------------------------------------

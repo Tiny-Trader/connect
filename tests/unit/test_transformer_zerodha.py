@@ -1,6 +1,6 @@
 import pytest
-from tt_connect.adapters.zerodha.transformer import ZerodhaTransformer
-from tt_connect.enums import OrderStatus, Exchange, ProductType, Side
+from tt_connect.brokers.zerodha.transformer import ZerodhaTransformer
+from tt_connect.core.models.enums import OrderStatus, Exchange, ProductType, Side
 
 @pytest.mark.parametrize("zerodha_response", ["profile"], indirect=True)
 def test_to_profile(zerodha_response):
@@ -117,7 +117,7 @@ def test_parse_error():
         "message": "Invalid token"
     }
     err = ZerodhaTransformer.parse_error(raw)
-    from tt_connect.exceptions import AuthenticationError
+    from tt_connect.core.exceptions import AuthenticationError
     assert isinstance(err, AuthenticationError)
     assert str(err) == "Invalid token"
 
@@ -130,7 +130,7 @@ def test_parse_error():
     ("GeneralException", "BrokerError"),
 ])
 def test_parse_error_all_documented_types(error_type, expected_cls):
-    import tt_connect.exceptions as exc
+    import tt_connect.core.exceptions as exc
     raw = {"error_type": error_type, "message": "err"}
     err = ZerodhaTransformer.parse_error(raw)
     assert isinstance(err, getattr(exc, expected_cls))

@@ -29,7 +29,7 @@ async def test_get_positions(broker):
 
 @pytest.mark.live
 async def test_get_expiries_returns_sorted_dates(broker):
-    from tt_connect.instruments import Equity
+    from tt_connect.core.models.instruments import Equity
     sbin = Equity(exchange="NSE", symbol="SBIN")
     expiries = await broker.get_expiries(sbin)
 
@@ -40,7 +40,7 @@ async def test_get_expiries_returns_sorted_dates(broker):
 @pytest.mark.live
 async def test_get_futures_returns_future_objects(broker):
     from datetime import date
-    from tt_connect.instruments import Equity, Future
+    from tt_connect.core.models.instruments import Equity, Future
     sbin = Equity(exchange="NSE", symbol="SBIN")
     futures = await broker.get_futures(sbin)
 
@@ -54,7 +54,7 @@ async def test_get_futures_returns_future_objects(broker):
 
 @pytest.mark.live
 async def test_get_options_all_expiries(broker):
-    from tt_connect.instruments import Equity, Option
+    from tt_connect.core.models.instruments import Equity, Option
     sbin = Equity(exchange="NSE", symbol="SBIN")
     options = await broker.get_options(sbin)
 
@@ -66,7 +66,7 @@ async def test_get_options_all_expiries(broker):
 
 @pytest.mark.live
 async def test_get_options_filtered_by_expiry(broker):
-    from tt_connect.instruments import Equity
+    from tt_connect.core.models.instruments import Equity
     sbin = Equity(exchange="NSE", symbol="SBIN")
 
     # Use the nearest expiry from get_expiries
@@ -86,7 +86,7 @@ async def test_get_options_filtered_by_expiry(broker):
 @pytest.mark.live
 async def test_get_options_has_ce_pe_pairs(broker):
     """Each strike should have exactly one CE and one PE for a given expiry."""
-    from tt_connect.instruments import Equity
+    from tt_connect.core.models.instruments import Equity
     sbin = Equity(exchange="NSE", symbol="SBIN")
 
     expiries = await broker.get_expiries(sbin)

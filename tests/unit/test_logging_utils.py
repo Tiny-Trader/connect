@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import logging
 
-from tt_connect.logging_utils import TTConnectJsonFormatter, setup_logging
+from tt_connect.core.logging import TTConnectJsonFormatter, setup_logging
 
 
 def _make_record(

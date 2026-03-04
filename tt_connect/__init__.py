@@ -2,28 +2,36 @@
 
 import logging
 
-from tt_connect.client import AsyncTTConnect
-from tt_connect.config import AngelOneConfig, ZerodhaConfig
-from tt_connect.enums import CandleInterval
-from tt_connect.exceptions import ConfigurationError
-from tt_connect.instruments import Equity, Future, Index, Option
-from tt_connect.logging_utils import setup_logging
-from tt_connect.models import (
-    Candle,
+from tt_connect.core.client import AsyncTTConnect, TTConnect
+from tt_connect.core.exceptions import ConfigurationError
+from tt_connect.core.logging import setup_logging
+from tt_connect.core.models import (
+    # Enums
+    CandleInterval,
+    # Instruments
+    Equity,
+    Future,
+    Index,
+    Option,
+    # Requests
     GetHistoricalRequest,
-    Gtt,
     GttLeg,
     ModifyGttRequest,
     ModifyOrderRequest,
     PlaceGttRequest,
     PlaceOrderRequest,
+    # Responses
+    Candle,
+    Gtt,
     Tick,
 )
-from tt_connect.sync_client import TTConnect
 
-# Import adapters to trigger auto-registration
-import tt_connect.adapters.zerodha.adapter   # noqa: F401
-import tt_connect.adapters.angelone.adapter  # noqa: F401
+# Auto-discover and register all broker packages (adapters + configs)
+import tt_connect.brokers  # noqa: F401
+
+# Re-export broker configs for user convenience
+from tt_connect.brokers.zerodha.config import ZerodhaConfig
+from tt_connect.brokers.angelone.config import AngelOneConfig
 
 logging.getLogger(__name__).addHandler(logging.NullHandler())
 

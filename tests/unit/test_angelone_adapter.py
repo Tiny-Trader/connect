@@ -6,8 +6,8 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from tt_connect.adapters.angelone.adapter import AngelOneAdapter
-from tt_connect.auth.base import SessionData
+from tt_connect.brokers.angelone.adapter import AngelOneAdapter
+from tt_connect.core.adapter.auth import SessionData
 
 
 @pytest.mark.asyncio

@@ -1,8 +1,8 @@
 import pytest
 from pydantic import ValidationError
-from tt_connect.models import Profile, Fund, Holding, Order, Margin
-from tt_connect.instruments import Instrument
-from tt_connect.enums import Exchange, Side, ProductType, OrderType, OrderStatus
+from tt_connect.core.models import Profile, Fund, Holding, Order, Margin
+from tt_connect.core.models.instruments import Instrument
+from tt_connect.core.models.enums import Exchange, Side, ProductType, OrderType, OrderStatus
 
 def test_profile_validation():
     p = Profile(client_id="ZZ0001", name="Test", email="test@ex.com")

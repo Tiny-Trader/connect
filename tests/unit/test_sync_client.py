@@ -6,9 +6,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from tt_connect.enums import OrderStatus, OrderType, ProductType, Side
-from tt_connect.instruments import Equity
-from tt_connect.models import (
+from tt_connect.core.models.enums import OrderStatus, OrderType, ProductType, Side
+from tt_connect.core.models.instruments import Equity
+from tt_connect.core.models import (
     Fund,
     Gtt,
     GttLeg,
@@ -22,7 +22,7 @@ from tt_connect.models import (
     Profile,
     Trade,
 )
-from tt_connect.sync_client import TTConnect
+from tt_connect.core.client._sync import TTConnect
 
 
 # ---------------------------------------------------------------------------
@@ -52,7 +52,7 @@ GTT       = Gtt(gtt_id="G1", status="active", symbol="RELIANCE", exchange="NSE",
 @pytest.fixture
 def client_and_mock():
     """TTConnect backed by a fully mocked AsyncTTConnect."""
-    with patch("tt_connect.client.AsyncTTConnect") as mock_cls:
+    with patch("tt_connect.core.client._async.AsyncTTConnect") as mock_cls:
         mock_async = MagicMock()
         mock_async.init             = AsyncMock(return_value=None)
         mock_async.close            = AsyncMock(return_value=None)
@@ -91,7 +91,7 @@ def test_init_calls_async_init(client_and_mock):
 
 
 def test_context_manager_calls_close():
-    with patch("tt_connect.client.AsyncTTConnect") as mock_cls:
+    with patch("tt_connect.core.client._async.AsyncTTConnect") as mock_cls:
         mock_async = MagicMock()
         mock_async.init  = AsyncMock(return_value=None)
         mock_async.close = AsyncMock(return_value=None)
@@ -124,7 +124,7 @@ def test_init_failure_cleans_up_loop_and_thread(monkeypatch: pytest.MonkeyPatch)
     with (
         patch("asyncio.new_event_loop", return_value=fake_loop),
         patch("threading.Thread", return_value=fake_thread),
-        patch("tt_connect.client.AsyncTTConnect", return_value=mock_async),
+        patch("tt_connect.core.client._async.AsyncTTConnect", return_value=mock_async),
     ):
         monkeypatch.setattr(TTConnect, "_run", fake_run)
 

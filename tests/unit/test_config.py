@@ -4,9 +4,11 @@ from __future__ import annotations
 
 import pytest
 
-from tt_connect.config import AngelOneConfig, ZerodhaConfig, validate_config
-from tt_connect.enums import AuthMode, OnStale
-from tt_connect.exceptions import ConfigurationError
+from tt_connect.core.models.config import validate_config
+from tt_connect.brokers.angelone.config import AngelOneConfig
+from tt_connect.brokers.zerodha.config import ZerodhaConfig
+from tt_connect.core.models.enums import AuthMode, OnStale
+from tt_connect.core.exceptions import ConfigurationError
 
 
 # ---------------------------------------------------------------------------
@@ -187,12 +189,12 @@ def test_validate_config_unknown_broker_does_not_raise() -> None:
 
 
 def test_angelone_adapter_raises_on_bad_config() -> None:
-    from tt_connect.adapters.angelone.adapter import AngelOneAdapter
+    from tt_connect.brokers.angelone.adapter import AngelOneAdapter
     with pytest.raises(ConfigurationError):
         AngelOneAdapter({"api_key": "k"})  # missing client_id, pin, totp_secret
 
 
 def test_zerodha_adapter_raises_on_bad_config() -> None:
-    from tt_connect.adapters.zerodha.adapter import ZerodhaAdapter
+    from tt_connect.brokers.zerodha.adapter import ZerodhaAdapter
     with pytest.raises(ConfigurationError):
         ZerodhaAdapter({"api_key": "k"})  # missing access_token

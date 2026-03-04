@@ -5,9 +5,9 @@ from __future__ import annotations
 from datetime import date
 from unittest.mock import AsyncMock, MagicMock
 
-from tt_connect.instruments import Equity, Future, Option
-from tt_connect.instruments_mixin import InstrumentsMixin
-from tt_connect.instrument_manager.resolver import ResolvedInstrument
+from tt_connect.core.models.instruments import Equity, Future, Option
+from tt_connect.core.client._instruments import InstrumentsMixin
+from tt_connect.core.store.resolver import ResolvedInstrument
 
 
 SBIN = Equity(exchange="NSE", symbol="SBIN")

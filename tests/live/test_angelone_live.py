@@ -39,7 +39,7 @@ async def test_get_orders(angelone_broker) -> None:
 
 @pytest.mark.live
 async def test_get_expiries_returns_sorted_dates(angelone_broker) -> None:
-    from tt_connect.instruments import Equity
+    from tt_connect.core.models.instruments import Equity
     sbin = Equity(exchange="NSE", symbol="SBIN")
     expiries = await angelone_broker.get_expiries(sbin)
 
@@ -50,7 +50,7 @@ async def test_get_expiries_returns_sorted_dates(angelone_broker) -> None:
 @pytest.mark.live
 async def test_get_futures_returns_future_objects(angelone_broker) -> None:
     from datetime import date
-    from tt_connect.instruments import Equity, Future
+    from tt_connect.core.models.instruments import Equity, Future
     sbin = Equity(exchange="NSE", symbol="SBIN")
     futures = await angelone_broker.get_futures(sbin)
 
@@ -63,7 +63,7 @@ async def test_get_futures_returns_future_objects(angelone_broker) -> None:
 
 @pytest.mark.live
 async def test_get_options_filtered_by_expiry(angelone_broker) -> None:
-    from tt_connect.instruments import Equity
+    from tt_connect.core.models.instruments import Equity
     sbin = Equity(exchange="NSE", symbol="SBIN")
 
     expiries = await angelone_broker.get_expiries(sbin)
@@ -81,8 +81,8 @@ async def test_get_options_filtered_by_expiry(angelone_broker) -> None:
 @pytest.mark.live
 async def test_get_historical_returns_candles(angelone_broker) -> None:
     from datetime import datetime
-    from tt_connect.enums import CandleInterval
-    from tt_connect.instruments import Equity
+    from tt_connect.core.models.enums import CandleInterval
+    from tt_connect.core.models.instruments import Equity
 
     instr = Equity(exchange="NSE", symbol="SBIN")
     candles = await angelone_broker.get_historical(

@@ -1,9 +1,9 @@
 import pytest
 from datetime import date
-from tt_connect.instrument_manager.resolver import InstrumentResolver, ResolvedInstrument
-from tt_connect.instruments import Index, Equity, Future, Option
-from tt_connect.enums import Exchange
-from tt_connect.exceptions import InstrumentNotFoundError
+from tt_connect.core.store.resolver import InstrumentResolver, ResolvedInstrument
+from tt_connect.core.models.instruments import Index, Equity, Future, Option
+from tt_connect.core.models.enums import Exchange
+from tt_connect.core.exceptions import InstrumentNotFoundError
 
 async def test_resolve_index(populated_db):
     resolver = InstrumentResolver(populated_db, "zerodha")

@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock
 
-from tt_connect.enums import ProductType, Side
-from tt_connect.instruments import Equity
-from tt_connect.models import Fund, Holding, Position, Profile, Trade
-from tt_connect.portfolio import PortfolioMixin
+from tt_connect.core.models.enums import ProductType, Side
+from tt_connect.core.models.instruments import Equity
+from tt_connect.core.models import Fund, Holding, Position, Profile, Trade
+from tt_connect.core.client._portfolio import PortfolioMixin
 
 
 # ---------------------------------------------------------------------------

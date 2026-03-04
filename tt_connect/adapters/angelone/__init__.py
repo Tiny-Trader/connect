@@ -1,1 +1,0 @@
-"""AngelOne adapter package."""

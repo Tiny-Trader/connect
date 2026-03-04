@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from datetime import date
 
-from tt_connect.enums import OnStale
-from tt_connect.instrument_manager.manager import InstrumentManager
-from tt_connect.instruments import Equity
+from tt_connect.core.models.enums import OnStale
+from tt_connect.core.store.manager import InstrumentManager
+from tt_connect.core.models.instruments import Equity
 
 
 # ---------------------------------------------------------------------------
@@ -52,7 +52,7 @@ async def test_get_futures_unknown_underlying_returns_empty(populated_db):
 
 
 async def test_get_futures_returns_future_objects(populated_db):
-    from tt_connect.instruments import Future
+    from tt_connect.core.models.instruments import Future
     mgr = _manager(populated_db)
     reliance = Equity(exchange="NSE", symbol="RELIANCE")
     futures = await mgr.get_futures(reliance)
@@ -95,7 +95,7 @@ async def test_get_options_expiry_filter_no_match(populated_db):
 
 
 async def test_get_options_sorted(populated_db):
-    from tt_connect.instruments import Option
+    from tt_connect.core.models.instruments import Option
     mgr = _manager(populated_db)
     reliance = Equity(exchange="NSE", symbol="RELIANCE")
     options = await mgr.get_options(reliance)

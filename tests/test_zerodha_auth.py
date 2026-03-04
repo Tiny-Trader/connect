@@ -1,6 +1,6 @@
 import pytest
-from tt_connect.adapters.zerodha.auth import ZerodhaAuth
-from tt_connect.exceptions import AuthenticationError
+from tt_connect.brokers.zerodha.auth import ZerodhaAuth
+from tt_connect.core.exceptions import AuthenticationError
 
 
 def _make_auth(config: dict) -> ZerodhaAuth:

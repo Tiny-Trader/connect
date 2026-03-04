@@ -6,15 +6,15 @@ import pytest
 import pytest_asyncio
 from freezegun import freeze_time
 
-from tt_connect.adapters.zerodha.parser import parse
-from tt_connect.enums import OnStale
-from tt_connect.instrument_manager.db import (
+from tt_connect.brokers.zerodha.parser import parse
+from tt_connect.core.models.enums import OnStale
+from tt_connect.core.store.schema import (
     SCHEMA_VERSION,
     _get_schema_version,
     init_schema,
     truncate_all,
 )
-from tt_connect.instrument_manager.manager import InstrumentManager
+from tt_connect.core.store.manager import InstrumentManager
 
 async def _count(db, table: str) -> int:
     async with db.execute(f"SELECT COUNT(*) FROM {table}") as cur:

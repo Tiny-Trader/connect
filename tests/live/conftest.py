@@ -3,7 +3,7 @@ import os
 import pytest
 import pytest_asyncio
 
-from tt_connect.client import AsyncTTConnect
+from tt_connect.core.client._async import AsyncTTConnect
 
 # --- Zerodha ---
 

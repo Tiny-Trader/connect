@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock
 
-from tt_connect.enums import ClientState
-from tt_connect.lifecycle import LifecycleMixin
+from tt_connect.core.models.enums import ClientState
+from tt_connect.core.client._lifecycle import LifecycleMixin
 
 
 class _FakeLifecycle(LifecycleMixin):

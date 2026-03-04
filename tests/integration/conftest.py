@@ -1,9 +1,9 @@
 import aiosqlite
 import pytest_asyncio
-from tt_connect.instrument_manager.db import init_schema
-from tt_connect.instrument_manager.manager import InstrumentManager
-from tt_connect.adapters.zerodha.parser import parse
-from tt_connect.enums import OnStale
+from tt_connect.core.store.schema import init_schema
+from tt_connect.core.store.manager import InstrumentManager
+from tt_connect.brokers.zerodha.parser import parse
+from tt_connect.core.models.enums import OnStale
 
 @pytest_asyncio.fixture
 async def db():

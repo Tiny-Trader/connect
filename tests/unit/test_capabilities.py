@@ -6,11 +6,11 @@ the enforcement logic.
 """
 
 import pytest
-from tt_connect.capabilities import Capabilities
-from tt_connect.enums import Exchange, OrderType, ProductType, AuthMode
-from tt_connect.exceptions import UnsupportedFeatureError
-from tt_connect.adapters.zerodha.capabilities import ZERODHA_CAPABILITIES
-from tt_connect.adapters.angelone.capabilities import ANGELONE_CAPABILITIES
+from tt_connect.core.adapter.capabilities import Capabilities
+from tt_connect.core.models.enums import Exchange, OrderType, ProductType, AuthMode
+from tt_connect.core.exceptions import UnsupportedFeatureError
+from tt_connect.brokers.zerodha.capabilities import ZERODHA_CAPABILITIES
+from tt_connect.brokers.angelone.capabilities import ANGELONE_CAPABILITIES
 
 
 # ---------------------------------------------------------------------------

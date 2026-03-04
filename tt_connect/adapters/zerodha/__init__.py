@@ -1,1 +1,0 @@
-"""Zerodha adapter package."""

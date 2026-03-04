@@ -1,9 +1,9 @@
 """Unit tests for AngelOne transformer."""
 
 import pytest
-from tt_connect.adapters.angelone.transformer import AngelOneTransformer
-from tt_connect.enums import Exchange, OrderStatus, OrderType
-from tt_connect.models import ModifyOrderRequest
+from tt_connect.brokers.angelone.transformer import AngelOneTransformer
+from tt_connect.core.models.enums import Exchange, OrderStatus, OrderType
+from tt_connect.core.models import ModifyOrderRequest
 
 
 # ---------------------------------------------------------------------------
@@ -148,21 +148,21 @@ def test_to_order_uses_filledshares():
 
 
 def test_parse_error_authentication():
-    from tt_connect.exceptions import AuthenticationError
+    from tt_connect.core.exceptions import AuthenticationError
     raw = {"errorcode": "AG8001", "message": "Invalid token"}
     err = AngelOneTransformer.parse_error(raw)
     assert isinstance(err, AuthenticationError)
 
 
 def test_parse_error_order_error():
-    from tt_connect.exceptions import OrderError
+    from tt_connect.core.exceptions import OrderError
     raw = {"errorcode": "AB2002", "message": "ROBO blocked"}
     err = AngelOneTransformer.parse_error(raw)
     assert isinstance(err, OrderError)
 
 
 def test_parse_error_unknown_code_becomes_broker_error():
-    from tt_connect.exceptions import BrokerError
+    from tt_connect.core.exceptions import BrokerError
     raw = {"errorcode": "ZZZZ99", "message": "Unknown"}
     err = AngelOneTransformer.parse_error(raw)
     assert isinstance(err, BrokerError)

@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock
 
-from tt_connect.enums import OrderStatus, OrderType, ProductType, Side
-from tt_connect.instrument_manager.resolver import ResolvedInstrument
-from tt_connect.instruments import Equity
-from tt_connect.models import (
+from tt_connect.core.models.enums import OrderStatus, OrderType, ProductType, Side
+from tt_connect.core.store.resolver import ResolvedInstrument
+from tt_connect.core.models.instruments import Equity
+from tt_connect.core.models import (
     Gtt,
     GttLeg,
     ModifyGttRequest,
@@ -17,7 +17,7 @@ from tt_connect.models import (
     PlaceOrderRequest,
     Position,
 )
-from tt_connect.orders import OrdersMixin
+from tt_connect.core.client._orders import OrdersMixin
 
 
 # ---------------------------------------------------------------------------
