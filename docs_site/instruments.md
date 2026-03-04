@@ -19,3 +19,8 @@ You pass a canonical instrument. The package maps it to broker token/symbol befo
 - always use correct exchange + symbol
 - use helper APIs to discover futures/options/expiries
 - treat index as non-tradable for order placement
+
+## See also
+- [Client methods (`get_futures`, `get_options`, `get_expiries`, `search_instruments`)](reference/clients.md)
+- [Models (Instrument, Equity, Future, Option, Index)](reference/models.md)
+- [Enums (`Exchange`, `OptionType`)](reference/enums.md)

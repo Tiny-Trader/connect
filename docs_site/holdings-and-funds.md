@@ -13,3 +13,7 @@
 ## User expectations
 - values can change quickly during market hours
 - field names are normalized, but broker math may differ
+
+## See also
+- [Client methods (`get_holdings`, `get_funds`)](reference/clients.md)
+- [Models (`Holding`, `Fund`)](reference/models.md)

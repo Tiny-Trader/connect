@@ -15,3 +15,9 @@ Current net open quantity for an instrument.
 
 ## Caution
 close-all sends market actions; always verify product/segment limits.
+
+## See also
+- [Client methods (`get_positions`, `close_all_positions`)](reference/clients.md)
+- [Models (`Position`)](reference/models.md)
+- [Enums (`ProductType`, `Side`)](reference/enums.md)
+- [Recipe: Close all open positions](recipes/close-all-open-positions.md)

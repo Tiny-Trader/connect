@@ -87,6 +87,7 @@ _cache/
 dev/
 .claude/
 .local/
+site/
 
 # AI Assistant Context Files
 CLAUDE.md

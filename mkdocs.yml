@@ -26,5 +26,15 @@ nav:
   - Safety & Good Practices: safety-and-good-practices.md
   - Recipes:
     - Overview: recipes/index.md
+    - First Order: recipes/first-order.md
+    - Cancel All Open Orders: recipes/cancel-all-open-orders.md
+    - Close All Open Positions: recipes/close-all-open-positions.md
+    - Stream And Store Live Ticks: recipes/stream-and-store-live-ticks.md
+    - Recover From Reconnect: recipes/recover-from-reconnect.md
   - API Reference:
     - Overview: reference/index.md
+    - Client Methods: reference/clients.md
+    - Models: reference/models.md
+    - Enums: reference/enums.md
+    - Exceptions: reference/exceptions.md
+    - Broker Capabilities: reference/capabilities.md

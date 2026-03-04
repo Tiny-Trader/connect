@@ -1,22 +1,58 @@
 # Errors & Retries
 
-## Error groups
-- auth errors
-- validation/config errors
-- broker/business errors
-- timeout/network errors
-- unsupported feature errors
+## Common error types
+```python
+from tt_connect.exceptions import (
+    AuthenticationError,
+    ConfigurationError,
+    RateLimitError,
+    UnsupportedFeatureError,
+    InsufficientFundsError,
+    BrokerError,
+    TTConnectError,
+)
+```
+
+## Basic handling pattern
+```python
+try:
+    order_id = broker.place_order(req)
+except InsufficientFundsError:
+    # do not retry; change size/funds first
+    raise
+except UnsupportedFeatureError:
+    # do not retry; broker does not support this flow
+    raise
+except RateLimitError:
+    # retry with backoff
+    raise
+except AuthenticationError:
+    # refresh/re-login flow
+    raise
+except BrokerError:
+    # broker rejected request; inspect message
+    raise
+except TTConnectError:
+    # generic library-level error fallback
+    raise
+```
 
 ## Retry guidance
-Retry:
+Retry (with backoff):
 - timeout/network transient failures
-- rate-limit failures with backoff
+- rate-limit failures
 
 Do not retry blindly:
-- bad request/validation errors
+- validation/config errors
 - insufficient funds
 - unsupported feature
 
-## Safe retry pattern
-- attach unique client tag/idempotency key when possible
-- check order book before re-sending place order
+## Safe retry idea for place order
+- use request `tag` (already present in `PlaceOrderRequest`)
+- before placing again, check recent orders to avoid duplicates
+
+## See also
+- [Exceptions](reference/exceptions.md)
+- [Models (`PlaceOrderRequest`)](reference/models.md)
+- [Client methods (orders)](reference/clients.md)
+- [Recipe: Cancel all open orders](recipes/cancel-all-open-orders.md)

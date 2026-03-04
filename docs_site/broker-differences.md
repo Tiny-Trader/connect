@@ -13,3 +13,8 @@ API shape is unified, but broker behavior is not always identical.
 - check capability before critical flows
 - keep broker-specific fallbacks for edge cases
 - test same strategy on each broker separately
+
+## See also
+- [Broker capabilities](reference/capabilities.md)
+- [Enums](reference/enums.md)
+- [Exceptions](reference/exceptions.md)

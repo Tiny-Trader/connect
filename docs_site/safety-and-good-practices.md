@@ -18,3 +18,9 @@
 - retry policy configured
 - alerts for auth/placement failures
 - graceful shutdown closes client
+
+## See also
+- [Errors & retries](errors-and-retries.md)
+- [Exceptions](reference/exceptions.md)
+- [Broker capabilities](reference/capabilities.md)
+- [Recipe: Close all open positions](recipes/close-all-open-positions.md)

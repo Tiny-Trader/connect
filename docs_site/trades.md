@@ -11,3 +11,8 @@ A trade is an executed fill of an order.
 ## Usage
 - use trades for execution reports
 - reconcile trades with final order status
+
+## See also
+- [Client methods (`get_trades`)](reference/clients.md)
+- [Models (`Trade`, `Order`)](reference/models.md)
+- [Enums (`Side`, `OrderStatus`)](reference/enums.md)

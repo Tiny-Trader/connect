@@ -16,3 +16,8 @@ A rule that triggers an order when price condition is met.
 ## Practical notes
 - GTT behavior is broker-specific
 - always confirm trigger status after creation
+
+## See also
+- [Client methods (GTT APIs)](reference/clients.md)
+- [Models (`PlaceGttRequest`, `ModifyGttRequest`, `Gtt`, `GttLeg`)](reference/models.md)
+- [Broker capabilities](reference/capabilities.md)
