@@ -17,3 +17,8 @@ with TTConnect("zerodha", config) as broker:
 - This is a high-impact action.
 - Verify open positions before and after.
 - Run in controlled environments first.
+
+## Related reference
+- [Client methods (`get_positions`, `close_all_positions`)](../reference/clients.md)
+- [Models (`Position`)](../reference/models.md)
+- [Safety & Good Practices](../safety-and-good-practices.md)

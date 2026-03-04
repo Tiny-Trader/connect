@@ -67,5 +67,6 @@ for o in orders:
 - [Models (`PlaceOrderRequest`, `ModifyOrderRequest`, `Order`)](reference/models.md)
 - [Enums (`OrderType`, `ProductType`, `Side`, `OrderStatus`)](reference/enums.md)
 - [Exceptions](reference/exceptions.md)
+- [Broker operation notes](reference/operation-notes.md)
 - [Recipe: First order](recipes/first-order.md)
 - [Recipe: Cancel all open orders](recipes/cancel-all-open-orders.md)

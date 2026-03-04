@@ -34,3 +34,8 @@ asyncio.run(main())
 ## Tips
 - Keep your own latest state per symbol.
 - Do not assume strictly ordered ticks across reconnect boundaries.
+
+## Related reference
+- [Client methods (`subscribe`, `unsubscribe`)](../reference/clients.md)
+- [Models (`Tick`)](../reference/models.md)
+- [Troubleshooting: WebSocket reconnect](../troubleshooting/websocket-reconnect.md)

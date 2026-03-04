@@ -8,8 +8,10 @@ Available pages:
 - [Enums](enums.md)
 - [Exceptions](exceptions.md)
 - [Broker capabilities](capabilities.md)
+- [Broker operation notes](operation-notes.md)
 
 ## Quick jump from guides
 - [Orders guide](../orders.md) -> [Client methods](clients.md), [Models](models.md), [Enums](enums.md)
 - [Market Data guide](../market-data.md) -> [Client methods](clients.md), [Models](models.md), [Enums](enums.md)
 - [Login & Session guide](../login-and-session.md) -> [Client methods](clients.md), [Exceptions](exceptions.md), [Capabilities](capabilities.md)
+- [Broker Differences guide](../broker-differences.md) -> [Capabilities](capabilities.md), [Operation notes](operation-notes.md)

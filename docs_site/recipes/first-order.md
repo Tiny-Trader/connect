@@ -48,3 +48,9 @@ broker.close()
 ## Notes
 - Use very small quantity for first run.
 - If rejected, print full order details and verify product/order type.
+
+## Related reference
+- [Client methods (orders)](../reference/clients.md)
+- [Models (`PlaceOrderRequest`, `Order`)](../reference/models.md)
+- [Enums (`OrderType`, `ProductType`, `Side`)](../reference/enums.md)
+- [Troubleshooting: Order rejected](../troubleshooting/order-rejected.md)

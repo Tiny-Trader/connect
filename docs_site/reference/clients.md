@@ -2,57 +2,63 @@
 
 ## Constructors
 
-### Sync client
-```python
-TTConnect(broker: str, config: dict[str, Any])
-```
+| Client | Signature | Notes |
+|---|---|---|
+| Sync | `TTConnect(broker: str, config: dict[str, Any])` | Initializes and logs in during construction |
+| Async | `AsyncTTConnect(broker: str, config: dict[str, Any])` | Call `await init()` before use (or use `async with`) |
 
-### Async client
-```python
-AsyncTTConnect(broker: str, config: dict[str, Any])
-```
+## Lifecycle methods
 
-## Lifecycle
+| Client | Method | Params | Returns | Common errors |
+|---|---|---|---|---|
+| Sync | `close` | none | `None` | `TTConnectError` |
+| Async | `init` | none | `None` | `AuthenticationError`, `ConfigurationError`, `TTConnectError` |
+| Async | `close` | none | `None` | `TTConnectError` |
+| Async | `subscribe` | `instruments`, `on_tick` | `None` | `ClientNotConnectedError`, `InstrumentNotFoundError`, `TTConnectError` |
+| Async | `unsubscribe` | `instruments` | `None` | `ClientNotConnectedError`, `TTConnectError` |
 
-### `TTConnect`
-- `close() -> None`
+## Portfolio / account methods
 
-### `AsyncTTConnect`
-- `init() -> None`
-- `close() -> None`
-- `subscribe(instruments: list[Instrument], on_tick: OnTick) -> None`
-- `unsubscribe(instruments: list[Instrument]) -> None`
+| Method | Params | Returns | Common errors |
+|---|---|---|---|
+| `get_profile` | none | `Profile` | `ClientNotConnectedError`, `AuthenticationError`, `BrokerError` |
+| `get_funds` | none | `Fund` | `ClientNotConnectedError`, `AuthenticationError`, `BrokerError` |
+| `get_holdings` | none | `list[Holding]` | `ClientNotConnectedError`, `AuthenticationError`, `BrokerError` |
+| `get_positions` | none | `list[Position]` | `ClientNotConnectedError`, `AuthenticationError`, `BrokerError` |
+| `get_trades` | none | `list[Trade]` | `ClientNotConnectedError`, `AuthenticationError`, `BrokerError` |
+| `get_quotes` | `instruments: list[Instrument]` | `list[Tick]` | `ClientNotConnectedError`, `InstrumentNotFoundError`, `UnsupportedFeatureError` |
+| `get_historical` | `instrument`, `interval`, `from_date`, `to_date` | `list[Candle]` | `ClientNotConnectedError`, `InstrumentNotFoundError`, `UnsupportedFeatureError` |
 
-## Portfolio / Account
-- `get_profile() -> Profile`
-- `get_funds() -> Fund`
-- `get_holdings() -> list[Holding]`
-- `get_positions() -> list[Position]`
-- `get_trades() -> list[Trade]`
-- `get_quotes(instruments: list[Instrument]) -> list[Tick]`
-- `get_historical(instrument: Instrument, interval: CandleInterval, from_date: datetime, to_date: datetime) -> list[Candle]`
+## Order methods
 
-## Orders
-- `place_order(req: PlaceOrderRequest) -> str`
-- `modify_order(req: ModifyOrderRequest) -> None`
-- `cancel_order(order_id: str) -> None`
-- `cancel_all_orders() -> tuple[list[str], list[str]]`
-- `get_order(order_id: str) -> Order`
-- `get_orders() -> list[Order]`
-- `close_all_positions() -> tuple[list[str], list[str]]`
+| Method | Params | Returns | Common errors |
+|---|---|---|---|
+| `place_order` | `req: PlaceOrderRequest` | `str` (order id) | `UnsupportedFeatureError`, `InstrumentNotFoundError`, `InsufficientFundsError`, `BrokerError` |
+| `modify_order` | `req: ModifyOrderRequest` | `None` | `OrderNotFoundError`, `InvalidOrderError`, `BrokerError` |
+| `cancel_order` | `order_id: str` | `None` | `OrderNotFoundError`, `BrokerError` |
+| `cancel_all_orders` | none | `tuple[list[str], list[str]]` | `BrokerError`, `TTConnectError` |
+| `get_order` | `order_id: str` | `Order` | `OrderNotFoundError`, `UnsupportedFeatureError`, `BrokerError` |
+| `get_orders` | none | `list[Order]` | `BrokerError` |
+| `close_all_positions` | none | `tuple[list[str], list[str]]` | `BrokerError`, `TTConnectError` |
 
-## GTT
-- `place_gtt(req: PlaceGttRequest) -> str`
-- `modify_gtt(req: ModifyGttRequest) -> None`
-- `cancel_gtt(gtt_id: str) -> None`
-- `get_gtt(gtt_id: str) -> Gtt`
-- `get_gtts() -> list[Gtt]`
+## GTT methods
 
-## Instrument Helpers
-- `get_futures(instrument: Instrument) -> list[Future]`
-- `get_options(instrument: Instrument, expiry: date | None = None) -> list[Option]`
-- `get_expiries(instrument: Instrument) -> list[date]`
-- `search_instruments(query: str, exchange: str | None = None) -> list[Equity]`
+| Method | Params | Returns | Common errors |
+|---|---|---|---|
+| `place_gtt` | `req: PlaceGttRequest` | `str` (gtt id) | `UnsupportedFeatureError`, `InstrumentNotFoundError`, `BrokerError` |
+| `modify_gtt` | `req: ModifyGttRequest` | `None` | `UnsupportedFeatureError`, `InstrumentNotFoundError`, `BrokerError` |
+| `cancel_gtt` | `gtt_id: str` | `None` | `UnsupportedFeatureError`, `BrokerError` |
+| `get_gtt` | `gtt_id: str` | `Gtt` | `UnsupportedFeatureError`, `BrokerError` |
+| `get_gtts` | none | `list[Gtt]` | `UnsupportedFeatureError`, `BrokerError` |
+
+## Instrument helper methods
+
+| Method | Params | Returns | Common errors |
+|---|---|---|---|
+| `get_futures` | `instrument: Instrument` | `list[Future]` | `ClientNotConnectedError`, `TTConnectError` |
+| `get_options` | `instrument: Instrument`, `expiry: date | None = None` | `list[Option]` | `ClientNotConnectedError`, `TTConnectError` |
+| `get_expiries` | `instrument: Instrument` | `list[date]` | `ClientNotConnectedError`, `TTConnectError` |
+| `search_instruments` | `query: str`, `exchange: str | None = None` | `list[Equity]` | `ClientNotConnectedError`, `TTConnectError` |
 
 ## Notes
 - `TTConnect` calls async internals in a dedicated background event-loop thread.

@@ -16,3 +16,8 @@ with TTConnect("zerodha", config) as broker:
 ## Suggested checks
 - Run once and record counts.
 - If any failed, fetch `get_orders()` and inspect status/reason.
+
+## Related reference
+- [Client methods (`cancel_all_orders`, `get_orders`)](../reference/clients.md)
+- [Exceptions](../reference/exceptions.md)
+- [Troubleshooting: Duplicate orders](../troubleshooting/duplicate-orders.md)

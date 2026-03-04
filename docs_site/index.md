@@ -9,6 +9,12 @@ Use this docs set if you want to:
 - handle errors and reconnects in production
 
 Start here:
-1. Read [Basics](basics.md)
-2. Setup [Login & Session](login-and-session.md)
-3. Place your first order in [Orders](orders.md)
+1. Open [Start Here](start-here.md)
+2. Read [Basics](basics.md)
+3. Setup [Login & Session](login-and-session.md)
+4. Verify [Config & Environment](config-and-env.md)
+5. Place your first order in [Orders](orders.md)
+
+If something fails, go to [Troubleshooting](troubleshooting/index.md).
+
+Need terms? See the [Glossary](glossary.md).

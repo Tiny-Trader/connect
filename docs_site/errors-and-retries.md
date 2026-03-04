@@ -56,3 +56,6 @@ Do not retry blindly:
 - [Models (`PlaceOrderRequest`)](reference/models.md)
 - [Client methods (orders)](reference/clients.md)
 - [Recipe: Cancel all open orders](recipes/cancel-all-open-orders.md)
+- [Troubleshooting: Auth failures](troubleshooting/auth-failures.md)
+- [Troubleshooting: Order rejected](troubleshooting/order-rejected.md)
+- [Troubleshooting: Duplicate orders](troubleshooting/duplicate-orders.md)

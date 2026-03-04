@@ -64,6 +64,7 @@ with TTConnect("angelone", config) as broker:
 - wrong auth mode for selected broker
 
 ## See also
+- [Config & Environment](config-and-env.md)
 - [Client methods](reference/clients.md)
 - [Enums (`AuthMode`)](reference/enums.md)
 - [Exceptions](reference/exceptions.md)

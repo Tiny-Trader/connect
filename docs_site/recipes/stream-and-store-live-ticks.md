@@ -34,3 +34,8 @@ asyncio.run(main())
 
 ## Practical note
 For high tick rates, use an in-memory queue + background writer instead of writing per tick.
+
+## Related reference
+- [Client methods (`subscribe`, `unsubscribe`)](../reference/clients.md)
+- [Models (`Tick`)](../reference/models.md)
+- [Broker operation notes](../reference/operation-notes.md)

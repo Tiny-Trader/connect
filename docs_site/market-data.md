@@ -57,4 +57,5 @@ for c in candles[:3]:
 - [Client methods (`get_quotes`, `get_historical`, `subscribe`)](reference/clients.md)
 - [Models (`Tick`, `Candle`)](reference/models.md)
 - [Enums (`CandleInterval`)](reference/enums.md)
+- [Broker operation notes](reference/operation-notes.md)
 - [Recipe: Stream and store live ticks](recipes/stream-and-store-live-ticks.md)
