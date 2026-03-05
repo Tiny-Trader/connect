@@ -1,0 +1,51 @@
+site_name: tt-connect Docs
+site_description: Simple user docs for tt-connect broker API
+repo_name: tt-connect
+repo_url: https://github.com/Tiny-Trader/connect
+
+# Keep new docs isolated from existing markdown docs/
+docs_dir: docs_site
+
+theme:
+  name: mkdocs
+
+nav:
+  - Home: index.md
+  - Start Here: start-here.md
+  - Basics: basics.md
+  - Glossary: glossary.md
+  - Login & Session: login-and-session.md
+  - Config & Environment: config-and-env.md
+  - Instruments: instruments.md
+  - Market Data: market-data.md
+  - Orders: orders.md
+  - Trades: trades.md
+  - Positions: positions.md
+  - Holdings & Funds: holdings-and-funds.md
+  - GTT (Trigger Orders): gtt.md
+  - Broker Differences: broker-differences.md
+  - Errors & Retries: errors-and-retries.md
+  - Realtime (WebSocket): realtime-websocket.md
+  - Safety & Good Practices: safety-and-good-practices.md
+  - Troubleshooting:
+    - Overview: troubleshooting/index.md
+    - Auth Failures: troubleshooting/auth-failures.md
+    - Instrument Not Found: troubleshooting/instrument-not-found.md
+    - Order Rejected: troubleshooting/order-rejected.md
+    - WebSocket Reconnect: troubleshooting/websocket-reconnect.md
+    - Duplicate Orders: troubleshooting/duplicate-orders.md
+  - Recipes:
+    - Overview: recipes/index.md
+    - First Order: recipes/first-order.md
+    - Cancel All Open Orders: recipes/cancel-all-open-orders.md
+    - Close All Open Positions: recipes/close-all-open-positions.md
+    - Stream And Store Live Ticks: recipes/stream-and-store-live-ticks.md
+    - Recover From Reconnect: recipes/recover-from-reconnect.md
+  - API Reference:
+    - Overview: reference/index.md
+    - Client Methods: reference/clients.md
+    - Models: reference/models.md
+    - Enums: reference/enums.md
+    - Exceptions: reference/exceptions.md
+    - Broker Capabilities: reference/capabilities.md
+    - Broker Operation Notes: reference/operation-notes.md

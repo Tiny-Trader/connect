@@ -8,6 +8,8 @@ on:
     paths:
       - "tt_connect/**"
       - "tests/**"
+      - "docs_site/**"
+      - "mkdocs.yml"
       - "pyproject.toml"
       - "poetry.lock"
       - ".github/workflows/connect-ci.yml"
@@ -147,3 +149,28 @@ jobs:
         with:
           name: dist
           path: dist/*
+
+  docs_check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install Poetry
+        run: pip install poetry
+
+      - name: Install Dependencies
+        run: poetry install --with dev
+
+      - name: Install MkDocs Tooling
+        run: poetry run pip install mkdocs mkdocs-material
+
+      - name: Strict MkDocs Build
+        run: make docs-build
