@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.1 - 2026-03-05
+
+- Bump: **patch**
+- Source PR: #31 Feat/upgrade logging observability
+
+
 ## 0.4.0 - 2026-03-04
 
 - Bump: **minor**
