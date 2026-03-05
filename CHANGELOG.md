@@ -44,6 +44,10 @@
   - `setup_logging(level="INFO", fmt="json"|"text")` exported from the top-level package.
   - Library remains silent by default (`NullHandler`) — existing users see no change.
 - Usage demonstrated in `examples/zerodha.py` and `examples/angelone.py`.
+- Upgrade-aware package-level observability events:
+  - One-time startup event: `package.startup` with `tt_connect_version`, broker, auth mode, stale policy, and session cache mode.
+  - One-time migration hints: `upgrade.notice` for deprecated config key names (e.g. `authMode` -> `auth_mode`, `apiKey` -> `api_key`).
+  - Automatic emission during client initialization (no application code changes required).
 
 ## 0.2.4 - 2026-02-28
 
