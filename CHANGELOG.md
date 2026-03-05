@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.7 - 2026-03-05
+
+- Bump: **patch**
+- Source PR: #38 docs(mkdocs): recover docs site and add GitHub Pages deploy
+
+
 ## 0.4.6 - 2026-03-05
 
 - Bump: **patch**
