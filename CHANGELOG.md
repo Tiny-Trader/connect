@@ -97,6 +97,8 @@
   - Reintroduced `mkdocs.yml` and `docs_site/` content on top of current `dev`.
   - Added `docs_check` CI job in `.github/workflows/connect-ci.yml` for strict MkDocs builds.
   - Added `make docs-serve` and `make docs-build` targets in `Makefile`.
+  - Simplified docs theme to built-in `readthedocs` and removed custom theme assets/styles for a clean baseline.
+  - Added `.github/workflows/docs-pages.yml` to deploy docs to GitHub Pages from `main`.
 
 ## 0.2.4 - 2026-02-28
 

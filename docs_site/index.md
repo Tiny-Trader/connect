@@ -1,20 +1,24 @@
-# tt-connect Docs
+# tt-connect docs
 
-`tt-connect` gives one simple API for multiple brokers.
+`tt-connect` gives one consistent Python API for multiple Indian brokers.
 
-Use this docs set if you want to:
-- log in safely
-- place and manage orders
-- read portfolio, funds, and market data
-- handle errors and reconnects in production
+## Start In 5 Minutes
 
-Start here:
-1. Open [Start Here](start-here.md)
-2. Read [Basics](basics.md)
-3. Setup [Login & Session](login-and-session.md)
-4. Verify [Config & Environment](config-and-env.md)
-5. Place your first order in [Orders](orders.md)
+1. [Start Here](start-here.md): install, initialize, and verify setup
+2. [Basics](basics.md): core concepts before placing real orders
+3. [Login & Session](login-and-session.md): auth modes and token lifecycle
+4. [Config & Environment](config-and-env.md): safe defaults and common mistakes
 
-If something fails, go to [Troubleshooting](troubleshooting/index.md).
+## Common Tasks
 
-Need terms? See the [Glossary](glossary.md).
+- [Place Your First Order](orders.md)
+- [Read Portfolio & Funds](holdings-and-funds.md)
+- [Use Market Data](market-data.md)
+- [Realtime WebSocket](realtime-websocket.md)
+
+## Need Help Fast?
+
+- Go to [Troubleshooting](troubleshooting/index.md) for auth/order/reconnect failures.
+- Use [Recipes](recipes/index.md) for ready copy-paste workflows.
+- Use [API Reference](reference/index.md) for exact models and method behavior.
+- Check [Glossary](glossary.md) if you are unsure about trading terms.
