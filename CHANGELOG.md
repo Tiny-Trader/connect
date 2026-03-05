@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.4.7 - 2026-03-05
+
+- Bump: **patch**
+- Source PR: #38 docs(mkdocs): recover docs site and add GitHub Pages deploy
+
+
+## 0.4.6 - 2026-03-05
+
+- Bump: **patch**
+- Source PR: #37 ci(release): fix pypi deployment status tracking
+
+
 ## 0.4.5 - 2026-03-05
 
 - Bump: **patch**
@@ -85,6 +97,14 @@
   - Added `docs/CORE_BROKER_INTEGRATION.md` to explain `core/` ↔ `brokers/` integration, registries, lifecycle, order flow, and streaming flow.
   - Added `docs/REMAINING_WORK.md` to track open issues, docs gaps, design limitations, and roadmap priorities.
   - Updated `README.md` with badges for CI status, PyPI version, supported Python versions, and license.
+- Release workflow deployment tracking:
+  - Updated `.github/workflows/publish-main.yml` to publish under GitHub environment `pypi` so deployment status reflects current releases.
+- MkDocs documentation recovery:
+  - Reintroduced `mkdocs.yml` and `docs_site/` content on top of current `dev`.
+  - Added `docs_check` CI job in `.github/workflows/connect-ci.yml` for strict MkDocs builds.
+  - Added `make docs-serve` and `make docs-build` targets in `Makefile`.
+  - Simplified docs theme to built-in `readthedocs` and removed custom theme assets/styles for a clean baseline.
+  - Added `.github/workflows/docs-pages.yml` to deploy docs to GitHub Pages from `main`.
 
 ## 0.2.4 - 2026-02-28
 
