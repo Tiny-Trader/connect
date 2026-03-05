@@ -13,6 +13,7 @@ from tt_connect.core.store.manager import InstrumentManager
 from tt_connect.core.store.resolver import InstrumentResolver, ResolvedInstrument
 from tt_connect.core.models.instruments import Instrument
 from tt_connect.core.adapter.ws import BrokerWebSocket, OnTick
+from tt_connect.core.logging import log_deprecated_config_keys, log_package_startup
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +39,8 @@ class LifecycleMixin(_ClientBase):
     """Lifecycle management: init, close, state guards, and WebSocket subscribe."""
 
     def __init__(self, broker: str, config: dict[str, Any]) -> None:
+        log_package_startup(broker, config)
+        log_deprecated_config_keys(config)
         self._broker_id: str = broker
         self._adapter: BrokerAdapter = BrokerAdapter._registry[broker](config)
         self._instrument_manager: InstrumentManager = InstrumentManager(

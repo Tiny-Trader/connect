@@ -5,7 +5,13 @@ from __future__ import annotations
 import json
 import logging
 
-from tt_connect.core.logging import TTConnectJsonFormatter, setup_logging
+from tt_connect.core.logging import (
+    TTConnectJsonFormatter,
+    _reset_upgrade_log_state_for_tests,
+    log_deprecated_config_keys,
+    log_package_startup,
+    setup_logging,
+)
 
 
 def _make_record(
@@ -104,3 +110,29 @@ class TestTTConnectJsonFormatter:
             pkg_logger.handlers.clear()
             pkg_logger.handlers.extend(original_handlers)
             pkg_logger.setLevel(original_level)
+
+    def test_log_package_startup_once_per_process(self, caplog) -> None:
+        _reset_upgrade_log_state_for_tests()
+        with caplog.at_level(logging.INFO, logger="tt_connect"):
+            log_package_startup("zerodha", {"auth_mode": "manual"})
+            log_package_startup("angelone", {"auth_mode": "auto"})
+
+        startup = [r for r in caplog.records if getattr(r, "event", None) == "package.startup"]
+        assert len(startup) == 1
+        assert getattr(startup[0], "broker") == "zerodha"
+
+    def test_log_deprecated_config_keys_emits_migration_hints_once(self, caplog) -> None:
+        _reset_upgrade_log_state_for_tests()
+        cfg = {"authMode": "auto", "apiKey": "x", "cacheSession": True}
+
+        with caplog.at_level(logging.INFO, logger="tt_connect"):
+            log_deprecated_config_keys(cfg)
+            log_deprecated_config_keys(cfg)
+
+        notices = [r for r in caplog.records if getattr(r, "event", None) == "upgrade.notice"]
+        codes = sorted(getattr(r, "code", "") for r in notices)
+        assert codes == [
+            "deprecated_config_key:apiKey",
+            "deprecated_config_key:authMode",
+            "deprecated_config_key:cacheSession",
+        ]
