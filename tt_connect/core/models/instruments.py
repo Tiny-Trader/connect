@@ -1,6 +1,6 @@
 from __future__ import annotations
 from datetime import date
-from pydantic import BaseModel, ConfigDict, model_validator
+from pydantic import BaseModel, ConfigDict
 from tt_connect.core.models.enums import Exchange, OptionType
 
 
@@ -28,27 +28,25 @@ class Equity(Instrument):
 
 
 class Future(Instrument):
-    """Futures contract keyed by canonical underlying symbol + expiry."""
+    """Futures contract keyed by canonical underlying symbol + expiry.
+
+    Validity (does this expiry exist?) is checked at resolve time by
+    ``InstrumentResolver``, not at construction.
+    """
 
     expiry: date
 
-    @model_validator(mode="after")
-    def _validate(self) -> Future:
-        """Placeholder for DB-backed validation after client initialization."""
-        return self
-
 
 class Option(Instrument):
-    """Options contract keyed by underlying symbol, expiry, strike and side."""
+    """Options contract keyed by underlying symbol, expiry, strike and side.
+
+    Validity (does this contract exist?) is checked at resolve time by
+    ``InstrumentResolver``, not at construction.
+    """
 
     expiry: date
     strike: float
     option_type: OptionType
-
-    @model_validator(mode="after")
-    def _validate(self) -> Option:
-        """Placeholder for DB-backed validation after client initialization."""
-        return self
 
 
 class Currency(Instrument):
