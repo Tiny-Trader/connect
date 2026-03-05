@@ -36,7 +36,7 @@ jobs:
           cache: "pip"
 
       - name: Install MkDocs
-        run: pip install mkdocs
+        run: pip install mkdocs pymdown-extensions
 
       - name: Build docs
         run: mkdocs build --strict

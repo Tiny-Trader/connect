@@ -170,7 +170,7 @@ jobs:
         run: poetry install --with dev
 
       - name: Install MkDocs Tooling
-        run: poetry run pip install mkdocs
+        run: poetry run pip install mkdocs pymdown-extensions
 
       - name: Strict MkDocs Build
         run: make docs-build
