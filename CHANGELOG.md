@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.3 - 2026-03-05
+
+- Bump: **patch**
+- Source PR: #33 Chore/add docstrings
+
+
 ## 0.4.2 - 2026-03-05
 
 - Bump: **patch**
