@@ -1,5 +1,10 @@
 # tt-connect
 
+[![CI](https://github.com/Tiny-Trader/connect/actions/workflows/connect-ci.yml/badge.svg?branch=main)](https://github.com/Tiny-Trader/connect/actions/workflows/connect-ci.yml)
+[![PyPI version](https://img.shields.io/pypi/v/tt-connect.svg)](https://pypi.org/project/tt-connect/)
+[![Python](https://img.shields.io/pypi/pyversions/tt-connect.svg)](https://pypi.org/project/tt-connect/)
+[![License](https://img.shields.io/github/license/Tiny-Trader/connect.svg)](https://github.com/Tiny-Trader/connect/blob/main/LICENSE)
+
 `tt-connect` is a unified Python broker API for Indian markets. It gives you one canonical interface for auth, instruments, orders, portfolio, and reports across brokers.
 
 ## Who This Is For

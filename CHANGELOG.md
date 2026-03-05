@@ -78,6 +78,7 @@
 - Documentation additions:
   - Added `docs/CORE_BROKER_INTEGRATION.md` to explain `core/` ↔ `brokers/` integration, registries, lifecycle, order flow, and streaming flow.
   - Added `docs/REMAINING_WORK.md` to track open issues, docs gaps, design limitations, and roadmap priorities.
+  - Updated `README.md` with badges for CI status, PyPI version, supported Python versions, and license.
 
 ## 0.2.4 - 2026-02-28
 
