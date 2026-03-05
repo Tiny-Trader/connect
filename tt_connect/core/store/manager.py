@@ -1,3 +1,20 @@
+"""SQLite-backed instrument manager — download, store, and query lifecycle.
+
+This module owns the full instrument data lifecycle:
+
+1. **Download** — calls the broker adapter's ``fetch_instruments()`` via a
+   callback, receiving a ``ParsedInstrumentsLike`` container.
+2. **Store** — inserts indices → equities → futures → options into SQLite
+   in dependency-safe order (parent rows before FK children).
+3. **Staleness** — tracks ``last_updated`` in a ``_meta`` table; data older
+   than today is considered stale and triggers a fresh download.
+4. **Query** — exposes high-level async methods for futures chains, option
+   chains, expiry lists, and symbol search.
+
+The manager never imports broker code directly. It accepts any object
+satisfying :class:`ParsedInstrumentsLike` via structural typing.
+"""
+
 from __future__ import annotations
 from datetime import date
 import logging
@@ -14,21 +31,55 @@ from tt_connect.core.models.instruments import Equity, Future, Instrument, Optio
 logger = logging.getLogger(__name__)
 
 class ParsedInstrumentsLike(Protocol):
-    indices: list[Any]
-    equities: list[Any]
-    futures: list[Any]
-    options: list[Any]
+    """Structural contract for broker-parsed instrument data.
+
+    Each broker defines its own ``ParsedInstruments`` dataclass in
+    ``brokers/<name>/parser.py`` with concrete typed fields. This Protocol
+    lets the core accept any of them without importing broker code —
+    preserving the strict ``core → brokers`` dependency direction.
+
+    Any object with these four list attributes satisfies the Protocol
+    via duck typing (no explicit inheritance required). Each list item
+    is expected to carry at least ``.exchange``, ``.symbol``,
+    ``.broker_symbol``, and ``.broker_token`` attributes.
+    """
+
+    indices: list[Any]    #: Index instruments (must be inserted first — FKs depend on them)
+    equities: list[Any]   #: Cash equities (NSE/BSE EQ segment)
+    futures: list[Any]    #: Futures contracts (require ``underlying_exchange`` for FK resolution)
+    options: list[Any]    #: Options contracts (require ``underlying_exchange``, ``strike``, ``option_type``)
 
 
 class InstrumentManager:
-    """Maintains the local instrument master and staleness lifecycle."""
+    """Maintains the local SQLite instrument master and staleness lifecycle.
+
+    Responsibilities:
+        - Open a per-broker SQLite database under ``_cache/``.
+        - Check whether cached data is stale (not updated today).
+        - Download and atomically replace instrument data when stale.
+        - Provide query methods for futures chains, option chains,
+          expiry calendars, and symbol search.
+
+    The ``on_stale`` policy controls behavior when a refresh fails:
+        - ``OnStale.FAIL`` — raise immediately (default, safest for prod).
+        - ``OnStale.WARN`` — fall back to yesterday's cache if it exists,
+          log a warning, and continue.
+    """
 
     def __init__(self, broker_id: str, on_stale: OnStale = OnStale.FAIL):
+        """Create an instrument manager for a specific broker.
+
+        Args:
+            broker_id: Identifier used for the database filename and
+                broker_tokens table filtering (e.g. ``"zerodha"``).
+            on_stale: Policy when instrument refresh fails — see class docstring.
+        """
         self._broker_id = broker_id
         self._on_stale = on_stale
         self._conn: aiosqlite.Connection | None = None
 
     def _conn_or_raise(self) -> aiosqlite.Connection:
+        """Return the active DB connection, or raise if ``init()`` was not called."""
         if self._conn is None:
             raise InstrumentManagerError("InstrumentManager not initialized. Call init() first.")
         return self._conn
@@ -106,6 +157,11 @@ class InstrumentManager:
         await self._conn_or_raise().commit()
 
     async def _insert_indices(self, indices: list[Any]) -> None:
+        """Insert index rows into ``instruments`` + ``equities`` + ``broker_tokens``.
+
+        Indices are inserted first because futures and options hold foreign keys
+        to their underlying, which may be an index (e.g. NIFTY, BANKNIFTY).
+        """
         if not indices:
             return
 
@@ -138,6 +194,11 @@ class InstrumentManager:
             )
 
     async def _insert_equities(self, equities: list[Any]) -> None:
+        """Insert cash equity rows into ``instruments`` + ``equities`` + ``broker_tokens``.
+
+        Inserted after indices so that the underlying lookup (used by futures
+        and options) contains both indices and stocks.
+        """
         if not equities:
             return
 
@@ -182,6 +243,17 @@ class InstrumentManager:
         return {(row[1], row[2]): row[0] for row in rows}
 
     async def _insert_futures(self, futures: list[Any], lookup: dict[tuple[str, str], int]) -> None:
+        """Insert futures rows, resolving ``underlying_id`` from the lookup.
+
+        Each future item must carry ``underlying_exchange`` (e.g. ``"NSE"``)
+        so the FK to the parent index/equity can be resolved. Rows whose
+        underlying is missing from the DB are skipped with a warning.
+
+        Args:
+            futures: Parsed future records from the broker's instrument dump.
+            lookup: ``{(exchange, symbol): instrument_id}`` built from
+                already-inserted indices + equities.
+        """
         if not futures:
             return
 
@@ -227,6 +299,16 @@ class InstrumentManager:
             logger.warning(f"Skipped {skipped} futures due to unresolved underlyings")
 
     async def _insert_options(self, options: list[Any], lookup: dict[tuple[str, str], int]) -> None:
+        """Insert options rows, resolving ``underlying_id`` from the lookup.
+
+        Same resolution logic as ``_insert_futures``. Each option item must
+        additionally carry ``strike`` and ``option_type`` (``"CE"`` / ``"PE"``).
+
+        Args:
+            options: Parsed option records from the broker's instrument dump.
+            lookup: ``{(exchange, symbol): instrument_id}`` built from
+                already-inserted indices + equities.
+        """
         if not options:
             return
 

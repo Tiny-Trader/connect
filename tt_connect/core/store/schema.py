@@ -16,10 +16,18 @@ import aiosqlite
 from pathlib import Path
 
 DB_DIR = Path("_cache")
+"""Default directory for per-broker SQLite instrument databases."""
 
 SCHEMA_VERSION = 2
+"""Current schema revision. Bump this whenever any CREATE TABLE changes —
+the next ``init_schema()`` call will drop and recreate all tables."""
+
 
 def get_db_path(broker_id: str) -> Path:
+    """Return the SQLite database file path for a broker.
+
+    Path convention: ``_cache/{broker_id}_instruments.db``.
+    """
     return DB_DIR / f"{broker_id}_instruments.db"
 
 

@@ -14,6 +14,11 @@ class AngelOneConfig(BrokerConfig, broker_id="angelone"):
 
     MANUAL mode — you supply an already-obtained JWT token:
         api_key, access_token  (both required)
+
+    Note:
+        Validators raise ``ValueError`` (Pydantic convention). The public
+        entry point ``validate_config()`` catches all ``ValidationError``s
+        and wraps them into a single ``ConfigurationError``.
     """
 
     auth_mode: AuthMode = AuthMode.AUTO
@@ -37,3 +42,4 @@ class AngelOneConfig(BrokerConfig, broker_id="angelone"):
             if not self.access_token:
                 raise ValueError("AngelOne MANUAL mode requires 'access_token'")
         return self
+
