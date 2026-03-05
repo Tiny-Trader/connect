@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.5 - 2026-03-05
+
+- Bump: **patch**
+- Source PR: #35 Chore/readme badges
+
+
 ## 0.4.4 - 2026-03-05
 
 - Bump: **patch**
