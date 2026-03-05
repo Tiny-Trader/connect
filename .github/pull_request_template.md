@@ -1,5 +1,7 @@
 ## Summary
 
+> For `dev -> main` release PRs, use `.github/PULL_REQUEST_TEMPLATE/release-dev-to-main.md`.
+
 - What problem does this PR solve?
 - What changed?
 

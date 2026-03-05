@@ -50,6 +50,9 @@
   - `setup_logging(level="INFO", fmt="json"|"text")` exported from the top-level package.
   - Library remains silent by default (`NullHandler`) — existing users see no change.
 - Usage demonstrated in `examples/zerodha.py` and `examples/angelone.py`.
+- PR workflow templates for releases:
+  - Added `.github/PULL_REQUEST_TEMPLATE/release-dev-to-main.md` for `dev -> main` release PRs.
+  - Updated `.github/pull_request_template.md` to point release PRs to the dedicated release template.
 - Upgrade-aware package-level observability events:
   - One-time startup event: `package.startup` with `tt_connect_version`, broker, auth mode, stale policy, and session cache mode.
   - One-time migration hints: `upgrade.notice` for deprecated config key names (e.g. `authMode` -> `auth_mode`, `apiKey` -> `api_key`).
