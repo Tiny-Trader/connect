@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 import logging
-from abc import ABC, abstractmethod
 from typing import Any, Self
 
 from tt_connect.core.adapter.base import BrokerAdapter
+from tt_connect.core.client._base import _ClientBase
 from tt_connect.core.models.enums import ClientState, OnStale
 from tt_connect.core.exceptions import ClientClosedError, ClientNotConnectedError
 from tt_connect.core.store.manager import InstrumentManager
@@ -16,23 +16,6 @@ from tt_connect.core.adapter.ws import BrokerWebSocket, OnTick
 from tt_connect.core.logging import log_deprecated_config_keys, log_package_startup
 
 logger = logging.getLogger(__name__)
-
-
-class _ClientBase(ABC):
-    """Declares shared state and abstract interface used by all client mixins."""
-
-    _broker_id: str
-    _adapter: BrokerAdapter
-    _instrument_manager: InstrumentManager
-    _resolver: InstrumentResolver | None
-    _ws: BrokerWebSocket | None
-    _state: ClientState
-
-    @abstractmethod
-    def _require_connected(self) -> None: ...
-
-    @abstractmethod
-    async def _resolve(self, instrument: Instrument) -> ResolvedInstrument: ...
 
 
 class LifecycleMixin(_ClientBase):

@@ -44,7 +44,21 @@ class ModifyGttRequest(BaseModel):
 
 
 class PlaceOrderRequest(BaseModel):
-    """Canonical input model for placing an order."""
+    """Canonical input model for placing an order.
+
+    Attributes:
+        instrument: The instrument to trade (Equity, Future, Option).
+        side: Buy or sell.
+        qty: Number of shares/lots.
+        order_type: MARKET, LIMIT, SL, or SL_M.
+        product: CNC (delivery), MIS (intraday), or NRML (F&O carry).
+        price: Limit price — required for LIMIT and SL orders, ignored for MARKET.
+        trigger_price: Stop-loss trigger — required for SL and SL_M orders.
+        tag: Client-side correlation ID for tracing an order from placement
+            to the broker's order book. Auto-generated as a UUID if not
+            provided. Sent as ``tag`` (Zerodha, max 20 chars) or
+            ``uniqueorderid`` (AngelOne).
+    """
 
     instrument: Instrument
     side: Side

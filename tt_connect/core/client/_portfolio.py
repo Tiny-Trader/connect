@@ -7,7 +7,7 @@ from datetime import datetime
 from tt_connect.core.adapter.transformer import JsonDict
 from tt_connect.core.models.enums import CandleInterval
 from tt_connect.core.models.instruments import Instrument
-from tt_connect.core.client._lifecycle import _ClientBase
+from tt_connect.core.client._base import _ClientBase
 from tt_connect.core.models import Candle, Fund, GetHistoricalRequest, Holding, Position, Profile, Tick, Trade
 
 

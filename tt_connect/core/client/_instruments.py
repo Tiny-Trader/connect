@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import date
 
 from tt_connect.core.models.instruments import Equity, Future, Instrument, Option
-from tt_connect.core.client._lifecycle import _ClientBase
+from tt_connect.core.client._base import _ClientBase
 
 
 class InstrumentsMixin(_ClientBase):

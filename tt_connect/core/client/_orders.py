@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from tt_connect.core.adapter.transformer import JsonDict
 from tt_connect.core.models.enums import OrderStatus, Side
-from tt_connect.core.client._lifecycle import _ClientBase
+from tt_connect.core.client._base import _ClientBase
 from tt_connect.core.models import Gtt, ModifyGttRequest, ModifyOrderRequest, Order, PlaceGttRequest, PlaceOrderRequest
 
 
