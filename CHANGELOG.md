@@ -1,5 +1,14 @@
 # Changelog
 
+## [Unreleased]
+
+### Changed
+
+- Switched the project license from AGPL to Apache License 2.0.
+- Added explicit `Apache-2.0` package metadata in `pyproject.toml`.
+- Updated compliance guidance to match Apache-2.0 redistribution and hosted-use obligations.
+- Tightened trademark policy to protect `Tiny Traders`, `TT`, and `tt-connect` branding while keeping code reuse permissive under Apache-2.0.
+
 ## 0.5.0 - 2026-03-11
 
 - Bump: **minor**
