@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.0 - 2026-03-11
+
+- Bump: **minor**
+- Source PR: #42 refactor(api): flatten public order/GTT methods to accept kwargs
+
+
 ## 0.4.8 - 2026-03-05
 
 - Bump: **patch**
