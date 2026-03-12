@@ -160,7 +160,7 @@ async def test_get_instrument_info_raises_for_unknown(populated_db):
 
 async def test_get_option_chain_pairs_ce_pe(populated_db):
     mgr = _manager(populated_db)
-    nifty = Equity(exchange="NSE", symbol="NIFTY")
+    nifty = Index(exchange="NSE", symbol="NIFTY")
     expiry = date(2026, 2, 26)
     chain = await mgr.queries.get_option_chain(nifty, expiry)
 
@@ -201,7 +201,7 @@ async def test_get_option_chain_handles_missing_ce(populated_db):
 
 async def test_get_option_chain_sorted_by_strike(populated_db):
     mgr = _manager(populated_db)
-    nifty = Equity(exchange="NSE", symbol="NIFTY")
+    nifty = Index(exchange="NSE", symbol="NIFTY")
     expiry = date(2026, 2, 26)
     chain = await mgr.queries.get_option_chain(nifty, expiry)
     strikes = [e.strike for e in chain.entries]

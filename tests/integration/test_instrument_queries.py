@@ -6,7 +6,7 @@ from datetime import date
 
 from tt_connect.core.models.enums import OnStale
 from tt_connect.core.store.manager import InstrumentManager
-from tt_connect.core.models.instruments import Equity
+from tt_connect.core.models.instruments import Equity, Index
 
 
 # ---------------------------------------------------------------------------
@@ -158,7 +158,14 @@ async def test_search_instruments_returns_matches(populated_db):
     results = await mgr.queries.search_instruments("REL")
     symbols = [r.symbol for r in results]
     assert "RELIANCE" in symbols
-    assert all(isinstance(r, Equity) for r in results)
+    assert all(isinstance(r, (Equity, Index)) for r in results)
+
+
+async def test_search_instruments_returns_index_rows_as_index(populated_db):
+    mgr = _manager(populated_db)
+    results = await mgr.queries.search_instruments("NIFTY")
+    assert results
+    assert isinstance(results[0], Index)
 
 
 async def test_search_instruments_case_insensitive(populated_db):

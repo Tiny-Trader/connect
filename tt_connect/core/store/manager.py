@@ -23,7 +23,7 @@ import aiosqlite
 from tt_connect.core.models.enums import OnStale
 from tt_connect.core.exceptions import InstrumentManagerError, InstrumentStoreNotInitializedError, TTConnectError
 from tt_connect.core.store.queries import InstrumentQueries
-from tt_connect.core.store.schema import get_connection, init_schema, truncate_all
+from tt_connect.core.store.schema import get_connection, init_schema
 
 logger = logging.getLogger(__name__)
 
@@ -83,20 +83,28 @@ class InstrumentManager:
     async def init(self, fetch_fn: Callable[[], Awaitable[ParsedInstrumentsLike]]) -> None:
         """Open DB, initialize schema, and ensure data freshness."""
         self._conn = await get_connection(self._broker_id)
+        try:
+            await init_schema(self._conn_or_raise())
+            await self.ensure_fresh(fetch_fn)
+        except Exception:
+            await self._cleanup_failed_init()
+            raise
         self._queries.bind(self._conn)
-        await init_schema(self._conn_or_raise())
-        await self.ensure_fresh(fetch_fn)
 
     async def open_existing(self) -> None:
         """Open an existing local DB for read-only query use."""
         self._conn = await get_connection(self._broker_id)
+        try:
+            await init_schema(self._conn_or_raise())
+            if not await self._has_any_data():
+                raise InstrumentStoreNotInitializedError(
+                    "Instrument DB not initialized. Initialize TTConnect or AsyncTTConnect first "
+                    "to seed or refresh instruments before using InstrumentStore."
+                )
+        except Exception:
+            await self._cleanup_failed_init()
+            raise
         self._queries.bind(self._conn)
-        await init_schema(self._conn_or_raise())
-        if not await self._has_any_data():
-            raise InstrumentStoreNotInitializedError(
-                "Instrument DB not initialized. Initialize TTConnect or AsyncTTConnect first "
-                "to seed or refresh instruments before using InstrumentStore."
-            )
 
     async def ensure_fresh(self, fetch_fn: Callable[[], Awaitable[ParsedInstrumentsLike]]) -> None:
         """Refresh stale data; optionally fall back to cached data on failure.
@@ -135,9 +143,18 @@ class InstrumentManager:
         )
         t0 = time.monotonic()
         parsed: ParsedInstrumentsLike = await fetch_fn()
-        await truncate_all(self._conn_or_raise())
-        counts = await self._insert(parsed)
-        await self._set_last_updated()
+        conn = self._conn_or_raise()
+        try:
+            await conn.execute("BEGIN")
+            for table in ("broker_tokens", "equities", "futures", "options", "instruments"):
+                await conn.execute(f"DELETE FROM {table}")
+            await conn.execute("DELETE FROM _meta WHERE key = 'last_updated'")
+            counts = await self._insert(parsed)
+            await self._set_last_updated()
+            await conn.commit()
+        except Exception:
+            await conn.rollback()
+            raise
         elapsed_ms = int((time.monotonic() - t0) * 1000)
         logger.info(
             f"[{self._broker_id}] Instruments ready"
@@ -169,9 +186,6 @@ class InstrumentManager:
 
         # Chunk 4: options — same lookup, already built
         n_opt, missing_opt = await self._insert_options(parsed.options, lookup)
-
-        await self._conn_or_raise().commit()
-
         # Emit grouped DEBUG summaries for skipped instruments (expected for some
         # brokers where certain BSE underlyings are absent from the instrument dump).
         if missing_fut:
@@ -422,7 +436,13 @@ class InstrumentManager:
             "INSERT OR REPLACE INTO _meta(key, value) VALUES ('last_updated', ?)",
             (date.today().isoformat(),),
         )
-        await self._conn_or_raise().commit()
+
+    async def _cleanup_failed_init(self) -> None:
+        """Close and unbind the connection after an init/open failure."""
+        self._queries.bind(None)
+        if self._conn is not None:
+            await self._conn.close()
+            self._conn = None
 
     @property
     def queries(self) -> InstrumentQueries:

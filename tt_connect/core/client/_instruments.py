@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import date
 
-from tt_connect.core.models.instruments import Equity, Future, Instrument, Option
+from tt_connect.core.models.instruments import Equity, Future, Index, Instrument, Option
 from tt_connect.core.client._base import _ClientBase
 
 
@@ -61,7 +61,7 @@ class InstrumentsMixin(_ClientBase):
         self,
         query: str,
         exchange: str | None = None,
-    ) -> list[Equity]:
+    ) -> list[Equity | Index]:
         """Search the instrument master by symbol substring (case-insensitive).
 
         Returns up to 50 matching underlyings sorted by exchange then symbol.

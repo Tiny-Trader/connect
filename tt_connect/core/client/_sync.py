@@ -10,7 +10,7 @@ from typing import Any, Coroutine, TypeVar
 from datetime import date, datetime
 
 from tt_connect.core.models.enums import CandleInterval, OrderType, ProductType, Side
-from tt_connect.core.models.instruments import Equity, Future, Instrument, Option
+from tt_connect.core.models.instruments import Equity, Future, Index, Instrument, Option
 from tt_connect.core.models import Candle, Fund, Gtt, GttLeg, Holding, Order, Position, Profile, Tick, Trade
 
 T = TypeVar("T")
@@ -185,6 +185,5 @@ class TTConnect:
         self,
         query: str,
         exchange: str | None = None,
-    ) -> list[Equity]:
+    ) -> list[Equity | Index]:
         return self._run(self._async.search_instruments(query, exchange))
-

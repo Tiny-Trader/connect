@@ -95,7 +95,13 @@ class OptionChain:
     entries: list[OptionChainEntry]  # sorted by strike asc
 
     def atm(self, spot: float) -> OptionChainEntry:
-        """Entry with strike closest to spot price."""
+        """Entry with strike closest to spot price.
+
+        Raises:
+            ValueError: if the option chain has no entries.
+        """
+        if not self.entries:
+            raise ValueError("atm(): no option entries available")
         return min(self.entries, key=lambda e: abs(e.strike - spot))
 
     def strikes_around(self, spot: float, n: int) -> list[OptionChainEntry]:

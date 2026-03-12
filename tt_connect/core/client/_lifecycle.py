@@ -10,6 +10,7 @@ from tt_connect.core.client._base import _ClientBase
 from tt_connect.core.models.enums import ClientState, OnStale
 from tt_connect.core.exceptions import ClientClosedError, ClientNotConnectedError
 from tt_connect.core.store.manager import InstrumentManager
+from tt_connect.core.store.queries import InstrumentQueries
 from tt_connect.core.store.resolver import InstrumentResolver, ResolvedInstrument
 from tt_connect.core.models.instruments import Instrument
 from tt_connect.core.adapter.ws import BrokerWebSocket, OnTick
@@ -30,6 +31,7 @@ class LifecycleMixin(_ClientBase):
             broker_id=broker,
             on_stale=config.get("on_stale", OnStale.FAIL),
         )
+        self._instrument_queries: InstrumentQueries = InstrumentQueries(None)
         self._resolver: InstrumentResolver | None = None
         self._ws: BrokerWebSocket | None = None
         self._state: ClientState = ClientState.CREATED

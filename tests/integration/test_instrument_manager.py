@@ -1,5 +1,5 @@
 from datetime import date, timedelta
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, patch
 
 import aiosqlite
 import pytest
@@ -7,6 +7,7 @@ import pytest_asyncio
 from freezegun import freeze_time
 
 from tt_connect.brokers.zerodha.parser import parse
+from tt_connect.core.exceptions import InstrumentManagerError
 from tt_connect.core.models.enums import OnStale
 from tt_connect.core.store.schema import (
     SCHEMA_VERSION,
@@ -172,3 +173,40 @@ async def test_ensure_fresh_calls_refresh_only_when_stale(db):
     # Second call: not stale (just updated) -> should NOT call refresh
     await manager.ensure_fresh(fetch_mock)
     assert fetch_mock.await_count == 1
+
+
+async def test_refresh_rolls_back_on_insert_failure(populated_db, zerodha_csv):
+    manager = InstrumentManager(broker_id="zerodha", on_stale=OnStale.FAIL)
+    manager._conn = populated_db
+
+    before_count = await _count(populated_db, "instruments")
+    await manager._set_last_updated()
+    await populated_db.commit()
+
+    parsed = parse(zerodha_csv)
+    manager._insert = AsyncMock(side_effect=RuntimeError("boom"))  # type: ignore[method-assign]
+
+    with pytest.raises(RuntimeError, match="boom"):
+        await manager.refresh(AsyncMock(return_value=parsed))
+
+    after_count = await _count(populated_db, "instruments")
+    assert after_count == before_count
+    assert await manager._is_stale() is False
+
+
+async def test_init_failure_closes_connection_and_unbinds_queries():
+    manager = InstrumentManager(broker_id="zerodha", on_stale=OnStale.FAIL)
+    fake_conn = AsyncMock()
+
+    with (
+        patch("tt_connect.core.store.manager.get_connection", AsyncMock(return_value=fake_conn)),
+        patch("tt_connect.core.store.manager.init_schema", AsyncMock()),
+        patch.object(manager, "ensure_fresh", AsyncMock(side_effect=RuntimeError("refresh failed"))),
+        pytest.raises(RuntimeError, match="refresh failed"),
+    ):
+        await manager.init(AsyncMock())
+
+    fake_conn.close.assert_awaited_once()
+    assert manager._conn is None
+    with pytest.raises(InstrumentManagerError):
+        manager.connection

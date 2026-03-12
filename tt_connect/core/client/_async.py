@@ -6,7 +6,7 @@ from datetime import date, datetime
 from typing import Any
 
 from tt_connect.core.models.enums import CandleInterval, OrderType, ProductType, Side
-from tt_connect.core.models.instruments import Equity, Future, Instrument, Option
+from tt_connect.core.models.instruments import Equity, Future, Index, Instrument, Option
 from tt_connect.core.client._lifecycle import LifecycleMixin
 from tt_connect.core.models import (
     Candle,
@@ -235,6 +235,6 @@ class AsyncTTConnect:
         self,
         query: str,
         exchange: str | None = None,
-    ) -> list[Equity]:
+    ) -> list[Equity | Index]:
         """Search underlyings by symbol substring (case-insensitive)."""
         return await self._core.search_instruments(query, exchange)

@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from datetime import date
 
+import pytest
+
 from tt_connect.core.models.enums import Exchange, OptionType
 from tt_connect.core.models.instruments import Equity, Option, OptionChain, OptionChainEntry
 
@@ -45,6 +47,12 @@ def test_atm_returns_closest_strike():
 def test_atm_exact_match():
     chain = _chain([22000, 22500, 23000])
     assert chain.atm(23000).strike == 23000
+
+
+def test_atm_empty_chain_raises_clear_error():
+    chain = _chain([])
+    with pytest.raises(ValueError, match="no option entries available"):
+        chain.atm(23000)
 
 
 def test_strikes_around_normal():

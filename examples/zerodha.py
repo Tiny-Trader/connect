@@ -150,8 +150,17 @@ reliance = Equity(exchange=Exchange.NSE, symbol="RELIANCE")
 tcs      = Equity(exchange=Exchange.BSE, symbol="TCS")
 
 # Use the public instrument APIs instead of reaching into the DB directly.
-nearest_future_expiry = broker.get_futures(nifty)[0].expiry
-nearest_option_expiry = broker.get_expiries(nifty)[0]
+futures = broker.get_futures(nifty)
+option_expiries = broker.get_expiries(nifty)
+if not futures:
+    print("  [No NIFTY futures available in the instrument DB.]")
+    raise RuntimeError("Expected at least one NIFTY future in the refreshed instrument DB.")
+if not option_expiries:
+    print("  [No NIFTY option expiries available in the instrument DB.]")
+    raise RuntimeError("Expected at least one NIFTY option expiry in the refreshed instrument DB.")
+
+nearest_future_expiry = futures[0].expiry
+nearest_option_expiry = option_expiries[0]
 print(f"  [Using nearest NIFTY future expiry: {nearest_future_expiry}]")
 print(f"  [Using nearest NIFTY option expiry: {nearest_option_expiry}]")
 
@@ -172,6 +181,9 @@ nifty_ce = Option(
 )
 
 for inst in [nifty, sensex, reliance, tcs, nifty_fut, nifty_ce]:
+    # This reaches into private internals purely for illustration. Production
+    # code should rely on public methods like place_order(), which resolve
+    # canonical instruments automatically.
     token = broker._run(broker._async._core._resolve(inst))
     print(f"  {inst.exchange}:{inst.symbol:<20} → {token}")
 

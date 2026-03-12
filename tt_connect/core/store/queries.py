@@ -183,7 +183,7 @@ class InstrumentQueries:
         self,
         query: str,
         exchange: str | None = None,
-    ) -> list[Equity]:
+    ) -> list[Equity | Index]:
         """Search underlyings (equities + indices) by symbol substring.
 
         Matching is case-insensitive. Results are sorted by exchange then
@@ -192,7 +192,7 @@ class InstrumentQueries:
         pattern = f"%{query.upper()}%"
         if exchange is not None:
             sql = """
-                SELECT i.exchange, i.symbol
+                SELECT i.exchange, i.symbol, i.segment
                 FROM instruments i
                 JOIN equities e ON e.instrument_id = i.id
                 WHERE UPPER(i.symbol) LIKE ? AND i.exchange = ?
@@ -202,7 +202,7 @@ class InstrumentQueries:
             params: tuple[Any, ...] = (pattern, exchange)
         else:
             sql = """
-                SELECT i.exchange, i.symbol
+                SELECT i.exchange, i.symbol, i.segment
                 FROM instruments i
                 JOIN equities e ON e.instrument_id = i.id
                 WHERE UPPER(i.symbol) LIKE ?
@@ -212,7 +212,12 @@ class InstrumentQueries:
             params = (pattern,)
         async with self._conn_or_raise().execute(sql, params) as cur:
             rows = await cur.fetchall()
-        return [Equity(exchange=Exchange(row[0]), symbol=row[1]) for row in rows]
+        return [
+            Index(exchange=Exchange(row[0]), symbol=row[1])
+            if row[2] == "INDICES"
+            else Equity(exchange=Exchange(row[0]), symbol=row[1])
+            for row in rows
+        ]
 
     async def get_instrument_info(self, instrument: Instrument) -> InstrumentInfo:
         """Return lot size, tick size, name and segment for any instrument.

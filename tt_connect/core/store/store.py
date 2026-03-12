@@ -30,6 +30,7 @@ from typing import Any, Coroutine, TypeVar
 from tt_connect.core.models.enums import Exchange, OnStale, OptionType
 from tt_connect.core.models.instruments import (
     Equity,
+    Index,
     Instrument,
     InstrumentInfo,
     OptionChain,
@@ -103,7 +104,7 @@ class AsyncInstrumentStore:
         """Return all distinct expiry dates for an underlying."""
         return await self._queries.get_expiries(instrument)
 
-    async def search(self, query: str, exchange: str | None = None) -> list[Equity]:
+    async def search(self, query: str, exchange: str | None = None) -> list[Equity | Index]:
         """Search underlyings by symbol substring."""
         return await self._queries.search_instruments(query, exchange)
 
@@ -147,6 +148,7 @@ class InstrumentStore:
         self._run(self._async.close())
         self._loop.call_soon_threadsafe(self._loop.stop)
         self._thread.join()
+        self._loop.close()
 
     def __enter__(self) -> "InstrumentStore":
         """Return the initialized sync store."""
@@ -189,7 +191,7 @@ class InstrumentStore:
         """Return all distinct expiry dates for an underlying."""
         return self._run(self._async.get_expiries(instrument))
 
-    def search(self, query: str, exchange: str | None = None) -> list[Equity]:
+    def search(self, query: str, exchange: str | None = None) -> list[Equity | Index]:
         """Search underlyings by symbol substring."""
         return self._run(self._async.search(query, exchange))
 
