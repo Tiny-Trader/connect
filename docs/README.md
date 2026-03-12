@@ -62,4 +62,4 @@ These documents track design decisions and future plans:
 | [SECURITY.md](../SECURITY.md) | Security policy and vulnerability reporting |
 | [COMPLIANCE.md](../COMPLIANCE.md) | Regulatory compliance information |
 | [TRADEMARK.md](../TRADEMARK.md) | Trademark usage guidelines |
-| [LICENSE](../LICENSE) | MIT License |
+| [LICENSE](../LICENSE) | Apache License 2.0 |
