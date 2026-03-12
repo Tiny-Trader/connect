@@ -86,7 +86,7 @@ if not USE_AUTO_MODE and not ACCESS_TOKEN:
 
 from tt_connect import InstrumentStore, TTConnect, setup_logging  # noqa: E402
 from tt_connect.enums import Exchange  # noqa: E402
-from tt_connect.instruments import Equity, Index  # noqa: E402
+from tt_connect.instruments import Equity, Future, Index, Option  # noqa: E402
 
 
 setup_logging()
@@ -117,7 +117,7 @@ def main() -> None:
 
     with InstrumentStore("angelone") as store:
         print("── Derivative Underlyings (NSE) ───────")
-        underlyings = store.get_underlyings(exchange="NSE")
+        underlyings = store.list_instruments(exchange=Exchange.NSE, has_derivatives=True)
         for inst in underlyings[:10]:
             kind = "INDEX" if isinstance(inst, Index) else "EQUITY"
             print(f"  {kind:<6} {inst.exchange}:{inst.symbol}")
@@ -144,8 +144,26 @@ def main() -> None:
             print(f"  ... and {len(expiries) - 5} more")
         print()
 
+        print("── NIFTY Futures ─────────────────────")
+        futures = store.list_instruments(
+            instrument_type=Future,
+            underlying=nifty,
+            limit=3,
+        )
+        for future in futures:
+            print(f"  {future.exchange}:{future.symbol} {future.expiry}")
+        if not futures:
+            print("  (no futures found)")
+        print()
+
         if expiries:
             expiry = expiries[0]
+            calls = store.list_instruments(
+                instrument_type=Option,
+                underlying=nifty,
+                expiry=expiry,
+                limit=5,
+            )
             chain = store.get_option_chain(nifty, expiry)
             print(f"── Option Chain: {nifty.symbol} {expiry} ─────")
             for entry in chain.entries[:10]:
@@ -154,6 +172,7 @@ def main() -> None:
                 print(f"  strike={entry.strike:>8.2f}  {ce}  {pe}")
             if len(chain.entries) > 10:
                 print(f"  ... and {len(chain.entries) - 10} more strikes")
+            print(f"  first {len(calls)} contracts via list_instruments()")
             print()
 
         reliance = Equity(exchange=Exchange.NSE, symbol="RELIANCE")

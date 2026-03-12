@@ -1,4 +1,4 @@
-"""Integration tests for new InstrumentManager discovery query methods."""
+"""Integration tests for InstrumentStore discovery query methods."""
 
 from __future__ import annotations
 
@@ -7,8 +7,8 @@ from datetime import date
 import pytest
 
 from tt_connect.core.exceptions import InstrumentNotFoundError
-from tt_connect.core.models.enums import OnStale
-from tt_connect.core.models.instruments import Equity, Index, Option
+from tt_connect.core.models.enums import OnStale, OptionType
+from tt_connect.core.models.instruments import Commodity, Currency, Equity, Future, Index, Option
 from tt_connect.core.store.manager import InstrumentManager
 
 
@@ -20,12 +20,12 @@ def _manager(db) -> InstrumentManager:
 
 
 # ---------------------------------------------------------------------------
-# get_underlyings
+# list_instruments
 # ---------------------------------------------------------------------------
 
-async def test_get_underlyings_returns_only_those_with_derivatives(populated_db):
+async def test_list_instruments_returns_derivative_enabled_underlyings(populated_db):
     mgr = _manager(populated_db)
-    results = await mgr.queries.get_underlyings()
+    results = await mgr.queries.list_instruments(has_derivatives=True)
     symbols = [(str(r.exchange), r.symbol) for r in results]
     # Fixture has derivatives for NIFTY (NSE), SENSEX (BSE), RELIANCE (NSE), SBIN (NSE)
     assert ("NSE", "NIFTY") in symbols
@@ -36,9 +36,9 @@ async def test_get_underlyings_returns_only_those_with_derivatives(populated_db)
     assert ("BSE", "RELIANCE") not in symbols
 
 
-async def test_get_underlyings_index_typed_correctly(populated_db):
+async def test_list_instruments_underlyings_type_indices_correctly(populated_db):
     mgr = _manager(populated_db)
-    results = await mgr.queries.get_underlyings()
+    results = await mgr.queries.list_instruments(has_derivatives=True)
     by_symbol = {r.symbol: r for r in results}
     assert isinstance(by_symbol["NIFTY"], Index)
     assert isinstance(by_symbol["SENSEX"], Index)
@@ -46,9 +46,9 @@ async def test_get_underlyings_index_typed_correctly(populated_db):
     assert isinstance(by_symbol["SBIN"], Equity)
 
 
-async def test_get_underlyings_filtered_by_exchange(populated_db):
+async def test_list_instruments_filters_underlyings_by_exchange(populated_db):
     mgr = _manager(populated_db)
-    results = await mgr.queries.get_underlyings(exchange="NSE")
+    results = await mgr.queries.list_instruments(exchange="NSE", has_derivatives=True)
     assert all(str(r.exchange) == "NSE" for r in results)
     symbols = [r.symbol for r in results]
     assert "NIFTY" in symbols
@@ -58,12 +58,9 @@ async def test_get_underlyings_filtered_by_exchange(populated_db):
 
 
 # ---------------------------------------------------------------------------
-# get_all_equities
-# ---------------------------------------------------------------------------
-
-async def test_get_all_equities_returns_everything(populated_db):
+async def test_list_instruments_returns_all_underlyings_by_default(populated_db):
     mgr = _manager(populated_db)
-    results = await mgr.queries.get_all_equities()
+    results = await mgr.queries.list_instruments()
     symbols = [(str(r.exchange), r.symbol) for r in results]
     # All equities and indices in the fixture
     assert ("NSE", "NIFTY") in symbols
@@ -75,14 +72,65 @@ async def test_get_all_equities_returns_everything(populated_db):
     assert len(results) == 5
 
 
-async def test_get_all_equities_exchange_filter(populated_db):
+async def test_list_instruments_filters_indices_only(populated_db):
     mgr = _manager(populated_db)
-    results = await mgr.queries.get_all_equities(exchange="BSE")
-    assert all(str(r.exchange) == "BSE" for r in results)
-    symbols = [r.symbol for r in results]
-    assert "SENSEX" in symbols
-    assert "RELIANCE" in symbols
-    assert "NIFTY" not in symbols
+    results = await mgr.queries.list_instruments(instrument_type=Index)
+    assert results
+    assert all(isinstance(r, Index) for r in results)
+    assert {r.symbol for r in results} == {"NIFTY", "SENSEX"}
+
+
+async def test_list_instruments_filters_equities_only(populated_db):
+    mgr = _manager(populated_db)
+    results = await mgr.queries.list_instruments(instrument_type=Equity)
+    assert results
+    assert all(isinstance(r, Equity) for r in results)
+    assert "RELIANCE" in {r.symbol for r in results}
+    assert "SBIN" in {r.symbol for r in results}
+
+
+async def test_list_instruments_returns_futures_for_underlying(populated_db):
+    mgr = _manager(populated_db)
+    reliance = Equity(exchange="NSE", symbol="RELIANCE")
+    results = await mgr.queries.list_instruments(instrument_type=Future, underlying=reliance)
+    assert results
+    assert all(isinstance(r, Future) for r in results)
+    assert all(r.symbol == "RELIANCE" for r in results)
+
+
+async def test_list_instruments_returns_options_with_filters(populated_db):
+    mgr = _manager(populated_db)
+    nifty = Index(exchange="NSE", symbol="NIFTY")
+    expiry = date(2026, 2, 26)
+    results = await mgr.queries.list_instruments(
+        instrument_type=Option,
+        underlying=nifty,
+        expiry=expiry,
+        strike=23000.0,
+    )
+    assert len(results) == 2
+    assert all(isinstance(r, Option) for r in results)
+    assert {r.option_type for r in results} == {OptionType.CE, OptionType.PE}
+
+
+async def test_list_instruments_rejects_invalid_filter_combinations(populated_db):
+    mgr = _manager(populated_db)
+    reliance = Equity(exchange="NSE", symbol="RELIANCE")
+
+    with pytest.raises(ValueError):
+        await mgr.queries.list_instruments(underlying=reliance)
+
+    with pytest.raises(ValueError):
+        await mgr.queries.list_instruments(instrument_type=Future, has_derivatives=True)
+
+    with pytest.raises(ValueError):
+        await mgr.queries.list_instruments(instrument_type=Option, strike=100.0, strike_min=50.0)
+
+    with pytest.raises(ValueError):
+        await mgr.queries.list_instruments(instrument_type=Currency)
+
+    with pytest.raises(ValueError):
+        await mgr.queries.list_instruments(instrument_type=Commodity)
 
 
 # ---------------------------------------------------------------------------

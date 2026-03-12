@@ -27,14 +27,11 @@ from concurrent.futures import Future as ThreadFuture
 from datetime import date
 from typing import Any, Coroutine, TypeVar
 
-from tt_connect.core.models.enums import OnStale
+from tt_connect.core.models.enums import Exchange, OnStale, OptionType
 from tt_connect.core.models.instruments import (
     Equity,
-    Future,
-    Index,
     Instrument,
     InstrumentInfo,
-    Option,
     OptionChain,
 )
 from tt_connect.core.store.manager import InstrumentManager
@@ -75,15 +72,32 @@ class AsyncInstrumentStore:
         """Close the local DB when leaving an async context manager."""
         await self.close()
 
-    async def get_futures(self, instrument: Instrument) -> list[Future]:
-        """Return all active futures for an underlying, sorted by expiry."""
-        return await self._queries.get_futures(instrument)
-
-    async def get_options(
-        self, instrument: Instrument, expiry: date | None = None
-    ) -> list[Option]:
-        """Return options for an underlying, optionally filtered by expiry."""
-        return await self._queries.get_options(instrument, expiry)
+    async def list_instruments(
+        self,
+        instrument_type: type[Instrument] | None = None,
+        exchange: Exchange | None = None,
+        underlying: Instrument | None = None,
+        expiry: date | None = None,
+        option_type: OptionType | None = None,
+        strike: float | None = None,
+        strike_min: float | None = None,
+        strike_max: float | None = None,
+        has_derivatives: bool | None = None,
+        limit: int | None = 100,
+    ) -> list[Instrument]:
+        """List instruments using strict canonical filters."""
+        return await self._queries.list_instruments(
+            instrument_type=instrument_type,
+            exchange=exchange,
+            underlying=underlying,
+            expiry=expiry,
+            option_type=option_type,
+            strike=strike,
+            strike_min=strike_min,
+            strike_max=strike_max,
+            has_derivatives=has_derivatives,
+            limit=limit,
+        )
 
     async def get_expiries(self, instrument: Instrument) -> list[date]:
         """Return all distinct expiry dates for an underlying."""
@@ -92,14 +106,6 @@ class AsyncInstrumentStore:
     async def search(self, query: str, exchange: str | None = None) -> list[Equity]:
         """Search underlyings by symbol substring."""
         return await self._queries.search_instruments(query, exchange)
-
-    async def get_underlyings(self, exchange: str | None = None) -> list[Equity | Index]:
-        """Return all underlyings that currently have derivatives."""
-        return await self._queries.get_underlyings(exchange)
-
-    async def get_all_equities(self, exchange: str | None = None) -> list[Equity | Index]:
-        """Return every equity and index stored in the local DB."""
-        return await self._queries.get_all_equities(exchange)
 
     async def get_instrument_info(self, instrument: Instrument) -> InstrumentInfo:
         """Return metadata such as lot size, tick size, and segment."""
@@ -150,13 +156,34 @@ class InstrumentStore:
         """Close the store when leaving a sync context manager."""
         self.close()
 
-    def get_futures(self, instrument: Instrument) -> list[Future]:
-        """Return all active futures for an underlying, sorted by expiry."""
-        return self._run(self._async.get_futures(instrument))
-
-    def get_options(self, instrument: Instrument, expiry: date | None = None) -> list[Option]:
-        """Return options for an underlying, optionally filtered by expiry."""
-        return self._run(self._async.get_options(instrument, expiry))
+    def list_instruments(
+        self,
+        instrument_type: type[Instrument] | None = None,
+        exchange: Exchange | None = None,
+        underlying: Instrument | None = None,
+        expiry: date | None = None,
+        option_type: OptionType | None = None,
+        strike: float | None = None,
+        strike_min: float | None = None,
+        strike_max: float | None = None,
+        has_derivatives: bool | None = None,
+        limit: int | None = 100,
+    ) -> list[Instrument]:
+        """List instruments using strict canonical filters."""
+        return self._run(
+            self._async.list_instruments(
+                instrument_type=instrument_type,
+                exchange=exchange,
+                underlying=underlying,
+                expiry=expiry,
+                option_type=option_type,
+                strike=strike,
+                strike_min=strike_min,
+                strike_max=strike_max,
+                has_derivatives=has_derivatives,
+                limit=limit,
+            )
+        )
 
     def get_expiries(self, instrument: Instrument) -> list[date]:
         """Return all distinct expiry dates for an underlying."""
@@ -165,14 +192,6 @@ class InstrumentStore:
     def search(self, query: str, exchange: str | None = None) -> list[Equity]:
         """Search underlyings by symbol substring."""
         return self._run(self._async.search(query, exchange))
-
-    def get_underlyings(self, exchange: str | None = None) -> list[Equity | Index]:
-        """Return all underlyings that currently have derivatives."""
-        return self._run(self._async.get_underlyings(exchange))
-
-    def get_all_equities(self, exchange: str | None = None) -> list[Equity | Index]:
-        """Return every equity and index stored in the local DB."""
-        return self._run(self._async.get_all_equities(exchange))
 
     def get_instrument_info(self, instrument: Instrument) -> InstrumentInfo:
         """Return metadata such as lot size, tick size, and segment."""

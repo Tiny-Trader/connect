@@ -21,13 +21,15 @@ client first.
 from __future__ import annotations
 
 from datetime import date
-from typing import Any
+from typing import Any, cast
 
 import aiosqlite
 
 from tt_connect.core.exceptions import InstrumentNotFoundError, InstrumentStoreNotInitializedError
 from tt_connect.core.models.enums import Exchange, OptionType
 from tt_connect.core.models.instruments import (
+    Commodity,
+    Currency,
     Equity,
     Future,
     Index,
@@ -64,28 +66,79 @@ class InstrumentQueries:
             )
         return self._conn
 
+    async def list_instruments(
+        self,
+        instrument_type: type[Instrument] | None = None,
+        exchange: Exchange | None = None,
+        underlying: Instrument | None = None,
+        expiry: date | None = None,
+        option_type: OptionType | None = None,
+        strike: float | None = None,
+        strike_min: float | None = None,
+        strike_max: float | None = None,
+        has_derivatives: bool | None = None,
+        limit: int | None = 100,
+    ) -> list[Instrument]:
+        """List instruments using strict canonical filters.
+
+        The filter language intentionally reuses the package's existing
+        instrument objects and enums instead of introducing a separate query
+        object. This keeps discovery aligned with the strict public model.
+        """
+        self._validate_list_filters(
+            instrument_type=instrument_type,
+            underlying=underlying,
+            expiry=expiry,
+            option_type=option_type,
+            strike=strike,
+            strike_min=strike_min,
+            strike_max=strike_max,
+            has_derivatives=has_derivatives,
+            limit=limit,
+        )
+
+        if instrument_type in (Future,):
+            return cast(
+                list[Instrument],
+                await self._list_futures(
+                    exchange=exchange,
+                    underlying=underlying,
+                    expiry=expiry,
+                    limit=limit,
+                ),
+            )
+        if instrument_type in (Option,):
+            return cast(
+                list[Instrument],
+                await self._list_options(
+                    exchange=exchange,
+                    underlying=underlying,
+                    expiry=expiry,
+                    option_type=option_type,
+                    strike=strike,
+                    strike_min=strike_min,
+                    strike_max=strike_max,
+                    limit=limit,
+                ),
+            )
+        return cast(
+            list[Instrument],
+            await self._list_underlyings(
+                instrument_type=instrument_type,
+                exchange=exchange,
+                has_derivatives=has_derivatives,
+                limit=limit,
+            ),
+        )
+
     async def get_futures(self, underlying: Instrument) -> list[Future]:
         """Return all active futures for an underlying instrument, sorted by expiry."""
-        query = """
-            SELECT fut.exchange, u.symbol, f.expiry
-            FROM instruments fut
-            JOIN futures f     ON f.instrument_id = fut.id
-            JOIN instruments u ON u.id = f.underlying_id
-            WHERE u.exchange = ? AND u.symbol = ?
-            ORDER BY f.expiry ASC
-        """
-        async with self._conn_or_raise().execute(
-            query, (str(underlying.exchange), underlying.symbol)
-        ) as cur:
-            rows = await cur.fetchall()
-        return [
-            Future(
-                exchange=Exchange(row[0]),
-                symbol=row[1],
-                expiry=date.fromisoformat(row[2]),
-            )
-            for row in rows
-        ]
+        futures = await self.list_instruments(
+            instrument_type=Future,
+            underlying=underlying,
+            limit=None,
+        )
+        return [instrument for instrument in futures if isinstance(instrument, Future)]
 
     async def get_options(
         self,
@@ -96,38 +149,13 @@ class InstrumentQueries:
 
         Results are sorted by expiry -> strike -> option_type (CE before PE).
         """
-        if expiry is not None:
-            query = """
-                SELECT opt.exchange, u.symbol, o.expiry, o.strike, o.option_type
-                FROM instruments opt
-                JOIN options o     ON o.instrument_id = opt.id
-                JOIN instruments u ON u.id = o.underlying_id
-                WHERE u.exchange = ? AND u.symbol = ? AND o.expiry = ?
-                ORDER BY o.expiry ASC, o.strike ASC, o.option_type ASC
-            """
-            params: tuple[Any, ...] = (str(underlying.exchange), underlying.symbol, expiry.isoformat())
-        else:
-            query = """
-                SELECT opt.exchange, u.symbol, o.expiry, o.strike, o.option_type
-                FROM instruments opt
-                JOIN options o     ON o.instrument_id = opt.id
-                JOIN instruments u ON u.id = o.underlying_id
-                WHERE u.exchange = ? AND u.symbol = ?
-                ORDER BY o.expiry ASC, o.strike ASC, o.option_type ASC
-            """
-            params = (str(underlying.exchange), underlying.symbol)
-        async with self._conn_or_raise().execute(query, params) as cur:
-            rows = await cur.fetchall()
-        return [
-            Option(
-                exchange=Exchange(row[0]),
-                symbol=row[1],
-                expiry=date.fromisoformat(row[2]),
-                strike=float(row[3]),
-                option_type=OptionType(row[4]),
-            )
-            for row in rows
-        ]
+        options = await self.list_instruments(
+            instrument_type=Option,
+            underlying=underlying,
+            expiry=expiry,
+            limit=None,
+        )
+        return [instrument for instrument in options if isinstance(instrument, Option)]
 
     async def get_expiries(self, underlying: Instrument) -> list[date]:
         """Return all distinct expiry dates for an underlying across futures and options."""
@@ -185,62 +213,6 @@ class InstrumentQueries:
         async with self._conn_or_raise().execute(sql, params) as cur:
             rows = await cur.fetchall()
         return [Equity(exchange=Exchange(row[0]), symbol=row[1]) for row in rows]
-
-    async def get_underlyings(self, exchange: str | None = None) -> list[Equity | Index]:
-        """Return all indices and equities that have at least one future or option."""
-        if exchange is not None:
-            sql = """
-                SELECT DISTINCT i.exchange, i.symbol, i.segment
-                FROM instruments i JOIN equities e ON e.instrument_id = i.id
-                WHERE i.id IN (SELECT underlying_id FROM futures
-                               UNION SELECT underlying_id FROM options)
-                AND i.exchange = ?
-                ORDER BY i.exchange, i.symbol
-            """
-            params: tuple[Any, ...] = (exchange,)
-        else:
-            sql = """
-                SELECT DISTINCT i.exchange, i.symbol, i.segment
-                FROM instruments i JOIN equities e ON e.instrument_id = i.id
-                WHERE i.id IN (SELECT underlying_id FROM futures
-                               UNION SELECT underlying_id FROM options)
-                ORDER BY i.exchange, i.symbol
-            """
-            params = ()
-        async with self._conn_or_raise().execute(sql, params) as cur:
-            rows = await cur.fetchall()
-        return [
-            Index(exchange=Exchange(row[0]), symbol=row[1])
-            if row[2] == "INDICES"
-            else Equity(exchange=Exchange(row[0]), symbol=row[1])
-            for row in rows
-        ]
-
-    async def get_all_equities(self, exchange: str | None = None) -> list[Equity | Index]:
-        """Return every equity and index in the DB (no derivatives filter)."""
-        if exchange is not None:
-            sql = """
-                SELECT i.exchange, i.symbol, i.segment
-                FROM instruments i JOIN equities e ON e.instrument_id = i.id
-                WHERE i.exchange = ?
-                ORDER BY i.exchange, i.symbol
-            """
-            params: tuple[Any, ...] = (exchange,)
-        else:
-            sql = """
-                SELECT i.exchange, i.symbol, i.segment
-                FROM instruments i JOIN equities e ON e.instrument_id = i.id
-                ORDER BY i.exchange, i.symbol
-            """
-            params = ()
-        async with self._conn_or_raise().execute(sql, params) as cur:
-            rows = await cur.fetchall()
-        return [
-            Index(exchange=Exchange(row[0]), symbol=row[1])
-            if row[2] == "INDICES"
-            else Equity(exchange=Exchange(row[0]), symbol=row[1])
-            for row in rows
-        ]
 
     async def get_instrument_info(self, instrument: Instrument) -> InstrumentInfo:
         """Return lot size, tick size, name and segment for any instrument.
@@ -313,3 +285,197 @@ class InstrumentQueries:
         async with self._conn_or_raise().execute(sql, params) as cur:
             rows = await cur.fetchall()
         return [tuple(row) for row in rows]
+
+    def _validate_list_filters(
+        self,
+        *,
+        instrument_type: type[Instrument] | None,
+        underlying: Instrument | None,
+        expiry: date | None,
+        option_type: OptionType | None,
+        strike: float | None,
+        strike_min: float | None,
+        strike_max: float | None,
+        has_derivatives: bool | None,
+        limit: int | None,
+    ) -> None:
+        if instrument_type in (Currency, Commodity):
+            raise ValueError(
+                "Currency and Commodity listings are not supported yet by the local instrument schema."
+            )
+        if instrument_type not in (None, Instrument, Equity, Index, Future, Option):
+            raise TypeError("instrument_type must be one of Instrument, Equity, Index, Future, or Option.")
+        if limit is not None and limit <= 0:
+            raise ValueError("limit must be positive when provided.")
+        if strike is not None and (strike_min is not None or strike_max is not None):
+            raise ValueError("Use either strike or strike_min/strike_max, not both.")
+        if strike_min is not None and strike_max is not None and strike_min > strike_max:
+            raise ValueError("strike_min cannot be greater than strike_max.")
+        if underlying is not None and instrument_type not in (Future, Option):
+            raise ValueError("underlying filter is only valid for Future or Option listings.")
+        if expiry is not None and instrument_type not in (Future, Option):
+            raise ValueError("expiry filter is only valid for Future or Option listings.")
+        if option_type is not None and instrument_type is not Option:
+            raise ValueError("option_type filter is only valid for Option listings.")
+        if any(value is not None for value in (strike, strike_min, strike_max)) and instrument_type is not Option:
+            raise ValueError("strike filters are only valid for Option listings.")
+        if has_derivatives is not None and instrument_type not in (None, Instrument, Equity, Index):
+            raise ValueError("has_derivatives is only valid for underlying listings.")
+
+    async def _list_underlyings(
+        self,
+        *,
+        instrument_type: type[Instrument] | None,
+        exchange: Exchange | None,
+        has_derivatives: bool | None,
+        limit: int | None,
+    ) -> list[Equity | Index]:
+        sql = """
+            SELECT DISTINCT i.exchange, i.symbol, i.segment
+            FROM instruments i
+            JOIN equities e ON e.instrument_id = i.id
+        """
+        conditions: list[str] = []
+        params: list[Any] = []
+
+        if instrument_type is Index:
+            conditions.append("i.segment = 'INDICES'")
+        elif instrument_type is Equity:
+            conditions.append("i.segment <> 'INDICES'")
+
+        if exchange is not None:
+            conditions.append("i.exchange = ?")
+            params.append(str(exchange))
+
+        if has_derivatives is True:
+            conditions.append(
+                "i.id IN (SELECT underlying_id FROM futures UNION SELECT underlying_id FROM options)"
+            )
+        elif has_derivatives is False:
+            conditions.append(
+                "i.id NOT IN (SELECT underlying_id FROM futures UNION SELECT underlying_id FROM options)"
+            )
+
+        if conditions:
+            sql += " WHERE " + " AND ".join(conditions)
+        sql += " ORDER BY i.exchange, i.symbol"
+        if limit is not None:
+            sql += " LIMIT ?"
+            params.append(limit)
+
+        async with self._conn_or_raise().execute(sql, tuple(params)) as cur:
+            rows = await cur.fetchall()
+        return [
+            Index(exchange=Exchange(row[0]), symbol=row[1])
+            if row[2] == "INDICES"
+            else Equity(exchange=Exchange(row[0]), symbol=row[1])
+            for row in rows
+        ]
+
+    async def _list_futures(
+        self,
+        *,
+        exchange: Exchange | None,
+        underlying: Instrument | None,
+        expiry: date | None,
+        limit: int | None,
+    ) -> list[Future]:
+        sql = """
+            SELECT fut.exchange, u.symbol, f.expiry
+            FROM instruments fut
+            JOIN futures f ON f.instrument_id = fut.id
+            JOIN instruments u ON u.id = f.underlying_id
+        """
+        conditions: list[str] = []
+        params: list[Any] = []
+
+        if exchange is not None:
+            conditions.append("fut.exchange = ?")
+            params.append(str(exchange))
+        if underlying is not None:
+            conditions.append("u.exchange = ? AND u.symbol = ?")
+            params.extend((str(underlying.exchange), underlying.symbol))
+        if expiry is not None:
+            conditions.append("f.expiry = ?")
+            params.append(expiry.isoformat())
+
+        if conditions:
+            sql += " WHERE " + " AND ".join(conditions)
+        sql += " ORDER BY f.expiry ASC, fut.exchange ASC, u.symbol ASC"
+        if limit is not None:
+            sql += " LIMIT ?"
+            params.append(limit)
+
+        async with self._conn_or_raise().execute(sql, tuple(params)) as cur:
+            rows = await cur.fetchall()
+        return [
+            Future(
+                exchange=Exchange(row[0]),
+                symbol=row[1],
+                expiry=date.fromisoformat(row[2]),
+            )
+            for row in rows
+        ]
+
+    async def _list_options(
+        self,
+        *,
+        exchange: Exchange | None,
+        underlying: Instrument | None,
+        expiry: date | None,
+        option_type: OptionType | None,
+        strike: float | None,
+        strike_min: float | None,
+        strike_max: float | None,
+        limit: int | None,
+    ) -> list[Option]:
+        sql = """
+            SELECT opt.exchange, u.symbol, o.expiry, o.strike, o.option_type
+            FROM instruments opt
+            JOIN options o ON o.instrument_id = opt.id
+            JOIN instruments u ON u.id = o.underlying_id
+        """
+        conditions: list[str] = []
+        params: list[Any] = []
+
+        if exchange is not None:
+            conditions.append("opt.exchange = ?")
+            params.append(str(exchange))
+        if underlying is not None:
+            conditions.append("u.exchange = ? AND u.symbol = ?")
+            params.extend((str(underlying.exchange), underlying.symbol))
+        if expiry is not None:
+            conditions.append("o.expiry = ?")
+            params.append(expiry.isoformat())
+        if option_type is not None:
+            conditions.append("o.option_type = ?")
+            params.append(str(option_type))
+        if strike is not None:
+            conditions.append("o.strike = ?")
+            params.append(strike)
+        if strike_min is not None:
+            conditions.append("o.strike >= ?")
+            params.append(strike_min)
+        if strike_max is not None:
+            conditions.append("o.strike <= ?")
+            params.append(strike_max)
+
+        if conditions:
+            sql += " WHERE " + " AND ".join(conditions)
+        sql += " ORDER BY o.expiry ASC, o.strike ASC, o.option_type ASC"
+        if limit is not None:
+            sql += " LIMIT ?"
+            params.append(limit)
+
+        async with self._conn_or_raise().execute(sql, tuple(params)) as cur:
+            rows = await cur.fetchall()
+        return [
+            Option(
+                exchange=Exchange(row[0]),
+                symbol=row[1],
+                expiry=date.fromisoformat(row[2]),
+                strike=float(row[3]),
+                option_type=OptionType(row[4]),
+            )
+            for row in rows
+        ]
