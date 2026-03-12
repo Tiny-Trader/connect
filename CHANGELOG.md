@@ -6,8 +6,46 @@
 
 - Switched the project license from AGPL to Apache License 2.0.
 - Added explicit `Apache-2.0` package metadata in `pyproject.toml`.
-- Updated compliance guidance to match Apache-2.0 redistribution and hosted-use obligations.
+- Updated compliance guidance to clarify Apache-2.0 redistribution obligations, including license/attribution preservation on redistributed source or binaries, and that it does not require publishing source code for network or hosted use.
 - Tightened trademark policy to protect `Tiny Traders`, `TT`, and `tt-connect` branding while keeping code reuse permissive under Apache-2.0.
+- **Breaking: public order/GTT methods now accept keyword arguments instead of request objects.**
+  `place_order`, `modify_order`, `place_gtt`, and `modify_gtt` on both `AsyncTTConnect` and `TTConnect`
+  no longer accept a single request-object argument. Pass fields directly as keyword arguments:
+
+  ```python
+  # Before (0.4.x)
+  broker.place_order(PlaceOrderRequest(instrument=..., side=Side.BUY, qty=1, ...))
+
+  # After (0.5.0+)
+  broker.place_order(instrument=..., side=Side.BUY, qty=1, ...)
+  ```
+
+- **`PlaceOrderRequest`, `ModifyOrderRequest`, `PlaceGttRequest`, `ModifyGttRequest`,
+  and `GetHistoricalRequest` removed from the public package exports.**
+  These were internal DTOs accidentally exposed. They remain in `tt_connect.core.models.requests`
+  for internal use; user code should not import them.
+  `GttLeg` stays exported — it is a value type users compose directly for GTT legs.
+
+### Migration
+
+```python
+# place_order
+# was: broker.place_order(PlaceOrderRequest(instrument=eq, side=Side.BUY, qty=10, ...))
+broker.place_order(instrument=eq, side=Side.BUY, qty=10,
+                   order_type=OrderType.MARKET, product=ProductType.CNC)
+
+# modify_order
+# was: broker.modify_order(ModifyOrderRequest(order_id="O1", price=801.0))
+broker.modify_order(order_id="O1", price=801.0)
+
+# place_gtt
+# was: broker.place_gtt(PlaceGttRequest(instrument=eq, last_price=2800.0, legs=[...]))
+broker.place_gtt(instrument=eq, last_price=2800.0, legs=[GttLeg(...)])
+
+# modify_gtt
+# was: broker.modify_gtt(ModifyGttRequest(gtt_id="G1", instrument=eq, last_price=2800.0, legs=[...]))
+broker.modify_gtt(gtt_id="G1", instrument=eq, last_price=2800.0, legs=[GttLeg(...)])
+```
 
 ## 0.5.0 - 2026-03-11
 
@@ -96,49 +134,6 @@
 
 - Bump: **minor**
 - Source PR: #27 feat(core): add logging
-
-## [Unreleased]
-
-### Changed
-
-- **Breaking: public order/GTT methods now accept keyword arguments instead of request objects.**
-  `place_order`, `modify_order`, `place_gtt`, and `modify_gtt` on both `AsyncTTConnect` and `TTConnect`
-  no longer accept a single request-object argument. Pass fields directly as keyword arguments:
-
-  ```python
-  # Before (0.4.x)
-  broker.place_order(PlaceOrderRequest(instrument=..., side=Side.BUY, qty=1, ...))
-
-  # After (0.5.0+)
-  broker.place_order(instrument=..., side=Side.BUY, qty=1, ...)
-  ```
-
-- **`PlaceOrderRequest`, `ModifyOrderRequest`, `PlaceGttRequest`, `ModifyGttRequest`,
-  and `GetHistoricalRequest` removed from the public package exports.**
-  These were internal DTOs accidentally exposed. They remain in `tt_connect.core.models.requests`
-  for internal use; user code should not import them.
-  `GttLeg` stays exported — it is a value type users compose directly for GTT legs.
-
-### Migration
-
-```python
-# place_order
-# was: broker.place_order(PlaceOrderRequest(instrument=eq, side=Side.BUY, qty=10, ...))
-broker.place_order(instrument=eq, side=Side.BUY, qty=10,
-                   order_type=OrderType.MARKET, product=ProductType.CNC)
-
-# modify_order
-# was: broker.modify_order(ModifyOrderRequest(order_id="O1", price=801.0))
-broker.modify_order(order_id="O1", price=801.0)
-
-# place_gtt
-# was: broker.place_gtt(PlaceGttRequest(instrument=eq, last_price=2800.0, legs=[...]))
-broker.place_gtt(instrument=eq, last_price=2800.0, legs=[GttLeg(...)])
-
-# modify_gtt
-# was: broker.modify_gtt(ModifyGttRequest(gtt_id="G1", instrument=eq, last_price=2800.0, legs=[...]))
-broker.modify_gtt(gtt_id="G1", instrument=eq, last_price=2800.0, legs=[GttLeg(...)])
-```
 
 ### Added
 
