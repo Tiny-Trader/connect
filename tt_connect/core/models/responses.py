@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from datetime import datetime
-
 from pydantic import BaseModel, ConfigDict
+
+from tt_connect.core.timezone import ISTDatetime
 
 from tt_connect.core.models.enums import OrderStatus, OrderType, ProductType, Side
 from tt_connect.core.models.instruments import Instrument
@@ -89,7 +89,7 @@ class Order(BaseModel):
     price: float | None = None
     trigger_price: float | None = None
     avg_price: float | None = None
-    timestamp: datetime | None = None
+    timestamp: ISTDatetime | None = None
 
 
 class Trade(BaseModel):
@@ -104,7 +104,7 @@ class Trade(BaseModel):
     avg_price: float
     trade_value: float
     product: ProductType
-    timestamp: datetime | None = None
+    timestamp: ISTDatetime | None = None
 
 
 class Margin(BaseModel):
@@ -131,7 +131,7 @@ class Tick(BaseModel):
     oi: int | None = None
     bid: float | None = None
     ask: float | None = None
-    timestamp: datetime | None = None
+    timestamp: ISTDatetime | None = None
 
 
 class Candle(BaseModel):
@@ -140,7 +140,7 @@ class Candle(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     instrument: Instrument
-    timestamp: datetime
+    timestamp: ISTDatetime
     open: float
     high: float
     low: float

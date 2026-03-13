@@ -4,6 +4,8 @@ import json as _json
 from datetime import datetime
 from typing import Any
 
+from tt_connect.core.timezone import IST
+
 from tt_connect.core.models import Candle, GetHistoricalRequest, Gtt, GttLeg, ModifyGttRequest, ModifyOrderRequest, PlaceGttRequest, PlaceOrderRequest, Profile, Fund, Holding, Position, Order, Tick, Trade, Margin
 from tt_connect.core.models.instruments import Instrument
 from tt_connect.core.models.enums import CandleInterval, Exchange, Side, ProductType, OrderType, OrderStatus
@@ -11,6 +13,17 @@ from tt_connect.core.exceptions import (
     TTConnectError, AuthenticationError, OrderError,
     InvalidOrderError, BrokerError,
 )
+
+def _parse_ts(raw: str | None) -> datetime | None:
+    """Parse a Zerodha ISO timestamp into an IST-aware datetime."""
+    if not raw:
+        return None
+    try:
+        dt = datetime.fromisoformat(raw)
+        return dt.replace(tzinfo=IST) if dt.tzinfo is None else dt.astimezone(IST)
+    except Exception:
+        return None
+
 
 ERROR_MAP: dict[str, type[TTConnectError]] = {
     "TokenException":      AuthenticationError,
@@ -264,7 +277,7 @@ class ZerodhaTransformer:
             avg_price=raw["average_price"],
             trade_value=round(raw["quantity"] * raw["average_price"], 2),
             product=ProductType(raw["product"]),
-            timestamp=datetime.fromisoformat(ts) if ts else None,
+            timestamp=_parse_ts(ts),
         )
 
     @staticmethod
@@ -284,7 +297,7 @@ class ZerodhaTransformer:
             price=raw.get("price") or None,
             trigger_price=raw.get("trigger_price") or None,
             avg_price=raw.get("average_price") or None,
-            timestamp=datetime.fromisoformat(ts) if ts else None,
+            timestamp=_parse_ts(ts),
         )
 
     _INTERVAL_MAP: dict[CandleInterval, str] = {
@@ -309,8 +322,8 @@ class ZerodhaTransformer:
         interval = ZerodhaTransformer._INTERVAL_MAP[req.interval]
         params: dict[str, Any] = {
             "interval": interval,
-            "from":     req.from_date.strftime("%Y-%m-%d %H:%M:%S"),
-            "to":       req.to_date.strftime("%Y-%m-%d %H:%M:%S"),
+            "from":     req.from_date.astimezone(IST).strftime("%Y-%m-%d %H:%M:%S"),
+            "to":       req.to_date.astimezone(IST).strftime("%Y-%m-%d %H:%M:%S"),
         }
         if req.include_oi:
             params["oi"] = "1"
@@ -324,7 +337,8 @@ class ZerodhaTransformer:
         """
         result: list[Candle] = []
         for row in rows:
-            ts = datetime.fromisoformat(str(row[0]))
+            dt = datetime.fromisoformat(str(row[0]))
+            ts = dt.replace(tzinfo=IST) if dt.tzinfo is None else dt.astimezone(IST)
             result.append(Candle(
                 instrument=instrument,
                 timestamp=ts,
@@ -361,7 +375,7 @@ class ZerodhaTransformer:
         oi=0 is normalised to None (Zerodha returns 0 for equities).
         """
         ts_str = raw.get("timestamp") or raw.get("last_trade_time")
-        ts = datetime.fromisoformat(ts_str) if ts_str else None
+        ts = _parse_ts(ts_str)
         oi_raw = raw.get("oi")
         depth = raw.get("depth", {})
         buy_levels  = depth.get("buy", [])

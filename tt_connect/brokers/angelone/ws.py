@@ -6,7 +6,9 @@ import asyncio
 import json
 import logging
 import struct
-from datetime import datetime, timezone
+from datetime import datetime
+
+from tt_connect.core.timezone import IST
 from typing import Any
 
 import websockets
@@ -269,7 +271,7 @@ class AngelOneWebSocket(BrokerWebSocket):
         ts_ms  = struct.unpack_from("<q", data, 35)[0]
         ltp    = struct.unpack_from("<q", data, 43)[0] / 100.0
         ts     = (
-            datetime.fromtimestamp(ts_ms / 1000, tz=timezone.utc)
+            datetime.fromtimestamp(ts_ms / 1000, tz=IST)
             if ts_ms > 0 else None
         )
 

@@ -6,7 +6,9 @@ import asyncio
 import json
 import logging
 import struct
-from datetime import datetime, timezone
+from datetime import datetime
+
+from tt_connect.core.timezone import IST
 from typing import Any
 from urllib.parse import urlencode
 
@@ -273,7 +275,7 @@ class ZerodhaWebSocket(BrokerWebSocket):
             oi = struct.unpack_from(">I", packet, 48)[0]
             ts_epoch = struct.unpack_from(">I", packet, 60)[0]
             if ts_epoch > 0:
-                ts = datetime.fromtimestamp(ts_epoch, tz=timezone.utc)
+                ts = datetime.fromtimestamp(ts_epoch, tz=IST)
             bid, ask = self._parse_depth_top(packet[64:184])
 
         return Tick(

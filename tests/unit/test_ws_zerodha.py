@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import struct
-from datetime import timezone
+from tt_connect.core.timezone import IST
 import pytest
 
 from tt_connect.core.models.instruments import Equity
@@ -188,7 +188,7 @@ def test_full_packet_timestamp() -> None:
 
     assert len(ticks) == 1
     assert ticks[0].timestamp is not None
-    assert ticks[0].timestamp.tzinfo == timezone.utc
+    assert ticks[0].timestamp.tzinfo == IST
 
 
 def test_empty_message_returns_empty() -> None:

@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-from datetime import datetime
 from uuid import uuid4
 
 from pydantic import BaseModel, Field
+
+from tt_connect.core.timezone import ISTDatetime
 
 from tt_connect.core.models.enums import CandleInterval, OrderType, ProductType, Side
 from tt_connect.core.models.instruments import Instrument
@@ -85,6 +86,6 @@ class GetHistoricalRequest(BaseModel):
 
     instrument: Instrument
     interval: CandleInterval
-    from_date: datetime
-    to_date: datetime
+    from_date: ISTDatetime
+    to_date: ISTDatetime
     include_oi: bool = True

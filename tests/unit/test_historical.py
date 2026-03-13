@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime
+
+from tt_connect.core.timezone import IST
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -25,8 +27,8 @@ from tt_connect.core.client._portfolio import PortfolioMixin
 INSTR    = Equity(exchange="NSE", symbol="RELIANCE")
 RESOLVED = ResolvedInstrument(token="2885", broker_symbol="RELIANCE", exchange="NSE")
 
-FROM_DT = datetime(2024, 1, 1, 9, 15, 0)
-TO_DT   = datetime(2024, 1, 1, 15, 30, 0)
+FROM_DT = datetime(2024, 1, 1, 9, 15, 0, tzinfo=IST)
+TO_DT   = datetime(2024, 1, 1, 15, 30, 0, tzinfo=IST)
 
 
 def _make_client() -> PortfolioMixin:
@@ -206,11 +208,11 @@ async def test_get_historical_resolves_and_returns_candles():
     expected_candles = [
         Candle(
             instrument=INSTR,
-            timestamp=datetime(2024, 1, 1, 9, 15, tzinfo=timezone.utc),
+            timestamp=datetime(2024, 1, 1, 9, 15, tzinfo=IST),
             open=100.0, high=105.0, low=99.0, close=103.0, volume=500,
         )
     ]
-    raw_rows = [["2024-01-01T09:15:00+00:00", 100.0, 105.0, 99.0, 103.0, 500]]
+    raw_rows = [["2024-01-01T09:15:00+05:30", 100.0, 105.0, 99.0, 103.0, 500]]
 
     client._adapter.transformer.to_historical_params.return_value = {"interval": "ONE_MINUTE"}
     client._adapter.get_historical = AsyncMock(return_value={"data": raw_rows})

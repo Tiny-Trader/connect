@@ -16,6 +16,16 @@
 
 ### Changed
 
+- All datetime fields across the public API are now **IST-aware** (`UTC+05:30`).
+  A shared `IST` constant and `ISTDatetime` Pydantic type live in
+  `tt_connect.core.timezone`. Naive datetimes are assumed to be IST (no user
+  code change required); any other timezone-aware datetime is normalised to IST.
+  Affected surfaces:
+  - `Order.timestamp`, `Trade.timestamp`, `Tick.timestamp`, `Candle.timestamp`
+  - `get_historical` `from_date` / `to_date` inputs
+  - WebSocket ticks (both Zerodha and AngelOne)
+  - Auth session fields (`obtained_at`, `expires_at`)
+
 - Switched the project license from AGPL to Apache License 2.0.
 - Added explicit `Apache-2.0` package metadata in `pyproject.toml`.
 - Updated compliance guidance to clarify Apache-2.0 redistribution obligations, including license/attribution preservation on redistributed source or binaries, and that it does not require publishing source code for network or hosted use.

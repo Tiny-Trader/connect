@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import struct
-from datetime import timezone
+from tt_connect.core.timezone import IST
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -134,7 +134,7 @@ def test_ltp_timestamp_nonzero_parsed() -> None:
 
     assert tick is not None
     assert tick.timestamp is not None
-    assert tick.timestamp.tzinfo == timezone.utc
+    assert tick.timestamp.tzinfo == IST
 
 
 def test_packet_too_short_returns_none() -> None:

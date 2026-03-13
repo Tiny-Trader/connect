@@ -16,7 +16,9 @@ import json
 import logging
 from abc import abstractmethod
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
+
+from tt_connect.core.timezone import IST as _IST
 from pathlib import Path
 from typing import Any
 
@@ -27,17 +29,13 @@ from tt_connect.core.exceptions import UnsupportedFeatureError
 
 logger = logging.getLogger(__name__)
 
-_IST = timezone(timedelta(hours=5, minutes=30))
-
-
 def next_midnight_ist() -> datetime:
-    """Return the next midnight IST as a timezone-aware UTC datetime.
+    """Return the next midnight IST as an IST-aware datetime.
 
     All major Indian brokers expire tokens at midnight IST.
     """
     now_ist = datetime.now(_IST)
-    expiry_ist = (now_ist + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
-    return expiry_ist.astimezone(timezone.utc)
+    return (now_ist + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
 
 
 @dataclass
@@ -47,14 +45,14 @@ class SessionData:
     refresh_token: str | None = None
     feed_token: str | None = None
     obtained_at: datetime = field(
-        default_factory=lambda: datetime.now(timezone.utc)
+        default_factory=lambda: datetime.now(_IST)
     )
     expires_at: datetime | None = None
 
     def is_expired(self) -> bool:
         if self.expires_at is None:
             return False
-        return datetime.now(timezone.utc) >= self.expires_at
+        return datetime.now(_IST) >= self.expires_at
 
 
 # ---------------------------------------------------------------------------
@@ -120,7 +118,7 @@ class FileSessionStore(BaseSessionStore):
             if data.get("expires_at"):
                 expires_at = datetime.fromisoformat(data["expires_at"])
             obtained_at = datetime.fromisoformat(
-                data.get("obtained_at", datetime.now(timezone.utc).isoformat())
+                data.get("obtained_at", datetime.now(_IST).isoformat())
             )
             session = SessionData(
                 access_token=data["access_token"],

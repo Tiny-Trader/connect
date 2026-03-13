@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import json
 from datetime import datetime
+
+from tt_connect.core.timezone import IST
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock
 
@@ -61,7 +63,7 @@ def test_to_quote_basic():
 def test_to_quote_timestamp_parsed():
     tick = ZerodhaTransformer.to_quote(_RAW_RELIANCE, INSTR)
     assert isinstance(tick.timestamp, datetime)
-    assert tick.timestamp == datetime(2024, 1, 15, 15, 30, 0)
+    assert tick.timestamp == datetime(2024, 1, 15, 15, 30, 0, tzinfo=IST)
 
 
 def test_to_quote_zero_oi_becomes_none():

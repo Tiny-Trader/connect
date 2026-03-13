@@ -5,6 +5,8 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
+from tt_connect.core.timezone import IST
+
 from tt_connect.core.models.enums import CandleInterval, Exchange, Side, ProductType, OrderType, OrderStatus
 from tt_connect.core.exceptions import (
     TTConnectError, AuthenticationError, OrderError, OrderNotFoundError,
@@ -92,11 +94,11 @@ _TS_FMT = "%d-%b-%Y %H:%M:%S"
 
 
 def _parse_ts(raw: str | None) -> datetime | None:
-    """Parse AngelOne timestamp string into datetime, returning None on failure."""
+    """Parse AngelOne timestamp string into IST-aware datetime, returning None on failure."""
     if not raw:
         return None
     try:
-        return datetime.strptime(raw.strip(), _TS_FMT)
+        return datetime.strptime(raw.strip(), _TS_FMT).replace(tzinfo=IST)
     except Exception:
         return None
 
@@ -280,8 +282,8 @@ class AngelOneTransformer:
             "exchange":    exchange,
             "symboltoken": token,
             "interval":    interval,
-            "fromdate":    req.from_date.strftime("%Y-%m-%d %H:%M"),
-            "todate":      req.to_date.strftime("%Y-%m-%d %H:%M"),
+            "fromdate":    req.from_date.astimezone(IST).strftime("%Y-%m-%d %H:%M"),
+            "todate":      req.to_date.astimezone(IST).strftime("%Y-%m-%d %H:%M"),
         }
 
     @staticmethod
@@ -292,7 +294,8 @@ class AngelOneTransformer:
         """
         result: list[Candle] = []
         for row in rows:
-            ts = datetime.fromisoformat(str(row[0]))
+            dt = datetime.fromisoformat(str(row[0]))
+            ts = dt.replace(tzinfo=IST) if dt.tzinfo is None else dt.astimezone(IST)
             result.append(Candle(
                 instrument=instrument,
                 timestamp=ts,
