@@ -8,7 +8,7 @@ constructing datetimes and ``ISTDatetime`` when annotating Pydantic fields:
     dt = datetime(2024, 1, 1, 9, 15, tzinfo=IST)
 
 The ``ISTDatetime`` validator:
-- Rejects naive datetimes with a clear error message.
+- Accepts naive datetimes and assumes IST (the natural default for this library).
 - Accepts any timezone-aware datetime and normalises it to IST.
 """
 
@@ -27,10 +27,7 @@ def _to_ist(v: object) -> datetime:
     if not isinstance(v, datetime):
         raise ValueError(f"Expected datetime, got {type(v).__name__}")
     if v.tzinfo is None:
-        raise ValueError(
-            "Naive datetime not allowed — pass an IST-aware datetime. "
-            "Example: datetime(2024, 1, 1, 9, 15, tzinfo=IST)"
-        )
+        return v.replace(tzinfo=IST)  # naive → assumed IST
     return v.astimezone(IST)
 
 
