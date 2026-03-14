@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.0 - 2026-03-14
+
+- Bump: **minor**
+- Source PR: #46 feat(ws): uniform feed health across all brokers
+
+
 ## 0.6.1 - 2026-03-13
 
 - Bump: **patch**
