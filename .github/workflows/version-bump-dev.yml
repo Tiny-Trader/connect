@@ -71,7 +71,7 @@ jobs:
             }
 
             if (!pr) {
-              core.setFailed(`No merged PR associated with commit ${sha} into dev.`);
+              core.warning(`No merged PR associated with commit ${sha} into dev — skipping bump.`);
               return;
             }
 
