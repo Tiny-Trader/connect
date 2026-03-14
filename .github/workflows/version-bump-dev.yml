@@ -92,6 +92,7 @@ jobs:
             core.info(`Resolved bump=${bump} from PR #${pr.number}`);
 
       - name: Bump version + update changelog
+        if: steps.semver.outputs.bump != ''
         env:
           BUMP: ${{ steps.semver.outputs.bump }}
           PR_NUMBER: ${{ steps.semver.outputs.pr_number }}
@@ -157,6 +158,7 @@ jobs:
           PY
 
       - name: Commit and push bump
+        if: steps.semver.outputs.bump != ''
         env:
           BUMP: ${{ steps.semver.outputs.bump }}
           RELEASE_BYPASS_TOKEN: ${{ secrets.RELEASE_BYPASS_TOKEN }}
