@@ -21,24 +21,22 @@ It gives one canonical interface for auth, instruments, orders, portfolio, repor
 ## Quick Start
 
 ```bash
-cd connect
-poetry install
+pip install tt-connect
 ```
 
 ```python
-from tt_connect import TTConnect, PlaceOrderRequest
+from tt_connect import TTConnect
 from tt_connect.instruments import Equity
 from tt_connect.enums import Exchange, Side, ProductType, OrderType
 
 with TTConnect("zerodha", {"api_key": "...", "access_token": "..."}) as broker:
-    req = PlaceOrderRequest(
+    order_id = broker.place_order(
         instrument=Equity(exchange=Exchange.NSE, symbol="RELIANCE"),
         side=Side.BUY,
         qty=1,
         order_type=OrderType.MARKET,
         product=ProductType.CNC,
     )
-    order_id = broker.place_order(req)
     print(order_id)
 ```
 

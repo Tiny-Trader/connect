@@ -35,8 +35,8 @@
 
 | Method | Params | Returns | Common errors |
 |---|---|---|---|
-| `place_order` | `req: PlaceOrderRequest` | `str` (order id) | `UnsupportedFeatureError`, `InstrumentNotFoundError`, `InsufficientFundsError`, `BrokerError` |
-| `modify_order` | `req: ModifyOrderRequest` | `None` | `OrderNotFoundError`, `InvalidOrderError`, `BrokerError` |
+| `place_order` | `instrument, side, qty, order_type, product, price=None, trigger_price=None, tag=auto` | `str` (order id) | `UnsupportedFeatureError`, `InstrumentNotFoundError`, `InsufficientFundsError`, `BrokerError` |
+| `modify_order` | `order_id, qty=None, price=None, trigger_price=None, order_type=None` | `None` | `OrderNotFoundError`, `InvalidOrderError`, `BrokerError` |
 | `cancel_order` | `order_id: str` | `None` | `OrderNotFoundError`, `BrokerError` |
 | `cancel_all_orders` | none | `tuple[list[str], list[str]]` | `BrokerError`, `TTConnectError` |
 | `get_order` | `order_id: str` | `Order` | `OrderNotFoundError`, `UnsupportedFeatureError`, `BrokerError` |
@@ -47,8 +47,8 @@
 
 | Method | Params | Returns | Common errors |
 |---|---|---|---|
-| `place_gtt` | `req: PlaceGttRequest` | `str` (gtt id) | `UnsupportedFeatureError`, `InstrumentNotFoundError`, `BrokerError` |
-| `modify_gtt` | `req: ModifyGttRequest` | `None` | `UnsupportedFeatureError`, `InstrumentNotFoundError`, `BrokerError` |
+| `place_gtt` | `instrument, last_price, legs: list[GttLeg]` | `str` (gtt id) | `UnsupportedFeatureError`, `InstrumentNotFoundError`, `BrokerError` |
+| `modify_gtt` | `gtt_id, instrument, last_price, legs: list[GttLeg]` | `None` | `UnsupportedFeatureError`, `InstrumentNotFoundError`, `BrokerError` |
 | `cancel_gtt` | `gtt_id: str` | `None` | `UnsupportedFeatureError`, `BrokerError` |
 | `get_gtt` | `gtt_id: str` | `Gtt` | `UnsupportedFeatureError`, `BrokerError` |
 | `get_gtts` | none | `list[Gtt]` | `UnsupportedFeatureError`, `BrokerError` |

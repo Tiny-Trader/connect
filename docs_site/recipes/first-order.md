@@ -18,18 +18,16 @@ print("Available:", funds.available)
 
 ## 3) Place a small order
 ```python
-from tt_connect import PlaceOrderRequest
 from tt_connect.instruments import Equity
 from tt_connect.enums import Exchange, Side, ProductType, OrderType
 
-req = PlaceOrderRequest(
+order_id = broker.place_order(
     instrument=Equity(exchange=Exchange.NSE, symbol="SBIN"),
     side=Side.BUY,
     qty=1,
     order_type=OrderType.MARKET,
     product=ProductType.CNC,
 )
-order_id = broker.place_order(req)
 print("Order ID:", order_id)
 ```
 
@@ -51,6 +49,6 @@ broker.close()
 
 ## Related reference
 - [Client methods (orders)](../reference/clients.md)
-- [Models (`PlaceOrderRequest`, `Order`)](../reference/models.md)
+- [Models (`Order`)](../reference/models.md)
 - [Enums (`OrderType`, `ProductType`, `Side`)](../reference/enums.md)
 - [Troubleshooting: Order rejected](../troubleshooting/order-rejected.md)

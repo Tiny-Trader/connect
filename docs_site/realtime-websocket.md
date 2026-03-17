@@ -9,7 +9,7 @@ import asyncio
 from tt_connect import AsyncTTConnect
 from tt_connect.instruments import Equity
 from tt_connect.enums import Exchange
-from tt_connect.models import Tick
+from tt_connect import Tick
 
 async def on_tick(tick: Tick) -> None:
     print(tick.instrument.symbol, tick.ltp, tick.timestamp)
@@ -38,7 +38,7 @@ import asyncio
 from tt_connect import AsyncTTConnect
 from tt_connect.instruments import Equity
 from tt_connect.enums import Exchange
-from tt_connect.models import Tick
+from tt_connect import Tick
 
 async def on_tick(tick: Tick) -> None:
     print(tick.instrument.symbol, tick.ltp)

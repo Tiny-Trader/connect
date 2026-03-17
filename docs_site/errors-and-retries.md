@@ -16,7 +16,7 @@ from tt_connect.exceptions import (
 ## Basic handling pattern
 ```python
 try:
-    order_id = broker.place_order(req)
+    order_id = broker.place_order(instrument=..., side=..., qty=1, order_type=..., product=...)
 except InsufficientFundsError:
     # do not retry; change size/funds first
     raise
@@ -48,12 +48,12 @@ Do not retry blindly:
 - unsupported feature
 
 ## Safe retry idea for place order
-- use request `tag` (already present in `PlaceOrderRequest`)
+- pass a `tag` kwarg to `place_order` for request correlation
 - before placing again, check recent orders to avoid duplicates
 
 ## See also
 - [Exceptions](reference/exceptions.md)
-- [Models (`PlaceOrderRequest`)](reference/models.md)
+- [Models](reference/models.md)
 - [Client methods (orders)](reference/clients.md)
 - [Recipe: Cancel all open orders](recipes/cancel-all-open-orders.md)
 - [Troubleshooting: Auth failures](troubleshooting/auth-failures.md)

@@ -5,14 +5,14 @@ A rule that triggers an order when price condition is met.
 
 ## Create a single-leg GTT
 ```python
-from tt_connect import TTConnect, PlaceGttRequest, GttLeg
+from tt_connect import TTConnect, GttLeg
 from tt_connect.instruments import Equity
 from tt_connect.enums import Exchange, Side, ProductType
 
 config = {"api_key": "...", "access_token": "..."}
 
 with TTConnect("zerodha", config) as broker:
-    req = PlaceGttRequest(
+    gtt_id = broker.place_gtt(
         instrument=Equity(exchange=Exchange.NSE, symbol="SBIN"),
         last_price=800.0,
         legs=[
@@ -25,19 +25,16 @@ with TTConnect("zerodha", config) as broker:
             )
         ],
     )
-    gtt_id = broker.place_gtt(req)
     print("GTT ID:", gtt_id)
 ```
 
 ## Read and modify GTT
 ```python
-from tt_connect import ModifyGttRequest
-
 with TTConnect("zerodha", config) as broker:
     gtt = broker.get_gtt("123456")
     print(gtt.gtt_id, gtt.status, gtt.symbol)
 
-    mod = ModifyGttRequest(
+    broker.modify_gtt(
         gtt_id="123456",
         instrument=Equity(exchange=Exchange.NSE, symbol="SBIN"),
         last_price=805.0,
@@ -51,7 +48,6 @@ with TTConnect("zerodha", config) as broker:
             )
         ],
     )
-    broker.modify_gtt(mod)
 ```
 
 ## Cancel GTT
@@ -67,6 +63,6 @@ with TTConnect("zerodha", config) as broker:
 
 ## See also
 - [Client methods (GTT APIs)](reference/clients.md)
-- [Models (`PlaceGttRequest`, `ModifyGttRequest`, `Gtt`, `GttLeg`)](reference/models.md)
+- [Models (`Gtt`, `GttLeg`)](reference/models.md)
 - [Broker capabilities](reference/capabilities.md)
 - [Broker operation notes](reference/operation-notes.md)

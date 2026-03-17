@@ -8,7 +8,7 @@ import asyncio
 from tt_connect import AsyncTTConnect
 from tt_connect.instruments import Equity
 from tt_connect.enums import Exchange
-from tt_connect.models import Tick
+from tt_connect import Tick
 
 algo_active = True
 

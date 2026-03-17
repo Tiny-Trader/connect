@@ -12,16 +12,22 @@
 | `Currency` | `exchange`, `symbol` | none | Currency derivative shape |
 | `Commodity` | `exchange`, `symbol` | none | Commodity derivative shape |
 
-## Request models
+## GTT leg model
 
-| Model | Required fields | Optional/default fields | Used by |
-|---|---|---|---|
-| `PlaceOrderRequest` | `instrument`, `side`, `qty`, `order_type`, `product` | `price=None`, `trigger_price=None`, `tag=uuid` | `place_order` |
-| `ModifyOrderRequest` | `order_id` | `qty=None`, `price=None`, `trigger_price=None`, `order_type=None` | `modify_order` |
-| `GttLeg` | `trigger_price`, `price`, `side`, `qty`, `product` | none | GTT request/response leg |
-| `PlaceGttRequest` | `instrument`, `last_price`, `legs` | none | `place_gtt` |
-| `ModifyGttRequest` | `gtt_id`, `instrument`, `last_price`, `legs` | none | `modify_gtt` |
-| `GetHistoricalRequest` | `instrument`, `interval`, `from_date`, `to_date` | `include_oi=True` | Internal request mapping |
+Order methods (`place_order`, `modify_order`, etc.) and GTT methods take keyword arguments
+directly — there are no request objects to construct. The one exception is `GttLeg`, which
+you compose to describe each leg of a GTT:
+
+| Model | Required fields | Notes |
+|---|---|---|
+| `GttLeg` | `trigger_price`, `price`, `side`, `qty`, `product` | One entry per GTT leg |
+
+```python
+from tt_connect import GttLeg
+from tt_connect.enums import Side, ProductType
+
+leg = GttLeg(trigger_price=790.0, price=789.5, side=Side.BUY, qty=1, product=ProductType.CNC)
+```
 
 ## Response models
 
@@ -42,7 +48,7 @@
 
 | Model class | Mutability |
 |---|---|
-| Request models | Mutable |
+| `GttLeg` | Mutable |
 | Most response models | Frozen/read-only |
 
 ## Related guides

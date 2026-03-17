@@ -7,7 +7,7 @@
 
 ## Pre-order safety check example
 ```python
-from tt_connect import TTConnect, PlaceOrderRequest
+from tt_connect import TTConnect
 from tt_connect.instruments import Equity
 from tt_connect.enums import Exchange, Side, ProductType, OrderType
 
@@ -18,14 +18,13 @@ with TTConnect("zerodha", config) as broker:
     if funds.available < 1000:
         raise RuntimeError("Not enough funds for this strategy")
 
-    req = PlaceOrderRequest(
+    order_id = broker.place_order(
         instrument=Equity(exchange=Exchange.NSE, symbol="SBIN"),
         side=Side.BUY,
         qty=1,
         order_type=OrderType.MARKET,
         product=ProductType.CNC,
     )
-    order_id = broker.place_order(req)
     print("placed:", order_id)
 ```
 

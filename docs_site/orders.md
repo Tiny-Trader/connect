@@ -8,27 +8,26 @@
 
 ## Place order (market)
 ```python
-from tt_connect import TTConnect, PlaceOrderRequest
+from tt_connect import TTConnect
 from tt_connect.instruments import Equity
 from tt_connect.enums import Exchange, Side, ProductType, OrderType
 
 config = {"api_key": "...", "access_token": "..."}
 
 with TTConnect("zerodha", config) as broker:
-    req = PlaceOrderRequest(
+    order_id = broker.place_order(
         instrument=Equity(exchange=Exchange.NSE, symbol="RELIANCE"),
         side=Side.BUY,
         qty=1,
         order_type=OrderType.MARKET,
         product=ProductType.CNC,
     )
-    order_id = broker.place_order(req)
     print("placed:", order_id)
 ```
 
 ## Place order (limit)
 ```python
-req = PlaceOrderRequest(
+order_id = broker.place_order(
     instrument=Equity(exchange=Exchange.NSE, symbol="SBIN"),
     side=Side.BUY,
     qty=10,
@@ -36,14 +35,11 @@ req = PlaceOrderRequest(
     product=ProductType.CNC,
     price=800.0,
 )
-order_id = broker.place_order(req)
 ```
 
 ## Modify and cancel
 ```python
-from tt_connect import ModifyOrderRequest
-
-broker.modify_order(ModifyOrderRequest(order_id=order_id, price=801.0, qty=10))
+broker.modify_order(order_id=order_id, price=801.0, qty=10)
 broker.cancel_order(order_id)
 ```
 
@@ -64,7 +60,7 @@ for o in orders:
 
 ## See also
 - [Client methods (order APIs)](reference/clients.md)
-- [Models (`PlaceOrderRequest`, `ModifyOrderRequest`, `Order`)](reference/models.md)
+- [Models (`Order`)](reference/models.md)
 - [Enums (`OrderType`, `ProductType`, `Side`, `OrderStatus`)](reference/enums.md)
 - [Exceptions](reference/exceptions.md)
 - [Broker operation notes](reference/operation-notes.md)
