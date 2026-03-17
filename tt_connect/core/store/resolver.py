@@ -12,8 +12,10 @@ for the lifetime of the resolver to avoid repeated DB lookups.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import date
 
 import aiosqlite
+from tt_connect.core.models.enums import Exchange, OptionType
 from tt_connect.core.models.instruments import Instrument, Index, Equity, Future, Option
 from tt_connect.core.exceptions import InstrumentNotFoundError
 
@@ -67,6 +69,7 @@ class InstrumentResolver:
         self._conn = conn
         self._broker_id = broker_id
         self._cache: dict[Instrument, ResolvedInstrument] = {}
+        self._reverse_cache: dict[str, Instrument | None] = {}
 
     async def resolve(self, instrument: Instrument) -> ResolvedInstrument:
         """Resolve a canonical instrument to broker-specific metadata.
@@ -87,6 +90,71 @@ class InstrumentResolver:
         resolved = await self._resolve(instrument)
         self._cache[instrument] = resolved
         return resolved
+
+    async def reverse_resolve(self, token: str) -> Instrument | None:
+        """Reverse-resolve a broker token back to a canonical Instrument.
+
+        Used to populate ``Order.instrument`` from raw order-book responses,
+        which carry a broker token but not a canonical instrument object.
+
+        Results are cached so repeated lookups for the same token (common when
+        the same instrument appears across many orders) avoid DB round-trips.
+
+        Args:
+            token: Broker instrument token string (e.g. ``"738561"``).
+
+        Returns:
+            The matching canonical ``Instrument``, or ``None`` if the token is
+            not present in the local store (e.g. delisted instrument).
+        """
+        if token in self._reverse_cache:
+            return self._reverse_cache[token]
+        instrument = await self._reverse_lookup(token)
+        self._reverse_cache[token] = instrument
+        return instrument
+
+    async def _reverse_lookup(self, token: str) -> Instrument | None:
+        """Query the DB to reconstruct an Instrument from a broker token."""
+        query = """
+            SELECT
+                i.exchange, i.symbol, i.segment,
+                u_f.exchange AS fut_exch, u_f.symbol AS fut_sym, f.expiry AS fut_expiry,
+                u_o.exchange AS opt_exch, u_o.symbol AS opt_sym,
+                o.expiry AS opt_expiry, o.strike, o.option_type
+            FROM instruments i
+            JOIN broker_tokens bt ON bt.instrument_id = i.id
+            LEFT JOIN futures      f   ON f.instrument_id  = i.id
+            LEFT JOIN instruments  u_f ON u_f.id = f.underlying_id
+            LEFT JOIN options      o   ON o.instrument_id  = i.id
+            LEFT JOIN instruments  u_o ON u_o.id = o.underlying_id
+            WHERE bt.token = ? AND bt.broker_id = ?
+        """
+        async with self._conn.execute(query, (token, self._broker_id)) as cur:
+            row = await cur.fetchone()
+        if row is None:
+            return None
+        (
+            exchange, symbol, segment,
+            fut_exch, fut_sym, fut_expiry,
+            opt_exch, opt_sym, opt_expiry, strike, option_type,
+        ) = row
+        if fut_expiry is not None:
+            return Future(
+                exchange=Exchange(fut_exch),
+                symbol=fut_sym,
+                expiry=date.fromisoformat(fut_expiry),
+            )
+        if opt_expiry is not None:
+            return Option(
+                exchange=Exchange(opt_exch),
+                symbol=opt_sym,
+                expiry=date.fromisoformat(opt_expiry),
+                strike=float(strike),
+                option_type=OptionType(option_type),
+            )
+        if segment == "INDICES":
+            return Index(exchange=Exchange(exchange), symbol=symbol)
+        return Equity(exchange=Exchange(exchange), symbol=symbol)
 
     async def _resolve(self, instrument: Instrument) -> ResolvedInstrument:
         """Dispatch resolution by instrument subtype."""

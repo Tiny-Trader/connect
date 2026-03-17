@@ -6,6 +6,7 @@ from tt_connect.core.adapter.transformer import JsonDict
 from tt_connect.core.models.enums import OrderStatus, Side
 from tt_connect.core.client._base import _ClientBase
 from tt_connect.core.models import Gtt, ModifyGttRequest, ModifyOrderRequest, Order, PlaceGttRequest, PlaceOrderRequest
+from tt_connect.core.models.instruments import Instrument
 
 
 class OrdersMixin(_ClientBase):
@@ -55,17 +56,29 @@ class OrdersMixin(_ClientBase):
                 failed.append(order.id)
         return cancelled, failed
 
+    async def _instrument_for_order(self, raw: JsonDict) -> Instrument | None:
+        """Reverse-resolve a raw order row to a canonical Instrument."""
+        token = self._adapter.transformer.token_from_order(raw)
+        if token is None or self._resolver is None:
+            return None
+        return await self._resolver.reverse_resolve(token)
+
     async def get_order(self, order_id: str) -> Order:
         """Fetch a single order and normalize it to the canonical model."""
         self._require_connected()
         raw: JsonDict = await self._adapter.get_order(order_id)
-        return self._adapter.transformer.to_order(raw["data"], instrument=None)
+        instrument = await self._instrument_for_order(raw["data"])
+        return self._adapter.transformer.to_order(raw["data"], instrument=instrument)
 
     async def get_orders(self) -> list[Order]:
         """Fetch and normalize all orders."""
         self._require_connected()
         raw: JsonDict = await self._adapter.get_orders()
-        return [self._adapter.transformer.to_order(o, instrument=None) for o in raw["data"]]
+        result: list[Order] = []
+        for o in raw["data"]:
+            instrument = await self._instrument_for_order(o)
+            result.append(self._adapter.transformer.to_order(o, instrument=instrument))
+        return result
 
     # --- GTT ---
 

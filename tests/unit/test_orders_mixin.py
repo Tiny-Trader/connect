@@ -40,6 +40,8 @@ def _make_client() -> OrdersMixin:
 
     client: _Fake = object.__new__(_Fake)
     client._adapter = MagicMock()
+    # No resolver by default — token_from_order returns None so instrument stays None
+    client._resolver = None  # type: ignore[assignment]
     return client
 
 
@@ -195,6 +197,7 @@ async def test_get_order_returns_normalized_order():
     client = _make_client()
     raw_data = {"order_id": "O1", "status": "COMPLETE"}
     client._adapter.get_order = AsyncMock(return_value={"data": raw_data})
+    client._adapter.transformer.token_from_order.return_value = None  # no token → instrument=None
     expected = _order("O1", OrderStatus.COMPLETE)
     client._adapter.transformer.to_order.return_value = expected
 
@@ -204,10 +207,29 @@ async def test_get_order_returns_normalized_order():
     client._adapter.transformer.to_order.assert_called_once_with(raw_data, instrument=None)
 
 
+async def test_get_order_populates_instrument_when_resolver_returns_one():
+    client = _make_client()
+    raw_data = {"order_id": "O1", "instrument_token": 2885}
+    client._adapter.get_order = AsyncMock(return_value={"data": raw_data})
+    client._adapter.transformer.token_from_order.return_value = "2885"
+    mock_resolver = MagicMock()
+    mock_resolver.reverse_resolve = AsyncMock(return_value=INSTR)
+    client._resolver = mock_resolver  # type: ignore[assignment]
+    expected = _order("O1")
+    client._adapter.transformer.to_order.return_value = expected
+
+    result = await client.get_order("O1")
+
+    assert result is expected
+    mock_resolver.reverse_resolve.assert_awaited_once_with("2885")
+    client._adapter.transformer.to_order.assert_called_once_with(raw_data, instrument=INSTR)
+
+
 async def test_get_orders_returns_all_orders():
     client = _make_client()
     o1, o2 = _order("O1"), _order("O2")
     client._adapter.get_orders = AsyncMock(return_value={"data": [{}, {}]})
+    client._adapter.transformer.token_from_order.return_value = None
     client._adapter.transformer.to_order.side_effect = [o1, o2]
 
     result = await client.get_orders()

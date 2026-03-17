@@ -281,6 +281,12 @@ class ZerodhaTransformer:
         )
 
     @staticmethod
+    def token_from_order(raw: dict[str, Any]) -> str | None:
+        """Extract the broker token from a raw order-book row."""
+        tok = raw.get("instrument_token")
+        return str(tok) if tok is not None else None
+
+    @staticmethod
     def to_order(raw: dict[str, Any], instrument: Instrument | None = None) -> Order:
         """Normalize order-book row with status mapping."""
         status = _ORDER_STATUS_MAP.get(raw["status"], OrderStatus.PENDING)

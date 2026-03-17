@@ -380,6 +380,11 @@ class AngelOneTransformer:
         )
 
     @staticmethod
+    def token_from_order(raw: dict[str, Any]) -> str | None:
+        """Extract the broker token from a raw order-book row."""
+        return raw.get("symboltoken") or None
+
+    @staticmethod
     def to_order(raw: dict[str, Any], instrument: Instrument | None = None) -> Order:
         """Normalize order row with status/order/product mappings."""
         status_raw = (raw.get("status") or raw.get("orderstatus") or "").lower()
