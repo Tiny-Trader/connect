@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.8.1 - 2026-03-25
+
+- Bump: **patch**
+- Source PR: #49 fix(gtt): validate leg count, paginate GTT list, fix docs
+
+
 ## [Unreleased]
 
 ### Fixed
