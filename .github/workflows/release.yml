@@ -17,6 +17,8 @@ permissions:
 
 jobs:
   release:
+    if: github.ref == 'refs/heads/main'
+    environment: release
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -101,4 +103,4 @@ jobs:
 
           git remote set-url origin "https://x-access-token:${RELEASE_BYPASS_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           git config --local --unset-all http.https://github.com/.extraheader || true
-          git push origin main --follow-tags
+          git push --atomic origin HEAD:refs/heads/main "refs/tags/v${NEW_VERSION}"

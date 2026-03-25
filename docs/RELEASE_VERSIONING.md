@@ -37,10 +37,9 @@ gh workflow run release.yml -f bump=patch   # or minor, major
 The `release.yml` workflow:
 
 1. Bumps the version in `pyproject.toml`.
-2. Renames `## [Unreleased]` in `CHANGELOG.md` to `## [X.Y.Z] - YYYY-MM-DD`.
-3. Adds a fresh `## [Unreleased]` heading for the next cycle.
-4. Commits `chore(release): vX.Y.Z` and creates tag `vX.Y.Z`.
-5. Pushes commit + tag to `main`.
+2. Inserts `## [X.Y.Z] - YYYY-MM-DD` immediately below `## [Unreleased]` in `CHANGELOG.md`.
+3. Commits `chore(release): vX.Y.Z` and creates tag `vX.Y.Z`.
+4. Pushes commit + tag atomically to `main`.
 
 The tag push automatically triggers `publish-main.yml`.
 

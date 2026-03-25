@@ -28,10 +28,10 @@ make test-fast
 
 ## Development Workflow
 
-1. Branch from `main`: `feat/<topic>` or `fix/<topic>`.
+1. Branch from `main`: `feat/<topic>`, `fix/<topic>`, or `chore/<topic>`.
 2. Make focused changes with tests.
 3. Run `make ci` locally when possible.
-4. Update `CHANGELOG.md` under `## [Unreleased]` for code-impacting changes.
+4. Update `CHANGELOG.md` under `## [Unreleased]` for user-visible changes.
 5. Open PR to `main` with test evidence and risk notes.
 6. Releases are cut via `gh workflow run release.yml -f bump=patch|minor|major`.
 
