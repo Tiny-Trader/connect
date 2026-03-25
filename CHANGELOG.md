@@ -9,6 +9,11 @@
   gains a `retry_after` attribute. Zerodha `TooManyRequests` and AngelOne `AB1023` error codes
   mapped to `RateLimitError`.
 
+### Fixed
+
+- **AngelOne `get_order()`** — no longer raises `UnsupportedFeatureError`. Fetches full order
+  book and filters by `order_id`; raises `OrderNotFoundError` if not found.
+
 ## [0.8.4] - 2026-03-25
 
 ### Fixed

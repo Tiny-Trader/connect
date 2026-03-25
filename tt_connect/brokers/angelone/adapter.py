@@ -10,7 +10,7 @@ from tt_connect.brokers.angelone.capabilities import ANGELONE_CAPABILITIES
 from tt_connect.brokers.angelone.parser import parse, ParsedInstruments
 from tt_connect.core.adapter.capabilities import Capabilities
 from tt_connect.core.models.config import validate_config
-from tt_connect.core.exceptions import UnsupportedFeatureError
+from tt_connect.core.exceptions import OrderNotFoundError
 from tt_connect.core.adapter.ws import BrokerWebSocket
 
 BASE_URL        = "https://apiconnect.angelbroking.com/rest/secure/angelbroking"
@@ -91,11 +91,16 @@ class AngelOneAdapter(BrokerAdapter, broker_id="angelone"):
         return raw
 
     async def get_order(self, order_id: str) -> JsonDict:
-        """Single-order endpoint is unavailable for AngelOne."""
-        raise UnsupportedFeatureError(
-            "AngelOne does not support fetching a single order by ID. "
-            "Use get_orders() and filter by order_id."
-        )
+        """Fetch a single order by filtering the full order book.
+
+        AngelOne SmartAPI has no single-order endpoint, so we fetch all
+        orders and return the matching entry in the expected envelope.
+        """
+        raw = await self.get_orders()
+        for order in raw["data"]:
+            if order.get("orderid") == order_id:
+                return {"data": order}
+        raise OrderNotFoundError(f"Order {order_id} not found", broker_code="AB1013")
 
     async def place_order(self, params: JsonDict) -> JsonDict:
         """Place a new order using broker-native params."""
