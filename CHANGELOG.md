@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+### Added
+
+- **Rate-limit handling** — `_request()` now retries on HTTP 429 (with `Retry-After` support)
+  and on broker-level retryable errors (e.g. AngelOne in-body rate limits). `RateLimitError`
+  gains a `retry_after` attribute. Zerodha `TooManyRequests` and AngelOne `AB1023` error codes
+  mapped to `RateLimitError`.
+
 ## [0.8.4] - 2026-03-25
 
 ### Fixed
