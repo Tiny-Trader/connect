@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.8.3 - 2026-03-25
+
+- Bump: **patch**
+- Source PR: #52 docs: clarify sync/async client API parity
+
+
 ## 0.8.2 - 2026-03-25
 
 - Bump: **patch**
