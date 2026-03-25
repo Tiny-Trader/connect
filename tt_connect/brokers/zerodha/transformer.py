@@ -11,7 +11,7 @@ from tt_connect.core.models.instruments import Instrument
 from tt_connect.core.models.enums import CandleInterval, Exchange, Side, ProductType, OrderType, OrderStatus
 from tt_connect.core.exceptions import (
     TTConnectError, AuthenticationError, OrderError,
-    InvalidOrderError, BrokerError,
+    InvalidOrderError, BrokerError, RateLimitError,
 )
 
 def _parse_ts(raw: str | None) -> datetime | None:
@@ -35,6 +35,7 @@ ERROR_MAP: dict[str, type[TTConnectError]] = {
     "NetworkException":    BrokerError,
     "DataException":       BrokerError,
     "GeneralException":    BrokerError,
+    "TooManyRequests":     RateLimitError,
 }
 
 # Zerodha statuses that don't map 1-to-1 to our OrderStatus enum

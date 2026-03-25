@@ -10,7 +10,7 @@ from tt_connect.core.timezone import IST
 from tt_connect.core.models.enums import CandleInterval, Exchange, Side, ProductType, OrderType, OrderStatus
 from tt_connect.core.exceptions import (
     TTConnectError, AuthenticationError, OrderError, OrderNotFoundError,
-    InvalidOrderError, InstrumentNotFoundError, BrokerError, UnsupportedFeatureError,
+    InvalidOrderError, InstrumentNotFoundError, BrokerError, RateLimitError, UnsupportedFeatureError,
 )
 from tt_connect.core.models.instruments import Instrument
 from tt_connect.core.models import Candle, GetHistoricalRequest, Gtt, GttLeg, ModifyGttRequest, ModifyOrderRequest, PlaceGttRequest, PlaceOrderRequest, Profile, Fund, Holding, Position, Order, Tick, Trade
@@ -47,6 +47,8 @@ ERROR_MAP: dict[str, type[TTConnectError]] = {
     "AB1015": BrokerError,            # Holding Not Found
     "AB1016": BrokerError,            # Position Not Found
     "AB1017": BrokerError,            # Position Conversion Failed
+    # --- Rate Limiting ---
+    "AB1023": RateLimitError,         # Rate Limit Exceeded
     # --- Generic Server ---
     "AB1004": BrokerError,            # Something Went Wrong (generic)
     "AB1007": BrokerError,            # AMX Error

@@ -22,6 +22,15 @@ class RateLimitError(TTConnectError):
 
     retryable = True
 
+    def __init__(
+        self,
+        message: str,
+        broker_code: str | None = None,
+        retry_after: float | None = None,
+    ):
+        super().__init__(message, broker_code=broker_code)
+        self.retry_after = retry_after
+
 
 class InsufficientFundsError(TTConnectError):
     """Order rejected due to insufficient buying power/margin."""
