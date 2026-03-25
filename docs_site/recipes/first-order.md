@@ -47,6 +47,11 @@ broker.close()
 - Use very small quantity for first run.
 - If rejected, print full order details and verify product/order type.
 
+## What's next?
+- [Cancel all open orders](cancel-all-open-orders.md) — clean up during testing
+- [Stream and store live ticks](stream-and-store-live-ticks.md) — get live market data
+- [Errors & Retries](../errors-and-retries.md) — handle failures in production
+
 ## Related reference
 - [Client methods (orders)](../reference/clients.md)
 - [Models (`Order`)](../reference/models.md)

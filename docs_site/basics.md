@@ -18,6 +18,16 @@ You write one trading flow, then switch brokers by changing client config.
 - `Holding`: delivery/carry inventory
 - `Tick`: realtime market update
 
+## Sync vs async — which to use
+
+| Use case | Client | Why |
+|---|---|---|
+| Scripts, one-shot tasks, Jupyter notebooks | `TTConnect` (sync) | Simpler — no `async`/`await` needed |
+| WebSocket streaming, long-running services | `AsyncTTConnect` (async) | Required for `subscribe()` and non-blocking I/O |
+| FastAPI, Django async views | `AsyncTTConnect` (async) | Fits naturally into async frameworks |
+
+Both clients expose the same methods and return the same models. Start with sync — switch to async only when you need streaming or are in an async context.
+
 ## First working script (sync)
 ```python
 from tt_connect import TTConnect
@@ -59,6 +69,10 @@ asyncio.run(main())
 3. Fetch profile/funds
 4. Place order
 5. Track order/trade/position
+
+## What's next?
+- [Login & Session](login-and-session.md) — set up credentials and auth modes
+- [Recipe: First Order](recipes/first-order.md) — place your first live order
 
 ## See also
 - [Client methods](reference/clients.md)

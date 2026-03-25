@@ -49,9 +49,17 @@ with TTConnect("angelone", config) as broker:
 ```
 
 ## Session lifecycle
-- client creation triggers login/init
-- session can be reused if valid
-- expired sessions are refreshed/reloaded by auth mode logic
+- Client creation triggers login/init.
+- Sessions can be reused within the same trading day.
+
+!!! warning "Daily token expiry (SEBI requirement)"
+    All Indian broker tokens expire at end-of-day. This is a SEBI mandate, not a tt-connect limitation. You must re-authenticate each trading day.
+
+    - **Zerodha**: Complete the OAuth login flow daily to get a fresh `access_token`.
+    - **AngelOne (auto mode)**: Set `cache_session: True` — tt-connect will auto-login via TOTP and cache the session for the day.
+    - **AngelOne (manual mode)**: Obtain a fresh `access_token` JWT daily.
+
+    If your token expires mid-session, API calls will raise `AuthenticationError`.
 
 ## Good practices
 - keep credentials in env vars/secret manager
@@ -63,9 +71,13 @@ with TTConnect("angelone", config) as broker:
 - expired token
 - wrong auth mode for selected broker
 
+## What's next?
+- [Config & Environment](config-and-env.md) — all config keys and env var mapping
+- [Instruments](instruments.md) — understand what you can trade
+
 ## See also
-- [Config & Environment](config-and-env.md)
 - [Client methods](reference/clients.md)
 - [Enums (`AuthMode`)](reference/enums.md)
 - [Exceptions](reference/exceptions.md)
 - [Broker capabilities](reference/capabilities.md)
+- [Troubleshooting: Auth failures](troubleshooting/auth-failures.md)

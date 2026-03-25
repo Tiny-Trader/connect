@@ -58,6 +58,10 @@ Both fire across reconnects — you do not need to re-subscribe after a disconne
 - If your strategy holds state per tick (e.g. running VWAP), resync it in `on_recovered`
 - `broker.last_tick_at(instrument)` gives the exact wall-clock time of the last received tick if you need finer control
 
+## What's next?
+- [Safety & Good Practices](../safety-and-good-practices.md) — production checklist for live trading
+- [Broker Differences](../broker-differences.md) — understand per-broker WebSocket behavior
+
 ## Related reference
 
 - [Realtime (WebSocket)](../realtime-websocket.md)

@@ -57,6 +57,7 @@ nav:
   - API Reference:
     - Overview: reference/index.md
     - Client Methods: reference/clients.md
+    - Instrument Store: reference/instrument-store.md
     - Models: reference/models.md
     - Enums: reference/enums.md
     - Exceptions: reference/exceptions.md
