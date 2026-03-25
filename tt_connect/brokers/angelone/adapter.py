@@ -145,7 +145,7 @@ class AngelOneAdapter(BrokerAdapter, broker_id="angelone"):
     async def get_gtts(self) -> JsonDict:
         """Fetch all GTT rules (active and recent), paginating automatically."""
         page_size = 50
-        all_rules: list[dict] = []  # type: ignore[type-arg]
+        all_rules: list[JsonDict] = []
         page = 1
 
         while True:
