@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.8.4 - 2026-03-25
+
+- Bump: **patch**
+- Source PR: #54 docs: clarify cache_session vs auth_mode=auto
+
+
+## 0.8.3 - 2026-03-25
+
+- Bump: **patch**
+- Source PR: #52 docs: clarify sync/async client API parity
+
+
+## 0.8.2 - 2026-03-25
+
+- Bump: **patch**
+- Source PR: #51 docs: improve UX — warnings, navigation, InstrumentStore
+
+
 ## 0.8.1 - 2026-03-25
 
 - Bump: **patch**

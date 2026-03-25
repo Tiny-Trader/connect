@@ -35,6 +35,10 @@ asyncio.run(main())
 ## Practical note
 For high tick rates, use an in-memory queue + background writer instead of writing per tick.
 
+## What's next?
+- [Recover from reconnect](recover-from-reconnect.md) — handle feed interruptions gracefully
+- [Realtime (WebSocket)](../realtime-websocket.md) — full feed health and staleness guide
+
 ## Related reference
 - [Client methods (`subscribe`, `unsubscribe`)](../reference/clients.md)
 - [Models (`Tick`)](../reference/models.md)

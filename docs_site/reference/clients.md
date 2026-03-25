@@ -35,7 +35,10 @@
 
 | Method | Params | Returns | Common errors |
 |---|---|---|---|
-| `place_order` | `instrument, side, qty, order_type, product, price=None, trigger_price=None, tag=auto` | `str` (order id) | `UnsupportedFeatureError`, `InstrumentNotFoundError`, `InsufficientFundsError`, `BrokerError` |
+| `place_order` | `instrument, side, qty, order_type, product, price=None, trigger_price=None, tag=None` | `str` (order id) | `UnsupportedFeatureError`, `InstrumentNotFoundError`, `InsufficientFundsError`, `BrokerError` |
+
+!!! note "About `tag`"
+    `tag` is an optional client-side correlation ID for tracing orders. If omitted, a UUID is auto-generated. Useful for idempotency checks — pass the same tag and verify via `get_orders()` to detect duplicates before retrying. Sent as `tag` (Zerodha, max 20 chars) or `uniqueorderid` (AngelOne).
 | `modify_order` | `order_id, qty=None, price=None, trigger_price=None, order_type=None` | `None` | `OrderNotFoundError`, `InvalidOrderError`, `BrokerError` |
 | `cancel_order` | `order_id: str` | `None` | `OrderNotFoundError`, `BrokerError` |
 | `cancel_all_orders` | none | `tuple[list[str], list[str]]` | `BrokerError`, `TTConnectError` |

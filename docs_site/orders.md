@@ -1,5 +1,8 @@
 # Orders
 
+!!! warning "Broker differences"
+    AngelOne does not support `get_order(order_id)` — use `get_orders()` and filter by ID instead. See [operation notes](reference/operation-notes.md) for full per-broker behavior.
+
 ## Core actions
 - place order
 - modify order
@@ -57,6 +60,11 @@ for o in orders:
 - save returned order id
 - check order state after placement
 - handle rejection and avoid blind retries
+
+## What's next?
+- [Trades](trades.md) — check fills after placing orders
+- [Positions](positions.md) — monitor net open quantity
+- [GTT (Trigger Orders)](gtt.md) — set up automated trigger-based orders
 
 ## See also
 - [Client methods (order APIs)](reference/clients.md)

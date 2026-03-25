@@ -1,5 +1,8 @@
 # Market Data
 
+!!! warning "Broker support"
+    `get_quotes()` is only available for Zerodha. AngelOne does not expose a REST quotes endpoint — use WebSocket streaming (`subscribe`) instead. `get_historical()` works on both brokers.
+
 ## Data types
 - Quotes: snapshot from REST
 - Ticks: live updates from WebSocket
@@ -53,9 +56,12 @@ for c in candles[:3]:
 - some fields may be missing by broker or segment
 - timestamps may differ from your local clock
 
+## What's next?
+- [Realtime (WebSocket)](realtime-websocket.md) — stream live ticks with feed health callbacks
+- [Recipe: Stream and store live ticks](recipes/stream-and-store-live-ticks.md) — save ticks to CSV
+
 ## See also
 - [Client methods (`get_quotes`, `get_historical`, `subscribe`)](reference/clients.md)
 - [Models (`Tick`, `Candle`)](reference/models.md)
 - [Enums (`CandleInterval`)](reference/enums.md)
 - [Broker operation notes](reference/operation-notes.md)
-- [Recipe: Stream and store live ticks](recipes/stream-and-store-live-ticks.md)

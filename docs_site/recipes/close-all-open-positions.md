@@ -18,6 +18,10 @@ with TTConnect("zerodha", config) as broker:
 - Verify open positions before and after.
 - Run in controlled environments first.
 
+## What's next?
+- [Cancel all open orders](cancel-all-open-orders.md) — cancel pending orders before closing positions
+- [Errors & Retries](../errors-and-retries.md) — handle partial failures gracefully
+
 ## Related reference
 - [Client methods (`get_positions`, `close_all_positions`)](../reference/clients.md)
 - [Models (`Position`)](../reference/models.md)

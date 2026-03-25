@@ -17,6 +17,10 @@ with TTConnect("zerodha", config) as broker:
 - Run once and record counts.
 - If any failed, fetch `get_orders()` and inspect status/reason.
 
+## What's next?
+- [Close all open positions](close-all-open-positions.md) — exit all positions after cancelling orders
+- [Safety & Good Practices](../safety-and-good-practices.md) — production checklist
+
 ## Related reference
 - [Client methods (`cancel_all_orders`, `get_orders`)](../reference/clients.md)
 - [Exceptions](../reference/exceptions.md)
