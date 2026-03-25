@@ -1,30 +1,8 @@
 # Changelog
 
-## 0.8.4 - 2026-03-25
-
-- Bump: **patch**
-- Source PR: #54 docs: clarify cache_session vs auth_mode=auto
-
-
-## 0.8.3 - 2026-03-25
-
-- Bump: **patch**
-- Source PR: #52 docs: clarify sync/async client API parity
-
-
-## 0.8.2 - 2026-03-25
-
-- Bump: **patch**
-- Source PR: #51 docs: improve UX — warnings, navigation, InstrumentStore
-
-
-## 0.8.1 - 2026-03-25
-
-- Bump: **patch**
-- Source PR: #49 fix(gtt): validate leg count, paginate GTT list, fix docs
-
-
 ## [Unreleased]
+
+## [0.8.4] - 2026-03-25
 
 ### Fixed
 
@@ -38,7 +16,14 @@
 - Removed dead `dev/get_token.py` references; pointed to `TROUBLESHOOTING.md` instead.
 - Unified install instructions to `pip install tt-connect` across all examples.
 
-## 0.8.0 - 2026-03-18
+### Docs
+
+- Clarified sync/async client API parity — `subscribe`/`unsubscribe` are async-only.
+- Clarified `cache_session` vs `auth_mode=auto` — `cache_session` controls disk persistence, not auto-login eligibility.
+- Added InstrumentStore API reference, broker-specific warnings, and cross-navigation links.
+- Added SEBI daily token expiry warning with per-broker details.
+
+## [0.8.0] - 2026-03-18
 
 ### Added
 
@@ -52,10 +37,7 @@
 - `BrokerTransformer.token_from_order(raw)` — new protocol method; Zerodha extracts
   `instrument_token`, AngelOne extracts `symboltoken`.
 
-## 0.7.0 - 2026-03-14
-
-- Bump: **minor**
-- Source PR: #46 feat(ws): uniform feed health across all brokers
+## [0.7.0] - 2026-03-14
 
 ### Added
 
@@ -86,11 +68,7 @@
   ping/pong (RFC 6455 binary frames) conflicting with AngelOne's application-level text
   `"ping"` frames. Disabled library ping with `ping_interval=None`.
 
-
-## 0.6.1 - 2026-03-13
-
-- Bump: **patch**
-- Source PR: #45 feat: enforce IST-aware datetimes across all broker surfaces
+## [0.6.1] - 2026-03-13
 
 ### Changed
 
@@ -104,11 +82,7 @@
   - WebSocket ticks (both Zerodha and AngelOne)
   - Auth session fields (`obtained_at`, `expires_at`)
 
-
-## 0.6.0 - 2026-03-12
-
-- Bump: **minor**
-- Source PR: #44 feat: add public instrument store discovery surface
+## [0.6.0] - 2026-03-12
 
 ### Added
 
@@ -125,11 +99,7 @@
   and consolidated store-side flat list lookups under `list_instruments(...)` with strict
   canonical filters.
 
-
-## 0.5.1 - 2026-03-12
-
-- Bump: **patch**
-- Source PR: #43 Fix/apache license trademark
+## [0.5.1] - 2026-03-12
 
 ### Changed
 
@@ -141,11 +111,7 @@
 - Tightened trademark policy to protect `Tiny Traders`, `TT`, and `tt-connect` branding
   while keeping code reuse permissive under Apache-2.0.
 
-
-## 0.5.0 - 2026-03-11
-
-- Bump: **minor**
-- Source PR: #42 refactor(api): flatten public order/GTT methods to accept kwargs
+## [0.5.0] - 2026-03-11
 
 ### Changed
 
@@ -188,59 +154,7 @@ broker.place_gtt(instrument=eq, last_price=2800.0, legs=[GttLeg(...)])
 broker.modify_gtt(gtt_id="G1", instrument=eq, last_price=2800.0, legs=[GttLeg(...)])
 ```
 
-
-## 0.4.8 - 2026-03-05
-
-- Bump: **patch**
-- Source PR: #40 ci(docs): fix mkdocs extensions in CI and Pages
-
-
-## 0.4.7 - 2026-03-05
-
-- Bump: **patch**
-- Source PR: #38 docs(mkdocs): recover docs site and add GitHub Pages deploy
-
-
-## 0.4.6 - 2026-03-05
-
-- Bump: **patch**
-- Source PR: #37 ci(release): fix pypi deployment status tracking
-
-
-## 0.4.5 - 2026-03-05
-
-- Bump: **patch**
-- Source PR: #35 Chore/readme badges
-
-
-## 0.4.4 - 2026-03-05
-
-- Bump: **patch**
-- Source PR: #34 Chore/add docstrings
-
-
-## 0.4.3 - 2026-03-05
-
-- Bump: **patch**
-- Source PR: #33 Chore/add docstrings
-
-
-## 0.4.2 - 2026-03-05
-
-- Bump: **patch**
-- Source PR: #32 Chore/release pr template dev main
-
-
-## 0.4.1 - 2026-03-05
-
-- Bump: **patch**
-- Source PR: #31 Feat/upgrade logging observability
-
-
-## 0.4.0 - 2026-03-04
-
-- Bump: **minor**
-- Source PR: #29 Feat/restructure core brokers
+## [0.4.0] - 2026-03-04
 
 ### Changed
 
@@ -262,80 +176,23 @@ broker.modify_gtt(gtt_id="G1", instrument=eq, last_price=2800.0, legs=[GttLeg(..
 - All public imports from `tt_connect` remain unchanged — no user-facing API break.
 - Internal imports changed from `tt_connect.enums` → `tt_connect.core.models.enums`, etc.
 
-
-## 0.3.0 - 2026-03-01
-
-- Bump: **minor**
-- Source PR: #27 feat(core): add logging
+## [0.3.0] - 2026-03-01
 
 ### Added
 
 - Structured JSON logging via `setup_logging()` (opt-in, zero new dependencies).
-  - `TTConnectJsonFormatter` emits one JSON line per record with stable fields: `ts`, `level`, `logger`, `message`, plus any caller-supplied `extra` fields merged in.
-  - 27 named events across auth, HTTP, instrument refresh, client lifecycle, and WebSocket layers (e.g. `auth.login`, `request.end`, `ws.connect`).
-  - `setup_logging(level="INFO", fmt="json"|"text")` exported from the top-level package.
-  - Library remains silent by default (`NullHandler`) — existing users see no change.
-- Usage demonstrated in `examples/zerodha.py` and `examples/angelone.py`.
-- PR workflow templates for releases:
-  - Added `.github/PULL_REQUEST_TEMPLATE/release-dev-to-main.md` for `dev -> main` release PRs.
-  - Updated `.github/pull_request_template.md` to point release PRs to the dedicated release template.
-- Upgrade-aware package-level observability events:
-  - One-time startup event: `package.startup` with `tt_connect_version`, broker, auth mode, stale policy, and session cache mode.
-  - One-time migration hints: `upgrade.notice` for deprecated config key names (e.g. `authMode` -> `auth_mode`, `apiKey` -> `api_key`).
-  - Automatic emission during client initialization (no application code changes required).
-- Documentation additions:
-  - Added `docs/CORE_BROKER_INTEGRATION.md` to explain `core/` ↔ `brokers/` integration, registries, lifecycle, order flow, and streaming flow.
-  - Added `docs/REMAINING_WORK.md` to track open issues, docs gaps, design limitations, and roadmap priorities.
-  - Updated `README.md` with badges for CI status, PyPI version, supported Python versions, and license.
-- Release workflow deployment tracking:
-  - Updated `.github/workflows/publish-main.yml` to publish under GitHub environment `pypi` so deployment status reflects current releases.
-- MkDocs documentation recovery:
-  - Reintroduced `mkdocs.yml` and `docs_site/` content on top of current `dev`.
-  - Added `docs_check` CI job in `.github/workflows/connect-ci.yml` for strict MkDocs builds.
-  - Added `make docs-serve` and `make docs-build` targets in `Makefile`.
-  - Simplified docs theme to built-in `readthedocs` and removed custom theme assets/styles for a clean baseline.
-  - Added `.github/workflows/docs-pages.yml` to deploy docs to GitHub Pages from `main`.
-  - Fixed docs CI/Pages dependencies by installing `pymdown-extensions` where MkDocs runs.
-  - Updated repository README and About metadata with live docs/PyPI links and project summary.
+- 27 named events across auth, HTTP, instrument refresh, client lifecycle, and WebSocket layers.
+- `setup_logging(level="INFO", fmt="json"|"text")` exported from the top-level package.
+- PR workflow templates for releases.
+- MkDocs documentation recovery with GitHub Pages deploy.
 
+## [0.2.0] - 2026-02-28
 
-## 0.2.4 - 2026-02-28
+### Added
 
-- Bump: **patch**
-- Source PR: #26 fix(brokers): update the subscription mode for ws
+- Instrument helper APIs: `get_futures`, `get_options`, `get_expiries`, `search_instruments`.
 
-
-## 0.2.3 - 2026-02-28
-
-- Bump: **patch**
-- Source PR: #25 ci(docs): remove legacy release workflow and align pipeline docs
-
-
-## 0.2.2 - 2026-02-28
-
-- Bump: **patch**
-- Source PR: #24 ci(release): fix fallback PR lookup regex
-
-
-## 0.2.1 - 2026-02-28
-
-- Bump: **patch**
-- Source PR: #19 ci(release): harden dev merge PR detection for auto-bump
-
-
-## 0.2.0 - 2026-02-28
-
-- Bump: **minor**
-- Source PR: #17 feat: add instrument helper APIs (futures/options/expiries/search)
-
-
-## 0.1.1 - 2026-02-28
-
-- Bump: **patch**
-- Source PR: #16 ci(release): fix auth precedence for dev auto-bump push
-
-
-## 0.1.0 - 2026-02-22
+## [0.1.0] - 2026-02-22
 
 ### Added
 

@@ -28,13 +28,12 @@ make test-fast
 
 ## Development Workflow
 
-1. Branch from `dev`: `feat/<topic>` or `fix/<topic>` (use `hotfix/<topic>` from `main` only for urgent production fixes).
+1. Branch from `main`: `feat/<topic>`, `fix/<topic>`, or `chore/<topic>`.
 2. Make focused changes with tests.
 3. Run `make ci` locally when possible.
-4. Update `CHANGELOG.md` for code-impacting changes.
-5. Add exactly one semver label for PRs targeting `dev`: `semver:major|semver:minor|semver:patch`.
-6. Open PR to `dev` with test evidence and risk notes.
-7. Release promotion is done by merging `dev` to `main`, then tagging on `main` as `vX.Y.Z`.
+4. Update `CHANGELOG.md` under `## [Unreleased]` for user-visible changes.
+5. Open PR to `main` with test evidence and risk notes.
+6. Releases are cut via `gh workflow run release.yml -f bump=patch|minor|major`.
 
 ## Testing Expectations
 
