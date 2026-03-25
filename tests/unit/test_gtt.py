@@ -11,6 +11,7 @@ from tt_connect.brokers.zerodha.transformer import ZerodhaTransformer
 from tt_connect.core.models.enums import ProductType, Side
 from tt_connect.core.models.instruments import Equity
 from tt_connect.core.models import GttLeg, ModifyGttRequest, PlaceGttRequest
+from tt_connect.core.exceptions import InvalidOrderError
 
 
 # ---------------------------------------------------------------------------
@@ -120,6 +121,41 @@ class TestAngelOneGtt:
         }
         gtt = AngelOneTransformer.to_gtt(raw)
         assert gtt.legs[0].product == ProductType.NRML
+
+    def test_to_gtt_params_rejects_empty_legs(self) -> None:
+        req = PlaceGttRequest(instrument=INSTR, last_price=200.0, legs=[])
+        with pytest.raises(InvalidOrderError, match="exactly 1 leg"):
+            AngelOneTransformer.to_gtt_params(
+                self.TOKEN, self.BROKER_SYMBOL, self.EXCHANGE, req
+            )
+
+    def test_to_gtt_params_rejects_two_legs(self) -> None:
+        leg2 = GttLeg(trigger_price=210.0, price=211.0, side=Side.SELL,
+                      qty=10, product=ProductType.CNC)
+        req = PlaceGttRequest(instrument=INSTR, last_price=200.0,
+                              legs=[SINGLE_LEG, leg2])
+        with pytest.raises(InvalidOrderError, match="exactly 1 leg"):
+            AngelOneTransformer.to_gtt_params(
+                self.TOKEN, self.BROKER_SYMBOL, self.EXCHANGE, req
+            )
+
+    def test_to_modify_gtt_params_rejects_empty_legs(self) -> None:
+        req = ModifyGttRequest(gtt_id="42", instrument=INSTR,
+                               last_price=200.0, legs=[])
+        with pytest.raises(InvalidOrderError, match="exactly 1 leg"):
+            AngelOneTransformer.to_modify_gtt_params(
+                self.TOKEN, self.BROKER_SYMBOL, self.EXCHANGE, req
+            )
+
+    def test_to_modify_gtt_params_rejects_two_legs(self) -> None:
+        leg2 = GttLeg(trigger_price=210.0, price=211.0, side=Side.SELL,
+                      qty=10, product=ProductType.CNC)
+        req = ModifyGttRequest(gtt_id="42", instrument=INSTR,
+                               last_price=200.0, legs=[SINGLE_LEG, leg2])
+        with pytest.raises(InvalidOrderError, match="exactly 1 leg"):
+            AngelOneTransformer.to_modify_gtt_params(
+                self.TOKEN, self.BROKER_SYMBOL, self.EXCHANGE, req
+            )
 
 
 # ---------------------------------------------------------------------------
@@ -252,3 +288,35 @@ class TestZerodhaGtt:
         }
         gtt = ZerodhaTransformer.to_gtt(raw)
         assert gtt.legs == []
+
+    def test_to_gtt_params_rejects_empty_legs(self) -> None:
+        req = PlaceGttRequest(instrument=INSTR, last_price=200.0, legs=[])
+        with pytest.raises(InvalidOrderError, match="1 or 2 legs"):
+            ZerodhaTransformer.to_gtt_params(
+                self.TOKEN, self.BROKER_SYMBOL, self.EXCHANGE, req
+            )
+
+    def test_to_gtt_params_rejects_three_legs(self) -> None:
+        legs = [SINGLE_LEG] * 3
+        req = PlaceGttRequest(instrument=INSTR, last_price=200.0, legs=legs)
+        with pytest.raises(InvalidOrderError, match="1 or 2 legs"):
+            ZerodhaTransformer.to_gtt_params(
+                self.TOKEN, self.BROKER_SYMBOL, self.EXCHANGE, req
+            )
+
+    def test_to_modify_gtt_params_rejects_empty_legs(self) -> None:
+        req = ModifyGttRequest(gtt_id="42", instrument=INSTR,
+                               last_price=200.0, legs=[])
+        with pytest.raises(InvalidOrderError, match="1 or 2 legs"):
+            ZerodhaTransformer.to_modify_gtt_params(
+                self.TOKEN, self.BROKER_SYMBOL, self.EXCHANGE, req
+            )
+
+    def test_to_modify_gtt_params_rejects_three_legs(self) -> None:
+        legs = [SINGLE_LEG] * 3
+        req = ModifyGttRequest(gtt_id="42", instrument=INSTR,
+                               last_price=200.0, legs=legs)
+        with pytest.raises(InvalidOrderError, match="1 or 2 legs"):
+            ZerodhaTransformer.to_modify_gtt_params(
+                self.TOKEN, self.BROKER_SYMBOL, self.EXCHANGE, req
+            )

@@ -32,8 +32,7 @@ ZERODHA_ACCESS_TOKEN=your_access_token
 
 **Get credentials:**
 1. Register app at https://kite.trade/
-2. Complete OAuth login to get `access_token`
-3. Use `dev/get_token.py` for automated token generation
+2. Complete OAuth login to get `access_token` (see [TROUBLESHOOTING.md](./TROUBLESHOOTING.md#zerodha-oauth-flow) for the step-by-step flow)
 
 ---
 

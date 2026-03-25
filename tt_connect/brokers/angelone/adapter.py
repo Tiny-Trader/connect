@@ -143,19 +143,30 @@ class AngelOneAdapter(BrokerAdapter, broker_id="angelone"):
                                    headers=self.auth.headers, json={"id": gtt_id})
 
     async def get_gtts(self) -> JsonDict:
-        """Fetch all GTT rules (active and recent)."""
-        raw = await self._request(
-            "POST", f"{GTT_BASE_URL}/ruleList",
-            headers=self.auth.headers,
-            json={"status": ["NEW", "CANCELLED", "ACTIVE", "SENTTOEXCHANGE", "FORALL"],
-                  "page": 1, "count": 50},
-        )
-        # Normalize data to always be a list
-        data = raw.get("data")
-        if data is None:
-            raw["data"] = []
-        elif isinstance(data, dict):
-            raw["data"] = [data]
+        """Fetch all GTT rules (active and recent), paginating automatically."""
+        page_size = 50
+        all_rules: list[JsonDict] = []
+        page = 1
+
+        while True:
+            raw = await self._request(
+                "POST", f"{GTT_BASE_URL}/ruleList",
+                headers=self.auth.headers,
+                json={"status": ["NEW", "CANCELLED", "ACTIVE", "SENTTOEXCHANGE", "FORALL"],
+                      "page": page, "count": page_size},
+            )
+            data = raw.get("data")
+            if data is None:
+                break
+            if isinstance(data, dict):
+                all_rules.append(data)
+                break
+            all_rules.extend(data)
+            if len(data) < page_size:
+                break
+            page += 1
+
+        raw["data"] = all_rules
         return raw
 
     # --- Historical ---

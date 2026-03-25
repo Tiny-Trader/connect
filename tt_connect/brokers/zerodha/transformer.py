@@ -133,6 +133,10 @@ class ZerodhaTransformer:
         req: PlaceGttRequest,
     ) -> dict[str, Any]:
         """Build Zerodha GTT create form params (sent as form-encoded data)."""
+        if not (1 <= len(req.legs) <= 2):
+            raise InvalidOrderError(
+                f"Zerodha GTT supports 1 or 2 legs, got {len(req.legs)}"
+            )
         gtt_type = "single" if len(req.legs) == 1 else "two-leg"
         condition = _json.dumps({
             "exchange":       exchange,
@@ -154,6 +158,10 @@ class ZerodhaTransformer:
         req: ModifyGttRequest,
     ) -> dict[str, Any]:
         """Build Zerodha GTT modify form params (same shape as create)."""
+        if not (1 <= len(req.legs) <= 2):
+            raise InvalidOrderError(
+                f"Zerodha GTT supports 1 or 2 legs, got {len(req.legs)}"
+            )
         gtt_type = "single" if len(req.legs) == 1 else "two-leg"
         condition = _json.dumps({
             "exchange":       exchange,

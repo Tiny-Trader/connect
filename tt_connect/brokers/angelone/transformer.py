@@ -205,6 +205,10 @@ class AngelOneTransformer:
         req: PlaceGttRequest,
     ) -> dict[str, Any]:
         """Build AngelOne GTT create payload (single-leg only)."""
+        if len(req.legs) != 1:
+            raise InvalidOrderError(
+                f"AngelOne GTT supports exactly 1 leg, got {len(req.legs)}"
+            )
         leg = req.legs[0]
         # AngelOne accepts DELIVERY (CNC) or MARGIN (NRML) for GTT
         product_raw = "DELIVERY" if leg.product == ProductType.CNC else "MARGIN"
@@ -228,6 +232,10 @@ class AngelOneTransformer:
         req: ModifyGttRequest,
     ) -> dict[str, Any]:
         """Build AngelOne GTT modify payload (single-leg only)."""
+        if len(req.legs) != 1:
+            raise InvalidOrderError(
+                f"AngelOne GTT supports exactly 1 leg, got {len(req.legs)}"
+            )
         leg = req.legs[0]
         return {
             "id":           req.gtt_id,

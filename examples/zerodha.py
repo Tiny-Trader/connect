@@ -13,13 +13,13 @@ This example shows the full user-facing API:
 
 Prerequisites
 -------------
-1. Install the library (from the connect/ directory):
-       pip install -e .
+1. Install the library:
+       pip install tt-connect
 
 2. Get your credentials from https://kite.trade/:
    - api_key      → your Kite Connect app's API key
    - access_token → generated after completing the daily OAuth login flow
-                    (use dev/get_token.py for the automated flow)
+                    (see docs/TROUBLESHOOTING.md for the step-by-step process)
 
 3. Set environment variables (or .env file):
        export ZERODHA_API_KEY=your_api_key

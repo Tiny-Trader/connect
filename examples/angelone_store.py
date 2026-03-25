@@ -18,8 +18,8 @@ What it covers
 
 Prerequisites
 -------------
-1. Install the library (from the connect/ directory):
-       pip install -e .
+1. Install the library:
+       pip install tt-connect
 
 2. Get your AngelOne Smart API credentials from https://smartapi.angelbroking.com/:
    - api_key     → your Smart API app key

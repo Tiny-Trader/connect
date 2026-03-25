@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.8.1 - 2026-03-25
+
+- Bump: **patch**
+- Source PR: #49 fix(gtt): validate leg count, paginate GTT list, fix docs
+
+
+## [Unreleased]
+
+### Fixed
+
+- **AngelOne GTT validation (#9)** — `to_gtt_params` / `to_modify_gtt_params` now raise
+  `InvalidOrderError` if legs != 1 (was: blind `legs[0]` access causing IndexError on empty
+  list, silent truncation on multi-leg).
+- **Zerodha GTT validation (#10)** — `to_gtt_params` / `to_modify_gtt_params` now raise
+  `InvalidOrderError` if legs not in [1, 2] (was: 0 or 3+ legs silently accepted).
+- **AngelOne GTT pagination (#8)** — `get_gtts()` now paginates through all pages
+  (was: hardcoded to page 1 with count=50, silently dropping rules beyond 50).
+- Removed dead `dev/get_token.py` references; pointed to `TROUBLESHOOTING.md` instead.
+- Unified install instructions to `pip install tt-connect` across all examples.
+
 ## 0.8.0 - 2026-03-18
 
 ### Added
