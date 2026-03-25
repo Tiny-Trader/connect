@@ -56,7 +56,7 @@ with TTConnect("angelone", config) as broker:
     All Indian broker tokens expire at end-of-day. This is a SEBI mandate, not a tt-connect limitation. You must re-authenticate each trading day.
 
     - **Zerodha**: Complete the OAuth login flow daily to get a fresh `access_token`.
-    - **AngelOne (auto mode)**: Set `cache_session: True` — tt-connect will auto-login via TOTP and cache the session for the day.
+    - **AngelOne (auto mode)**: tt-connect will auto-login via TOTP each day. Set `cache_session: True` to persist the session to disk so it survives restarts within the same day.
     - **AngelOne (manual mode)**: Obtain a fresh `access_token` JWT daily.
 
     If your token expires mid-session, API calls will raise `AuthenticationError`.
