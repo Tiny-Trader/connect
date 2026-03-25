@@ -21,7 +21,8 @@ _RENEW_URL = "https://apiconnect.angelbroking.com/rest/auth/angelbroking/user/v1
 def _local_ip() -> str:
     """Best-effort local IPv4 discovery required by AngelOne headers."""
     try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # Todo: Add 5 sec timeouts here
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.settimeout(5.0)
         s.connect(("8.8.8.8", 80))
         ip = str(s.getsockname()[0])
         s.close()
