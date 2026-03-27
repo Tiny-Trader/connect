@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+### Fixed
+- **AngelOne duplicate instruments** — symbols appearing as both index (`AMXIDX`) and plain
+  equity in AngelOne's master (e.g. NIFTY, BANKNIFTY) are now deduplicated; the index row
+  is kept, the spurious equity row is skipped.
+- **Empty display names for derivatives** — futures and options `name` column was always
+  `NULL`. Now populated with human-readable labels: `NIFTY FUT 27-Mar-2026` (futures),
+  `NIFTY 23000 CE 27-Mar-2026` (options). Applies to both brokers.
+
 ## [0.9.0] - 2026-03-25
 ### Added
 

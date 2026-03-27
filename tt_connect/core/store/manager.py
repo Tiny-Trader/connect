@@ -25,6 +25,34 @@ from tt_connect.core.exceptions import InstrumentManagerError, InstrumentStoreNo
 from tt_connect.core.store.queries import InstrumentQueries
 from tt_connect.core.store.schema import get_connection, init_schema
 
+# ---------------------------------------------------------------------------
+# Display-name helpers for derivative instruments
+# ---------------------------------------------------------------------------
+
+_MONTH_ABBR = [
+    "", "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+]
+
+
+def _fmt_expiry(expiry: date) -> str:
+    """Format expiry as ``DD-Mon-YYYY`` (e.g. ``27-Mar-2026``)."""
+    return f"{expiry.day:02d}-{_MONTH_ABBR[expiry.month]}-{expiry.year}"
+
+
+def _future_display_name(symbol: str, expiry: date) -> str:
+    """Human-readable future name: ``NIFTY FUT 27-Mar-2026``."""
+    return f"{symbol} FUT {_fmt_expiry(expiry)}"
+
+
+def _option_display_name(symbol: str, strike: float, option_type: str, expiry: date) -> str:
+    """Human-readable option name: ``NIFTY 23000 CE 27-Mar-2026``.
+
+    Strike is displayed as an integer when it has no fractional part.
+    """
+    strike_str = str(int(strike)) if strike == int(strike) else str(strike)
+    return f"{symbol} {strike_str} {option_type} {_fmt_expiry(expiry)}"
+
 logger = logging.getLogger(__name__)
 
 class ParsedInstrumentsLike(Protocol):
@@ -337,7 +365,9 @@ class InstrumentManager:
                 INSERT INTO instruments (exchange, symbol, segment, name, lot_size, tick_size)
                 VALUES (?, ?, ?, ?, ?, ?)
                 """,
-                (fut.exchange, fut.symbol, fut.segment, None, fut.lot_size, fut.tick_size),
+                (fut.exchange, fut.symbol, fut.segment,
+                 _future_display_name(fut.symbol, fut.expiry),
+                 fut.lot_size, fut.tick_size),
             )
             instrument_id = cursor.lastrowid
 
@@ -389,7 +419,9 @@ class InstrumentManager:
                 INSERT INTO instruments (exchange, symbol, segment, name, lot_size, tick_size)
                 VALUES (?, ?, ?, ?, ?, ?)
                 """,
-                (opt.exchange, opt.symbol, opt.segment, None, opt.lot_size, opt.tick_size),
+                (opt.exchange, opt.symbol, opt.segment,
+                 _option_display_name(opt.symbol, opt.strike, opt.option_type, opt.expiry),
+                 opt.lot_size, opt.tick_size),
             )
             instrument_id = cursor.lastrowid
 

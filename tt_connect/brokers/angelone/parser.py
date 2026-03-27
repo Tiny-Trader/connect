@@ -158,18 +158,30 @@ def parse(rows: list[dict[str, Any]]) -> ParsedInstruments:
     """
     result = ParsedInstruments()
 
+    # Track index symbols per exchange so equity pass can skip duplicates.
+    # AngelOne's master may list the same symbol (e.g. NIFTY) as both an
+    # AMXIDX index row and a plain NSE equity row — we keep only the index.
+    index_symbols: set[tuple[str, str]] = set()  # {(exchange, canonical_symbol)}
+
     for row in rows:
         instrument_type = (row.get("instrumenttype") or "").strip()
         exch_seg        = (row.get("exch_seg") or "").strip()
 
         # --- Indices ---
         if instrument_type == _INDEX_TYPE and exch_seg in _EQUITY_EXCHANGES:
-            result.indices.append(_parse_index(row))
+            parsed_idx = _parse_index(row)
+            index_symbols.add((parsed_idx.exchange, parsed_idx.symbol))
+            result.indices.append(parsed_idx)
             continue
 
         # --- Equities (instrumenttype is empty/NaN for plain equities) ---
         if not instrument_type and exch_seg in _EQUITY_EXCHANGES:
             symbol: str = (row.get("symbol") or "").strip()
+            canonical = symbol.removesuffix("-EQ")
+            exchange = exch_seg.strip()
+            # Skip symbols already captured as indices (e.g. NIFTY, BANKNIFTY)
+            if (exchange, canonical) in index_symbols:
+                continue
             # Keep plain equities (-EQ suffix) or heuristic plain ones; skip bonds/MFs/etc.
             if symbol.endswith("-EQ") or _is_plain_equity(row):
                 result.equities.append(_parse_equity(row))
