@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Changed
+- **Docs site** — restructured from 37 to 22 pages; merged overlapping guides, added
+  broker-agnostic examples with sync/async tabs, and switched to Material for MkDocs.
+
 ## [0.9.1] - 2026-03-27
 ### Fixed
 - **AngelOne duplicate instruments** — symbols appearing as both index (`AMXIDX`) and plain
