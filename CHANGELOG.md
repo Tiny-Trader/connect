@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Changed
+- Bumped `idna` (3.11 → 3.18), `python-dotenv` (1.2.1 → 1.2.2), `pytest` (9.0.2 → 9.1.1),
+  and `pygments` (2.19.2 → 2.20.0).
+
 ## [0.9.1] - 2026-03-27
 ### Fixed
 - **AngelOne duplicate instruments** — symbols appearing as both index (`AMXIDX`) and plain
