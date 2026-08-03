@@ -3,6 +3,10 @@
 ## [Unreleased]
 
 ### Changed
+- **`list_instruments` default limit** — raised from 100 to 500. When the result count
+  equals the requested `limit`, a WARNING is logged (`instruments.list.truncated`) so
+  callers do not mistake a capped page for a full result set. Pass `limit=None` for an
+  unbounded scan.
 - Bumped `idna` (3.11 → 3.18), `python-dotenv` (1.2.1 → 1.2.2), `pytest` (9.0.2 → 9.1.1),
   and `pygments` (2.19.2 → 2.20.0).
 
