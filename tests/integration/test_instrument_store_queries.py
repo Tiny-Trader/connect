@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from datetime import date
 
 import pytest
@@ -131,6 +132,31 @@ async def test_list_instruments_rejects_invalid_filter_combinations(populated_db
 
     with pytest.raises(ValueError):
         await mgr.queries.list_instruments(instrument_type=Commodity)
+
+
+async def test_list_instruments_warns_when_result_count_equals_limit(populated_db, caplog):
+    mgr = _manager(populated_db)
+
+    with caplog.at_level(logging.WARNING, logger="tt_connect.core.store.queries"):
+        results = await mgr.queries.list_instruments(has_derivatives=True, limit=2)
+
+    assert len(results) == 2
+    assert any("may be truncated" in r.message for r in caplog.records)
+    assert any(
+        getattr(r, "event", None) == "instruments.list.truncated" for r in caplog.records
+    )
+
+
+async def test_list_instruments_no_warning_when_under_limit_or_unbounded(populated_db, caplog):
+    mgr = _manager(populated_db)
+
+    with caplog.at_level(logging.WARNING, logger="tt_connect.core.store.queries"):
+        under = await mgr.queries.list_instruments(has_derivatives=True, limit=10_000)
+        full = await mgr.queries.list_instruments(has_derivatives=True, limit=None)
+
+    assert len(under) < 10_000
+    assert len(full) == len(under)
+    assert not any("may be truncated" in r.message for r in caplog.records)
 
 
 # ---------------------------------------------------------------------------

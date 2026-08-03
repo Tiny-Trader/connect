@@ -36,6 +36,7 @@ from tt_connect.core.models.instruments import (
     OptionChain,
 )
 from tt_connect.core.store.manager import InstrumentManager
+from tt_connect.core.store.queries import DEFAULT_LIST_LIMIT
 
 T = TypeVar("T")
 
@@ -84,9 +85,14 @@ class AsyncInstrumentStore:
         strike_min: float | None = None,
         strike_max: float | None = None,
         has_derivatives: bool | None = None,
-        limit: int | None = 100,
+        limit: int | None = DEFAULT_LIST_LIMIT,
     ) -> list[Instrument]:
-        """List instruments using strict canonical filters."""
+        """List instruments using strict canonical filters.
+
+        Defaults to ``limit=500``. Pass ``limit=None`` for a full scan. When
+        the result count equals ``limit``, a WARNING is logged (possible
+        truncation).
+        """
         return await self._queries.list_instruments(
             instrument_type=instrument_type,
             exchange=exchange,
@@ -169,9 +175,14 @@ class InstrumentStore:
         strike_min: float | None = None,
         strike_max: float | None = None,
         has_derivatives: bool | None = None,
-        limit: int | None = 100,
+        limit: int | None = DEFAULT_LIST_LIMIT,
     ) -> list[Instrument]:
-        """List instruments using strict canonical filters."""
+        """List instruments using strict canonical filters.
+
+        Defaults to ``limit=500``. Pass ``limit=None`` for a full scan. When
+        the result count equals ``limit``, a WARNING is logged (possible
+        truncation).
+        """
         return self._run(
             self._async.list_instruments(
                 instrument_type=instrument_type,

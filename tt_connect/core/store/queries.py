@@ -20,6 +20,7 @@ client first.
 
 from __future__ import annotations
 
+import logging
 from datetime import date
 from typing import Any, cast
 
@@ -39,6 +40,11 @@ from tt_connect.core.models.instruments import (
     OptionChain,
     OptionChainEntry,
 )
+
+logger = logging.getLogger(__name__)
+
+DEFAULT_LIST_LIMIT = 500
+"""Default ``limit`` for :meth:`InstrumentQueries.list_instruments`."""
 
 
 class InstrumentQueries:
@@ -77,13 +83,17 @@ class InstrumentQueries:
         strike_min: float | None = None,
         strike_max: float | None = None,
         has_derivatives: bool | None = None,
-        limit: int | None = 100,
+        limit: int | None = DEFAULT_LIST_LIMIT,
     ) -> list[Instrument]:
         """List instruments using strict canonical filters.
 
         The filter language intentionally reuses the package's existing
         instrument objects and enums instead of introducing a separate query
         object. This keeps discovery aligned with the strict public model.
+
+        ``limit`` defaults to :data:`DEFAULT_LIST_LIMIT`. Pass ``limit=None``
+        for an unbounded scan. When the result count equals ``limit``, a
+        WARNING is logged because the page may be truncated.
         """
         self._validate_list_filters(
             instrument_type=instrument_type,
@@ -98,7 +108,7 @@ class InstrumentQueries:
         )
 
         if instrument_type in (Future,):
-            return cast(
+            results: list[Instrument] = cast(
                 list[Instrument],
                 await self._list_futures(
                     exchange=exchange,
@@ -107,8 +117,8 @@ class InstrumentQueries:
                     limit=limit,
                 ),
             )
-        if instrument_type in (Option,):
-            return cast(
+        elif instrument_type in (Option,):
+            results = cast(
                 list[Instrument],
                 await self._list_options(
                     exchange=exchange,
@@ -121,15 +131,28 @@ class InstrumentQueries:
                     limit=limit,
                 ),
             )
-        return cast(
-            list[Instrument],
-            await self._list_underlyings(
-                instrument_type=instrument_type,
-                exchange=exchange,
-                has_derivatives=has_derivatives,
-                limit=limit,
-            ),
-        )
+        else:
+            results = cast(
+                list[Instrument],
+                await self._list_underlyings(
+                    instrument_type=instrument_type,
+                    exchange=exchange,
+                    has_derivatives=has_derivatives,
+                    limit=limit,
+                ),
+            )
+
+        if limit is not None and len(results) == limit:
+            logger.warning(
+                f"list_instruments returned {limit} rows (equals limit={limit}); "
+                "results may be truncated. Pass limit=None for a full scan.",
+                extra={
+                    "event": "instruments.list.truncated",
+                    "limit": limit,
+                    "count": len(results),
+                },
+            )
+        return results
 
     async def get_futures(self, underlying: Instrument) -> list[Future]:
         """Return all active futures for an underlying instrument, sorted by expiry."""
