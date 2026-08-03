@@ -3,6 +3,10 @@
 ## [Unreleased]
 
 ### Changed
+- **Instrument construction errors** — missing/invalid fields on `Index`, `Equity`,
+  `Future`, `Option`, etc. now raise `ConfigurationError` with a short usage example
+  instead of a raw Pydantic `ValidationError`. Compact `__repr__` forms such as
+  `Index(NSE:NIFTY)` and `Option(NFO:NIFTY 25000 CE 2026-03-27)`.
 - Bumped `idna` (3.11 → 3.18), `python-dotenv` (1.2.1 → 1.2.2), `pytest` (9.0.2 → 9.1.1),
   and `pygments` (2.19.2 → 2.20.0).
 
